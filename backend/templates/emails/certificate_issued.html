@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Issued</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; background: #f5576c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .achievement { background: white; border: 2px solid #f5576c; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏆 Congratulations!</h1>
+            <h2>Certificate Issued</h2>
+        </div>
+        <div class="content">
+            <h2>Hi {{ first_name }},</h2>
+            <p>Congratulations on completing <strong>{{ course_title }}</strong>!</p>
+            
+            <div class="achievement">
+                <h3>🎓 Achievement Unlocked</h3>
+                <p>You have successfully earned your certificate for:</p>
+                <h4>{{ course_title }}</h4>
+                <p>This blockchain-verified certificate proves your mastery of the course material.</p>
+            </div>
+            
+            <p>Your certificate is now available and can be:</p>
+            <ul>
+                <li>📥 Downloaded as a PDF</li>
+                <li>🔗 Shared on social media</li>
+                <li>🚀 Minted as an NFT on the blockchain</li>
+                <li>📋 Added to your professional profile</li>
+            </ul>
+            
+            <a href="{{ certificate_url }}" class="button">View Your Certificate</a>
+            
+            <p>Keep up the great work and continue your learning journey with {{ platform_name }}!</p>
+            
+            <p>Congratulations again!<br>The {{ platform_name }} Team</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 {{ platform_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
