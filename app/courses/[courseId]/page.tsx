@@ -1,18 +1,12 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Award,
   BookOpen,
@@ -25,93 +19,82 @@ import {
   ChevronUp,
   Lock,
   CreditCard,
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import AIChatAssistant from "@/components/ai-chat-assistant";
-import { courseService, type Course } from "@/lib/services/courses"; // 👈 import your service
+} from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import AIChatAssistant from "@/components/ai-chat-assistant"
+import { courseService, type Course } from "@/lib/services/courses" // 👈 import your service
 
 type Lesson = {
-  id: string;
-  title: string;
-  duration: string;
-  completed: boolean;
-};
+  id: string
+  title: string
+  duration: string
+  completed: boolean
+}
 
 type Module = {
-  id: string;
-  title: string;
-  duration: string;
-  completed: boolean;
-  lessons: Lesson[];
-};
+  id: string
+  title: string
+  duration: string
+  completed: boolean
+  lessons: Lesson[]
+}
 
 export default function CoursePage() {
-  const params = useParams();
-  const slug = params?.courseId as string;
+  const params = useParams()
+  const slug = params?.courseId as string
 
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expandedModules, setExpandedModules] = useState<
-    Record<string, boolean>
-  >({});
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        setLoading(true);
-        const response = await courseService.getCourse(slug);
-        console.log(`One course Data ${response}`);
+        setLoading(true)
+        const response = await courseService.getCourse(slug)
+        console.log(`One course Data ${response}`)
 
-        setCourse(response);
+        setCourse(response)
         // if (response?.modules?.length > 0) {
         //   setExpandedModules({ [response.modules[0].id]: true });
         // }
       } catch (err: any) {
-        console.error(err);
-        setError("Failed to load course information.");
+        console.error(err)
+        setError("Failed to load course information.")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    if (slug) fetchCourse();
-  }, [slug]);
+    }
+    if (slug) fetchCourse()
+  }, [slug])
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => ({
       ...prev,
       [moduleId]: !prev[moduleId],
-    }));
-  };
+    }))
+  }
 
   const handlePurchaseCourse = () => {
-    alert("Redirecting to payment gateway...");
-  };
+    alert("Redirecting to payment gateway...")
+  }
 
   if (loading)
     return (
       <div className="container py-10 text-center text-muted-foreground">
         Loading course information...
       </div>
-    );
+    )
 
-  if (error)
-    return (
-      <div className="container py-10 text-center text-red-500">{error}</div>
-    );
+  if (error) return <div className="container py-10 text-center text-red-500">{error}</div>
 
   if (!course)
     return (
-      <div className="container py-10 text-center text-muted-foreground">
-        Course not found.
-      </div>
-    );
+      <div className="container py-10 text-center text-muted-foreground">Course not found.</div>
+    )
 
-  const canAccessCourse = course.is_free;
+  const canAccessCourse = course.is_free
 
   return (
     <div className="container py-6">
@@ -174,9 +157,7 @@ export default function CoursePage() {
               </div>
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {course.total_students} students
-                </span>
+                <span className="text-sm">{course.total_students} students</span>
               </div>
               {course.is_free && (
                 <div className="flex items-center gap-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
@@ -223,17 +204,12 @@ export default function CoursePage() {
                         <Lock className="h-5 w-5 text-red" />
                       </div>
                       <div>
-                        <h3 className="font-medium">
-                          This course requires purchase
-                        </h3>
+                        <h3 className="font-medium">This course requires purchase</h3>
                         <p className="text-sm text-muted-foreground">
                           Purchase this course to access all modules and lessons
                         </p>
                       </div>
-                      <Button
-                        className="ml-auto"
-                        onClick={handlePurchaseCourse}
-                      >
+                      <Button className="ml-auto" onClick={handlePurchaseCourse}>
                         Purchase for {course.price}
                       </Button>
                     </div>
@@ -392,5 +368,5 @@ export default function CoursePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,17 +1,11 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -19,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -28,15 +22,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +38,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
   Users,
   Search,
@@ -58,12 +52,12 @@ import {
   UserCheck,
   UserX,
   Mail,
-} from "lucide-react";
+} from "lucide-react"
 
 export default function UsersManagement() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRole, setSelectedRole] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedRole, setSelectedRole] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
 
   // Mock user data
   const users = [
@@ -132,17 +126,16 @@ export default function UsersManagement() {
       tokensEarned: 320,
       avatar: "/placeholder.svg?height=32&width=32",
     },
-  ];
+  ]
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === "all" || user.role === selectedRole;
-    const matchesStatus =
-      selectedStatus === "all" || user.status === selectedStatus;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesRole = selectedRole === "all" || user.role === selectedRole
+    const matchesStatus = selectedStatus === "all" || user.status === selectedStatus
+    return matchesSearch && matchesRole && matchesStatus
+  })
 
   const stats = {
     totalUsers: users.length,
@@ -150,7 +143,7 @@ export default function UsersManagement() {
     students: users.filter((u) => u.role === "student").length,
     instructors: users.filter((u) => u.role === "instructor").length,
     admins: users.filter((u) => u.role === "admin").length,
-  };
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -181,8 +174,7 @@ export default function UsersManagement() {
                 <DialogHeader>
                   <DialogTitle>Add New User</DialogTitle>
                   <DialogDescription>
-                    Create a new user account. Fill in the required information
-                    below.
+                    Create a new user account. Fill in the required information below.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -190,11 +182,7 @@ export default function UsersManagement() {
                     <Label htmlFor="name" className="text-right">
                       Name
                     </Label>
-                    <Input
-                      id="name"
-                      placeholder="John Doe"
-                      className="col-span-3"
-                    />
+                    <Input id="name" placeholder="John Doe" className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">
@@ -237,9 +225,7 @@ export default function UsersManagement() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Users
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -248,9 +234,7 @@ export default function UsersManagement() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Users
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
                 <UserCheck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -268,9 +252,7 @@ export default function UsersManagement() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Instructors
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Instructors</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -316,10 +298,7 @@ export default function UsersManagement() {
                     <SelectItem value="admin">Admins</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -358,9 +337,7 @@ export default function UsersManagement() {
                             />
                             <div>
                               <div className="font-medium">{user.name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {user.email}
-                              </div>
+                              <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -370,19 +347,15 @@ export default function UsersManagement() {
                               user.role === "admin"
                                 ? "default"
                                 : user.role === "instructor"
-                                ? "secondary"
-                                : "outline"
+                                  ? "secondary"
+                                  : "outline"
                             }
                           >
                             {user.role}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              user.status === "active" ? "default" : "secondary"
-                            }
-                          >
+                          <Badge variant={user.status === "active" ? "default" : "secondary"}>
                             {user.status}
                           </Badge>
                         </TableCell>
@@ -446,5 +419,5 @@ export default function UsersManagement() {
         </main>
       </div>
     </div>
-  );
+  )
 }

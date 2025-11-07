@@ -36,7 +36,11 @@ export default function LearningPathProgress() {
         <div key={step.id} className="mb-6 relative">
           <div
             className={`absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full ${
-              step.status === "completed" ? "bg-green-100" : step.status === "in-progress" ? "bg-blue-100" : "bg-muted"
+              step.status === "completed"
+                ? "bg-green-100"
+                : step.status === "in-progress"
+                  ? "bg-blue-100"
+                  : "bg-muted"
             }`}
           >
             {step.status === "completed" ? (
@@ -61,11 +65,17 @@ export default function LearningPathProgress() {
                         : "text-muted-foreground"
                   }`}
                 >
-                  {step.status === "completed" ? "Completed" : step.status === "in-progress" ? "In Progress" : "Locked"}
+                  {step.status === "completed"
+                    ? "Completed"
+                    : step.status === "in-progress"
+                      ? "In Progress"
+                      : "Locked"}
                 </span>
 
                 {step.status === "completed" && (
-                  <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">25 tokens earned</span>
+                  <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                    25 tokens earned
+                  </span>
                 )}
               </div>
             </CardContent>

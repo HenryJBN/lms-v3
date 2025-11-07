@@ -1,7 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
@@ -27,7 +34,9 @@ interface LessonQuizProps {
 
 export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedAnswers, setSelectedAnswers] = useState<number[]>(Array(quiz.questions.length).fill(-1))
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>(
+    Array(quiz.questions.length).fill(-1)
+  )
   const [showResults, setShowResults] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -134,7 +143,9 @@ export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
                     <p className="font-medium">{question.question}</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       Your answer:{" "}
-                      {selectedAnswers[index] >= 0 ? question.options[selectedAnswers[index]] : "Not answered"}
+                      {selectedAnswers[index] >= 0
+                        ? question.options[selectedAnswers[index]]
+                        : "Not answered"}
                     </p>
                     {selectedAnswers[index] !== question.correctAnswer && (
                       <p className="text-sm text-green-600 mt-1">
@@ -178,14 +189,20 @@ export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
 
           <RadioGroup
             value={
-              selectedAnswers[currentQuestionIndex] >= 0 ? selectedAnswers[currentQuestionIndex].toString() : undefined
+              selectedAnswers[currentQuestionIndex] >= 0
+                ? selectedAnswers[currentQuestionIndex].toString()
+                : undefined
             }
             onValueChange={(value) => handleAnswerSelect(Number.parseInt(value))}
             className="space-y-3"
           >
             {currentQuestion.options.map((option, index) => (
               <div key={index} className="flex items-start space-x-2">
-                <RadioGroupItem value={index.toString()} id={`option-${index}`} disabled={submitted} />
+                <RadioGroupItem
+                  value={index.toString()}
+                  id={`option-${index}`}
+                  disabled={submitted}
+                />
                 <Label htmlFor={`option-${index}`} className="cursor-pointer">
                   {option}
                 </Label>
@@ -206,7 +223,9 @@ export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
                   <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
                   <div>
                     <p className="font-medium">Correct!</p>
-                    {currentQuestion.explanation && <p className="text-sm mt-1">{currentQuestion.explanation}</p>}
+                    {currentQuestion.explanation && (
+                      <p className="text-sm mt-1">{currentQuestion.explanation}</p>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -215,9 +234,12 @@ export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
                   <div>
                     <p className="font-medium">Incorrect</p>
                     <p className="text-sm mt-1">
-                      The correct answer is: {currentQuestion.options[currentQuestion.correctAnswer]}
+                      The correct answer is:{" "}
+                      {currentQuestion.options[currentQuestion.correctAnswer]}
                     </p>
-                    {currentQuestion.explanation && <p className="text-sm mt-1">{currentQuestion.explanation}</p>}
+                    {currentQuestion.explanation && (
+                      <p className="text-sm mt-1">{currentQuestion.explanation}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -226,7 +248,11 @@ export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={handlePreviousQuestion} disabled={currentQuestionIndex === 0}>
+        <Button
+          variant="outline"
+          onClick={handlePreviousQuestion}
+          disabled={currentQuestionIndex === 0}
+        >
           Previous
         </Button>
 

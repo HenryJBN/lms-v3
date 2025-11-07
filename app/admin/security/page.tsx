@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +24,13 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -188,7 +201,8 @@ export default function SecurityManagement() {
     const matchesSearch =
       log.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.user.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesType = selectedType === "all" || log.event.toLowerCase().includes(selectedType.toLowerCase())
+    const matchesType =
+      selectedType === "all" || log.event.toLowerCase().includes(selectedType.toLowerCase())
     const matchesSeverity = selectedSeverity === "all" || log.severity === selectedSeverity
     return matchesSearch && matchesType && matchesSeverity
   })
@@ -252,7 +266,9 @@ export default function SecurityManagement() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Create Security Rule</DialogTitle>
-                <DialogDescription>Add a new security rule to protect your platform.</DialogDescription>
+                <DialogDescription>
+                  Add a new security rule to protect your platform.
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -374,7 +390,9 @@ export default function SecurityManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Security Event Logs</CardTitle>
-              <CardDescription>Monitor and investigate security events across the platform</CardDescription>
+              <CardDescription>
+                Monitor and investigate security events across the platform
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">
@@ -482,7 +500,9 @@ export default function SecurityManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Access Control Rules</CardTitle>
-              <CardDescription>Manage IP whitelists, blacklists, and access restrictions</CardDescription>
+              <CardDescription>
+                Manage IP whitelists, blacklists, and access restrictions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
@@ -522,7 +542,9 @@ export default function SecurityManagement() {
                         </TableCell>
                         <TableCell>{rule.priority}</TableCell>
                         <TableCell>
-                          <Badge variant={rule.status === "active" ? "default" : "secondary"}>{rule.status}</Badge>
+                          <Badge variant={rule.status === "active" ? "default" : "secondary"}>
+                            {rule.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>{rule.lastTriggered}</TableCell>
                         <TableCell className="text-right">
@@ -652,21 +674,27 @@ export default function SecurityManagement() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Two-Factor Authentication</Label>
-                    <div className="text-sm text-muted-foreground">Require 2FA for admin accounts</div>
+                    <div className="text-sm text-muted-foreground">
+                      Require 2FA for admin accounts
+                    </div>
                   </div>
                   <Switch checked={securitySettings.twoFactorAuth} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Strong Password Policy</Label>
-                    <div className="text-sm text-muted-foreground">Enforce complex password requirements</div>
+                    <div className="text-sm text-muted-foreground">
+                      Enforce complex password requirements
+                    </div>
                   </div>
                   <Switch checked={securitySettings.passwordPolicy} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>IP Whitelisting</Label>
-                    <div className="text-sm text-muted-foreground">Restrict admin access to specific IPs</div>
+                    <div className="text-sm text-muted-foreground">
+                      Restrict admin access to specific IPs
+                    </div>
                   </div>
                   <Switch checked={securitySettings.ipWhitelisting} />
                 </div>
@@ -686,7 +714,9 @@ export default function SecurityManagement() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Brute Force Protection</Label>
-                    <div className="text-sm text-muted-foreground">Block repeated failed login attempts</div>
+                    <div className="text-sm text-muted-foreground">
+                      Block repeated failed login attempts
+                    </div>
                   </div>
                   <Switch checked={securitySettings.bruteForceProtection} />
                 </div>
@@ -707,7 +737,9 @@ export default function SecurityManagement() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Encryption at Rest</Label>
-                    <div className="text-sm text-muted-foreground">Encrypt sensitive data in database</div>
+                    <div className="text-sm text-muted-foreground">
+                      Encrypt sensitive data in database
+                    </div>
                   </div>
                   <Switch checked={securitySettings.encryptionAtRest} />
                 </div>

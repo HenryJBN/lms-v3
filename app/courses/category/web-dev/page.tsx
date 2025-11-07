@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -7,11 +7,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function WebDevCoursesPage() {
   // Mock data for web development courses
@@ -76,7 +76,7 @@ export default function WebDevCoursesPage() {
       tokenReward: 30,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,8 +89,8 @@ export default function WebDevCoursesPage() {
                   Web Development Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Learn frontend, backend, and full-stack development with our
-                  comprehensive web development courses.
+                  Learn frontend, backend, and full-stack development with our comprehensive web
+                  development courses.
                 </p>
               </div>
             </div>
@@ -122,8 +122,7 @@ export default function WebDevCoursesPage() {
                   Web Developer Path
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a professional
-                  web developer.
+                  Follow our structured learning path to become a professional web developer.
                 </p>
               </div>
             </div>
@@ -133,12 +132,10 @@ export default function WebDevCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  HTML & CSS Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">HTML & CSS Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with the basics of web development and learn to create
-                  structured, styled web pages.
+                  Start with the basics of web development and learn to create structured, styled
+                  web pages.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/html-css-fundamentals">
@@ -153,12 +150,9 @@ export default function WebDevCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  JavaScript Essentials
-                </h3>
+                <h3 className="text-xl font-bold mb-2">JavaScript Essentials</h3>
                 <p className="text-muted-foreground mb-4">
-                  Learn the programming language of the web and add
-                  interactivity to your websites.
+                  Learn the programming language of the web and add interactivity to your websites.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/javascript-essentials">
@@ -190,12 +184,9 @@ export default function WebDevCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Full-Stack Development
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Full-Stack Development</h3>
                 <p className="text-muted-foreground mb-4">
-                  Combine frontend and backend skills to build complete web
-                  applications.
+                  Combine frontend and backend skills to build complete web applications.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/fullstack-web3-development">
@@ -216,7 +207,7 @@ export default function WebDevCoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -230,14 +221,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -246,16 +237,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -282,5 +266,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

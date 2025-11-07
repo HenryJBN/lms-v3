@@ -1,6 +1,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { GraduationCap, Mail } from "lucide-react"
@@ -23,8 +30,8 @@ export default function ForgotPasswordPage() {
             <div className="relative z-20 mt-auto">
               <blockquote className="space-y-2">
                 <p className="text-lg">
-                  "The blockchain-verified certificates from DCA have been invaluable for demonstrating my skills to
-                  employers."
+                  "The blockchain-verified certificates from DCA have been invaluable for
+                  demonstrating my skills to employers."
                 </p>
                 <footer className="text-sm">Michael Chen, Software Engineer</footer>
               </blockquote>
@@ -42,14 +49,21 @@ export default function ForgotPasswordPage() {
               <Card>
                 <CardHeader className="space-y-1">
                   <CardTitle className="text-xl">Forgot password</CardTitle>
-                  <CardDescription>We'll email you instructions on how to reset your password</CardDescription>
+                  <CardDescription>
+                    We'll email you instructions on how to reset your password
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input id="email" type="email" placeholder="your@email.com" className="pl-8" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="your@email.com"
+                        className="pl-8"
+                      />
                     </div>
                   </div>
                 </CardContent>

@@ -1,17 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  GraduationCap,
-  Users,
-  Award,
-  BrainCircuit,
-  Shield,
-  Globe,
-  BookOpen,
-} from "lucide-react";
-import Link from "next/link";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { GraduationCap, Users, Award, BrainCircuit, Shield, Globe, BookOpen } from "lucide-react"
+import Link from "next/link"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function AboutPage() {
   return (
@@ -27,8 +19,8 @@ export default function AboutPage() {
                     Revolutionizing Education Through Technology
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    DCA LMS is on a mission to transform learning with
-                    blockchain verification and AI-powered adaptive education.
+                    DCA LMS is on a mission to transform learning with blockchain verification and
+                    AI-powered adaptive education.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -64,35 +56,32 @@ export default function AboutPage() {
                   Our Story
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Founded in 2022, DCA LMS was born from a vision to make
-                  education more accessible, verifiable, and personalized.
+                  Founded in 2022, DCA LMS was born from a vision to make education more accessible,
+                  verifiable, and personalized.
                 </p>
               </div>
             </div>
 
             <div className="mx-auto max-w-3xl space-y-8 py-8 md:py-12">
               <p className="text-muted-foreground">
-                DCA LMS was founded by a team of educators, technologists, and
-                blockchain enthusiasts who saw the potential to transform
-                education through emerging technologies. We recognized two major
-                problems in online education: the lack of verifiable credentials
-                and the one-size-fits-all approach to learning.
+                DCA LMS was founded by a team of educators, technologists, and blockchain
+                enthusiasts who saw the potential to transform education through emerging
+                technologies. We recognized two major problems in online education: the lack of
+                verifiable credentials and the one-size-fits-all approach to learning.
               </p>
 
               <p className="text-muted-foreground">
-                Our solution combines blockchain technology for secure,
-                tamper-proof certification with artificial intelligence for
-                adaptive learning experiences. By leveraging these technologies,
-                we've created a platform that not only verifies achievements but
-                also personalizes the learning journey for each student.
+                Our solution combines blockchain technology for secure, tamper-proof certification
+                with artificial intelligence for adaptive learning experiences. By leveraging these
+                technologies, we've created a platform that not only verifies achievements but also
+                personalizes the learning journey for each student.
               </p>
 
               <p className="text-muted-foreground">
-                Today, DCA LMS serves thousands of learners worldwide, offering
-                courses in blockchain, artificial intelligence, web development,
-                and business. Our platform continues to evolve, with a focus on
-                creating the most effective and engaging learning experience
-                possible.
+                Today, DCA LMS serves thousands of learners worldwide, offering courses in
+                blockchain, artificial intelligence, web development, and business. Our platform
+                continues to evolve, with a focus on creating the most effective and engaging
+                learning experience possible.
               </p>
 
               <div className="flex justify-center">
@@ -124,21 +113,19 @@ export default function AboutPage() {
                 <h3 className="text-xl font-bold mb-2">Accessible Education</h3>
                 <CardContent className="p-0">
                   <p className="text-muted-foreground">
-                    We believe quality education should be accessible to
-                    everyone, regardless of location or background.
+                    We believe quality education should be accessible to everyone, regardless of
+                    location or background.
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="flex flex-col items-center text-center p-6">
                 <BrainCircuit className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-bold mb-2">
-                  Personalized Learning
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Personalized Learning</h3>
                 <CardContent className="p-0">
                   <p className="text-muted-foreground">
-                    We're committed to creating adaptive learning experiences
-                    that meet each student where they are.
+                    We're committed to creating adaptive learning experiences that meet each student
+                    where they are.
                   </p>
                 </CardContent>
               </Card>
@@ -148,8 +135,8 @@ export default function AboutPage() {
                 <h3 className="text-xl font-bold mb-2">Verified Achievement</h3>
                 <CardContent className="p-0">
                   <p className="text-muted-foreground">
-                    We ensure that accomplishments are securely verified and
-                    recognized through blockchain technology.
+                    We ensure that accomplishments are securely verified and recognized through
+                    blockchain technology.
                   </p>
                 </CardContent>
               </Card>
@@ -186,8 +173,7 @@ export default function AboutPage() {
                   <p className="text-muted-foreground">CEO & Co-Founder</p>
                 </div>
                 <p className="text-sm text-center text-muted-foreground">
-                  Former EdTech executive with 15+ years experience in digital
-                  learning platforms.
+                  Former EdTech executive with 15+ years experience in digital learning platforms.
                 </p>
               </div>
 
@@ -205,8 +191,8 @@ export default function AboutPage() {
                   <p className="text-muted-foreground">CTO & Co-Founder</p>
                 </div>
                 <p className="text-sm text-center text-muted-foreground">
-                  Blockchain developer and AI researcher with multiple patents
-                  in educational technology.
+                  Blockchain developer and AI researcher with multiple patents in educational
+                  technology.
                 </p>
               </div>
 
@@ -221,13 +207,10 @@ export default function AboutPage() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-xl font-bold">Elena Rodriguez</h3>
-                  <p className="text-muted-foreground">
-                    Chief Learning Officer
-                  </p>
+                  <p className="text-muted-foreground">Chief Learning Officer</p>
                 </div>
                 <p className="text-sm text-center text-muted-foreground">
-                  PhD in Educational Psychology with expertise in adaptive
-                  learning systems.
+                  PhD in Educational Psychology with expertise in adaptive learning systems.
                 </p>
               </div>
             </div>
@@ -263,5 +246,5 @@ export default function AboutPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }

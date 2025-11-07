@@ -8,7 +8,7 @@ CREATE TYPE lesson_type AS ENUM ('video', 'text', 'quiz', 'assignment', 'live_se
 CREATE TYPE quiz_question_type AS ENUM ('multiple_choice', 'true_false', 'short_answer', 'essay');
 
 -- Categories table
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE categories (
 );
 
 -- Courses table
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE courses (
 );
 
 -- Course sections (chapters/modules)
-CREATE TABLE course_sections (
+CREATE TABLE IF NOT EXISTS course_sections (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE course_sections (
 );
 
 -- Lessons table
-CREATE TABLE lessons (
+CREATE TABLE IF NOT EXISTS lessons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     section_id UUID REFERENCES course_sections(id) ON DELETE SET NULL,
@@ -90,7 +90,7 @@ CREATE TABLE lessons (
 );
 
 -- Quizzes table
-CREATE TABLE quizzes (
+CREATE TABLE IF NOT EXISTS quizzes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
@@ -108,7 +108,7 @@ CREATE TABLE quizzes (
 );
 
 -- Quiz questions table
-CREATE TABLE quiz_questions (
+CREATE TABLE IF NOT EXISTS quiz_questions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     quiz_id UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
     question TEXT NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE quiz_questions (
 );
 
 -- Media files table
-CREATE TABLE media_files (
+CREATE TABLE IF NOT EXISTS media_files (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     filename VARCHAR(255) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,
@@ -139,35 +139,35 @@ CREATE TABLE media_files (
 );
 
 -- Create indexes
-CREATE INDEX idx_categories_parent_id ON categories(parent_id);
-CREATE INDEX idx_categories_slug ON categories(slug);
-CREATE INDEX idx_categories_is_active ON categories(is_active);
+CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories(is_active);
 
-CREATE INDEX idx_courses_instructor_id ON courses(instructor_id);
-CREATE INDEX idx_courses_category_id ON courses(category_id);
-CREATE INDEX idx_courses_status ON courses(status);
-CREATE INDEX idx_courses_slug ON courses(slug);
-CREATE INDEX idx_courses_is_featured ON courses(is_featured);
-CREATE INDEX idx_courses_is_free ON courses(is_free);
-CREATE INDEX idx_courses_published_at ON courses(published_at);
+CREATE INDEX IF NOT EXISTS idx_courses_instructor_id ON courses(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_courses_category_id ON courses(category_id);
+CREATE INDEX IF NOT EXISTS idx_courses_status ON courses(status);
+CREATE INDEX IF NOT EXISTS idx_courses_slug ON courses(slug);
+CREATE INDEX IF NOT EXISTS idx_courses_is_featured ON courses(is_featured);
+CREATE INDEX IF NOT EXISTS idx_courses_is_free ON courses(is_free);
+CREATE INDEX IF NOT EXISTS idx_courses_published_at ON courses(published_at);
 
-CREATE INDEX idx_course_sections_course_id ON course_sections(course_id);
-CREATE INDEX idx_course_sections_sort_order ON course_sections(course_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_course_sections_course_id ON course_sections(course_id);
+CREATE INDEX IF NOT EXISTS idx_course_sections_sort_order ON course_sections(course_id, sort_order);
 
-CREATE INDEX idx_lessons_course_id ON lessons(course_id);
-CREATE INDEX idx_lessons_section_id ON lessons(section_id);
-CREATE INDEX idx_lessons_slug ON lessons(course_id, slug);
-CREATE INDEX idx_lessons_sort_order ON lessons(course_id, sort_order);
-CREATE INDEX idx_lessons_is_published ON lessons(is_published);
+CREATE INDEX IF NOT EXISTS idx_lessons_course_id ON lessons(course_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_section_id ON lessons(section_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_slug ON lessons(course_id, slug);
+CREATE INDEX IF NOT EXISTS idx_lessons_sort_order ON lessons(course_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_lessons_is_published ON lessons(is_published);
 
-CREATE INDEX idx_quizzes_lesson_id ON quizzes(lesson_id);
-CREATE INDEX idx_quizzes_course_id ON quizzes(course_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_lesson_id ON quizzes(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_course_id ON quizzes(course_id);
 
-CREATE INDEX idx_quiz_questions_quiz_id ON quiz_questions(quiz_id);
-CREATE INDEX idx_quiz_questions_sort_order ON quiz_questions(quiz_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions(quiz_id);
+CREATE INDEX IF NOT EXISTS idx_quiz_questions_sort_order ON quiz_questions(quiz_id, sort_order);
 
-CREATE INDEX idx_media_files_uploaded_by ON media_files(uploaded_by);
-CREATE INDEX idx_media_files_file_type ON media_files(file_type);
+CREATE INDEX IF NOT EXISTS idx_media_files_uploaded_by ON media_files(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_media_files_file_type ON media_files(file_type);
 
 -- Apply updated_at triggers
 CREATE TRIGGER update_categories_updated_at BEFORE UPDATE ON categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

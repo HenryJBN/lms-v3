@@ -8,7 +8,14 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
@@ -50,7 +57,9 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12">
           <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
-          <p className="text-xl text-center">Continue your learning journey with blockchain-powered education</p>
+          <p className="text-xl text-center">
+            Continue your learning journey with blockchain-powered education
+          </p>
         </div>
       </div>
 

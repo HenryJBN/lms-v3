@@ -1,4 +1,11 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Award, ExternalLink, Share2 } from "lucide-react"
 
@@ -10,12 +17,24 @@ interface NFTCertificateProps {
   blockchain: string
 }
 
-export default function NFTCertificate({ title, issueDate, image, tokenId, blockchain }: NFTCertificateProps) {
+export default function NFTCertificate({
+  title,
+  issueDate,
+  image,
+  tokenId,
+  blockchain,
+}: NFTCertificateProps) {
   return (
     <Card className="overflow-hidden border-2">
       <div className="relative">
-        <img src={image || "/placeholder.svg"} alt={`${title} Certificate`} className="w-full h-auto" />
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">{blockchain}</div>
+        <img
+          src={image || "/placeholder.svg"}
+          alt={`${title} Certificate`}
+          className="w-full h-auto"
+        />
+        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+          {blockchain}
+        </div>
       </div>
 
       <CardHeader className="pb-2">

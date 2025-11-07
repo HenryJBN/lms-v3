@@ -86,9 +86,9 @@ export default function CertificatesPage() {
                 <div>
                   <h3 className="font-medium">How verification works</h3>
                   <p className="text-sm text-muted-foreground">
-                    Certificates are stored on the blockchain as NFTs, making them tamper-proof and permanently
-                    verifiable. The verification process checks the certificate's metadata and confirms its issuance by
-                    our platform.
+                    Certificates are stored on the blockchain as NFTs, making them tamper-proof and
+                    permanently verifiable. The verification process checks the certificate's
+                    metadata and confirms its issuance by our platform.
                   </p>
                 </div>
               </div>

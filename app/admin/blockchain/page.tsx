@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -16,7 +23,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -149,7 +162,10 @@ export default function BlockchainManagement() {
     totalHolders: tokens.reduce((sum, token) => sum + token.holders, 0),
     totalNFTs: nftCertificates.reduce((sum, cert) => sum + cert.totalMinted, 0),
     totalTransactions: transactions.length,
-    networkFees: transactions.reduce((sum, tx) => sum + Number.parseFloat(tx.gasFee.split(" ")[0]), 0),
+    networkFees: transactions.reduce(
+      (sum, tx) => sum + Number.parseFloat(tx.gasFee.split(" ")[0]),
+      0
+    ),
   }
 
   return (
@@ -158,7 +174,9 @@ export default function BlockchainManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Blockchain Management</h1>
-          <p className="text-muted-foreground">Manage tokens, NFT certificates, and blockchain transactions</p>
+          <p className="text-muted-foreground">
+            Manage tokens, NFT certificates, and blockchain transactions
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
@@ -179,7 +197,9 @@ export default function BlockchainManagement() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Deploy New Contract</DialogTitle>
-                <DialogDescription>Deploy a new token or NFT contract to the blockchain.</DialogDescription>
+                <DialogDescription>
+                  Deploy a new token or NFT contract to the blockchain.
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
@@ -325,7 +345,8 @@ export default function BlockchainManagement() {
                         <TableCell>
                           <div className="space-y-1">
                             <div className="text-sm">
-                              {token.circulatingSupply.toLocaleString()} / {token.totalSupply.toLocaleString()}
+                              {token.circulatingSupply.toLocaleString()} /{" "}
+                              {token.totalSupply.toLocaleString()}
                             </div>
                             <Progress
                               value={(token.circulatingSupply / token.totalSupply) * 100}
@@ -339,7 +360,9 @@ export default function BlockchainManagement() {
                           <Badge variant="outline">{token.network}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={token.status === "active" ? "default" : "secondary"}>{token.status}</Badge>
+                          <Badge variant={token.status === "active" ? "default" : "secondary"}>
+                            {token.status}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -416,7 +439,9 @@ export default function BlockchainManagement() {
                           <Badge variant="outline">{cert.network}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={cert.status === "active" ? "default" : "secondary"}>{cert.status}</Badge>
+                          <Badge variant={cert.status === "active" ? "default" : "secondary"}>
+                            {cert.status}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -464,7 +489,9 @@ export default function BlockchainManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Blockchain Transactions</CardTitle>
-              <CardDescription>Monitor all blockchain transactions and their status</CardDescription>
+              <CardDescription>
+                Monitor all blockchain transactions and their status
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">

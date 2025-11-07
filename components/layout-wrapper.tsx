@@ -1,18 +1,18 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { usePathname } from "next/navigation";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import { usePathname } from "next/navigation"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isAdminRoute = pathname?.startsWith("/admin");
+  const pathname = usePathname()
+  const isAdminRoute = pathname?.startsWith("/admin")
 
   if (isAdminRoute) {
     // Admin routes handle their own layout
-    return <>{children}</>;
+    return <>{children}</>
   }
 
   // All other routes get the standard header and footer
@@ -22,5 +22,5 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <SiteFooter />
     </div>
-  );
+  )
 }

@@ -44,7 +44,9 @@ export default function RecommendedCourses() {
                   <p className="text-xs text-muted-foreground">{course.description}</p>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">{course.difficulty}</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    {course.difficulty}
+                  </span>
                   <div className="flex items-center gap-1">
                     <Gem className="h-3 w-3 text-primary" />
                     <span className="text-xs">{course.tokens} tokens</span>

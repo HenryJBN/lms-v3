@@ -16,7 +16,7 @@ CREATE TYPE page_status AS ENUM ('draft', 'published', 'archived');
 CREATE TYPE page_type AS ENUM ('static', 'dynamic', 'landing', 'legal');
 
 -- Admin audit log
-CREATE TABLE admin_audit_log (
+CREATE TABLE IF NOT EXISTS admin_audit_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     admin_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     action admin_action_type NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE admin_audit_log (
 );
 
 -- System settings
-CREATE TABLE system_settings (
+CREATE TABLE IF NOT EXISTS system_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     key VARCHAR(100) NOT NULL UNIQUE,
     value TEXT,
@@ -44,7 +44,7 @@ CREATE TABLE system_settings (
 );
 
 -- Content pages (for CMS functionality)
-CREATE TABLE content_pages (
+CREATE TABLE IF NOT EXISTS content_pages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) UNIQUE NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE content_pages (
 );
 
 -- Analytics events tracking
-CREATE TABLE analytics_events (
+CREATE TABLE IF NOT EXISTS analytics_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     session_id VARCHAR(255),
@@ -83,7 +83,7 @@ CREATE TABLE analytics_events (
 );
 
 -- Course analytics summary (daily aggregates)
-CREATE TABLE course_analytics_daily (
+CREATE TABLE IF NOT EXISTS course_analytics_daily (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     date DATE NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE course_analytics_daily (
 );
 
 -- User analytics summary (daily aggregates)
-CREATE TABLE user_analytics_daily (
+CREATE TABLE IF NOT EXISTS user_analytics_daily (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     date DATE NOT NULL,
     new_users INTEGER DEFAULT 0,
@@ -112,7 +112,7 @@ CREATE TABLE user_analytics_daily (
 );
 
 -- Revenue tracking
-CREATE TABLE revenue_records (
+CREATE TABLE IF NOT EXISTS revenue_records (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
@@ -130,7 +130,7 @@ CREATE TABLE revenue_records (
 );
 
 -- Instructor payouts
-CREATE TABLE instructor_payouts (
+CREATE TABLE IF NOT EXISTS instructor_payouts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     instructor_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     amount DECIMAL(10,2) NOT NULL,
@@ -146,7 +146,7 @@ CREATE TABLE instructor_payouts (
 );
 
 -- Feature flags for A/B testing and gradual rollouts
-CREATE TABLE feature_flags (
+CREATE TABLE IF NOT EXISTS feature_flags (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -161,42 +161,42 @@ CREATE TABLE feature_flags (
 );
 
 -- Create indexes
-CREATE INDEX idx_admin_audit_log_admin_user_id ON admin_audit_log(admin_user_id);
-CREATE INDEX idx_admin_audit_log_action ON admin_audit_log(action);
-CREATE INDEX idx_admin_audit_log_target ON admin_audit_log(target_type, target_id);
-CREATE INDEX idx_admin_audit_log_created_at ON admin_audit_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_admin_user_id ON admin_audit_log(admin_user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_action ON admin_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_target ON admin_audit_log(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_log_created_at ON admin_audit_log(created_at);
 
-CREATE INDEX idx_system_settings_key ON system_settings(key);
-CREATE INDEX idx_system_settings_category ON system_settings(category);
-CREATE INDEX idx_system_settings_is_public ON system_settings(is_public);
+CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key);
+CREATE INDEX IF NOT EXISTS idx_system_settings_category ON system_settings(category);
+CREATE INDEX IF NOT EXISTS idx_system_settings_is_public ON system_settings(is_public);
 
-CREATE INDEX idx_content_pages_slug ON content_pages(slug);
-CREATE INDEX idx_content_pages_status ON content_pages(status);
-CREATE INDEX idx_content_pages_type ON content_pages(type);
-CREATE INDEX idx_content_pages_author_id ON content_pages(author_id);
+CREATE INDEX IF NOT EXISTS idx_content_pages_slug ON content_pages(slug);
+CREATE INDEX IF NOT EXISTS idx_content_pages_status ON content_pages(status);
+CREATE INDEX IF NOT EXISTS idx_content_pages_type ON content_pages(type);
+CREATE INDEX IF NOT EXISTS idx_content_pages_author_id ON content_pages(author_id);
 
-CREATE INDEX idx_analytics_events_user_id ON analytics_events(user_id);
-CREATE INDEX idx_analytics_events_session_id ON analytics_events(session_id);
-CREATE INDEX idx_analytics_events_event_type ON analytics_events(event_type);
-CREATE INDEX idx_analytics_events_created_at ON analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON analytics_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session_id ON analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_event_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events(created_at);
 
-CREATE INDEX idx_course_analytics_daily_course_id ON course_analytics_daily(course_id);
-CREATE INDEX idx_course_analytics_daily_date ON course_analytics_daily(date);
+CREATE INDEX IF NOT EXISTS idx_course_analytics_daily_course_id ON course_analytics_daily(course_id);
+CREATE INDEX IF NOT EXISTS idx_course_analytics_daily_date ON course_analytics_daily(date);
 
-CREATE INDEX idx_user_analytics_daily_date ON user_analytics_daily(date);
+CREATE INDEX IF NOT EXISTS idx_user_analytics_daily_date ON user_analytics_daily(date);
 
-CREATE INDEX idx_revenue_records_user_id ON revenue_records(user_id);
-CREATE INDEX idx_revenue_records_course_id ON revenue_records(course_id);
-CREATE INDEX idx_revenue_records_instructor_id ON revenue_records(instructor_id);
-CREATE INDEX idx_revenue_records_status ON revenue_records(status);
-CREATE INDEX idx_revenue_records_created_at ON revenue_records(created_at);
+CREATE INDEX IF NOT EXISTS idx_revenue_records_user_id ON revenue_records(user_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_records_course_id ON revenue_records(course_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_records_instructor_id ON revenue_records(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_revenue_records_status ON revenue_records(status);
+CREATE INDEX IF NOT EXISTS idx_revenue_records_created_at ON revenue_records(created_at);
 
-CREATE INDEX idx_instructor_payouts_instructor_id ON instructor_payouts(instructor_id);
-CREATE INDEX idx_instructor_payouts_status ON instructor_payouts(status);
-CREATE INDEX idx_instructor_payouts_period ON instructor_payouts(period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_instructor_payouts_instructor_id ON instructor_payouts(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_instructor_payouts_status ON instructor_payouts(status);
+CREATE INDEX IF NOT EXISTS idx_instructor_payouts_period ON instructor_payouts(period_start, period_end);
 
-CREATE INDEX idx_feature_flags_name ON feature_flags(name);
-CREATE INDEX idx_feature_flags_is_enabled ON feature_flags(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_feature_flags_name ON feature_flags(name);
+CREATE INDEX IF NOT EXISTS idx_feature_flags_is_enabled ON feature_flags(is_enabled);
 
 -- Apply updated_at triggers
 CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

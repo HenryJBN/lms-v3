@@ -36,7 +36,9 @@ export function StatsGrid({ stats, columns = 4 }: StatsGridProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
-            {stat.description && <p className="text-xs text-muted-foreground">{stat.description}</p>}
+            {stat.description && (
+              <p className="text-xs text-muted-foreground">{stat.description}</p>
+            )}
             {stat.trend && (
               <p className={`text-xs ${stat.trend.isPositive ? "text-green-600" : "text-red-600"}`}>
                 {stat.trend.isPositive ? "+" : ""}

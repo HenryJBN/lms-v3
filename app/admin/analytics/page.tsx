@@ -5,7 +5,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   BarChart,
   Bar,
@@ -20,7 +26,16 @@ import {
   AreaChart,
   Area,
 } from "recharts"
-import { TrendingUp, Users, BookOpen, DollarSign, Download, Shield, Target, Clock } from "lucide-react"
+import {
+  TrendingUp,
+  Users,
+  BookOpen,
+  DollarSign,
+  Download,
+  Shield,
+  Target,
+  Clock,
+} from "lucide-react"
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d")
@@ -224,8 +239,20 @@ export default function AnalyticsPage() {
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip />
-                        <Area type="monotone" dataKey="activeUsers" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                        <Area type="monotone" dataKey="newUsers" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                        <Area
+                          type="monotone"
+                          dataKey="activeUsers"
+                          stackId="1"
+                          stroke="#8884d8"
+                          fill="#8884d8"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="newUsers"
+                          stackId="1"
+                          stroke="#82ca9d"
+                          fill="#82ca9d"
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -275,8 +302,12 @@ export default function AnalyticsPage() {
                           <div>{country.country}</div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="text-sm text-muted-foreground">{country.users.toLocaleString()} users</div>
-                          <div className="w-16 text-right text-sm font-medium">{country.percentage}%</div>
+                          <div className="text-sm text-muted-foreground">
+                            {country.users.toLocaleString()} users
+                          </div>
+                          <div className="w-16 text-right text-sm font-medium">
+                            {country.percentage}%
+                          </div>
                         </div>
                       </div>
                     ))}

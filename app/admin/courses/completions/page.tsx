@@ -1,17 +1,11 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -19,22 +13,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +32,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
   BarChart,
   Bar,
@@ -56,7 +46,7 @@ import {
   Cell,
   LineChart,
   Line,
-} from "recharts";
+} from "recharts"
 import {
   Search,
   Download,
@@ -72,20 +62,20 @@ import {
   FileText,
   Mail,
   Shield,
-} from "lucide-react";
+} from "lucide-react"
 
 export default function CourseCompletionsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedTimeRange, setSelectedTimeRange] = useState("30d");
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCourse, setSelectedCourse] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [selectedTimeRange, setSelectedTimeRange] = useState("30d")
   const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
+    from: Date | undefined
+    to: Date | undefined
   }>({
     from: undefined,
     to: undefined,
-  });
+  })
 
   // Mock completion data
   const completions = [
@@ -194,7 +184,7 @@ export default function CourseCompletionsPage() {
       tokensEarned: 175,
       status: "completed",
     },
-  ];
+  ]
 
   // Mock course data for filtering
   const courses = [
@@ -203,7 +193,7 @@ export default function CourseCompletionsPage() {
     { id: "smart-contracts", title: "Smart Contract Development" },
     { id: "web-development", title: "Web Development Fundamentals" },
     { id: "3d-animation", title: "3D Animation Basics" },
-  ];
+  ]
 
   // Analytics data
   const completionTrends = [
@@ -213,7 +203,7 @@ export default function CourseCompletionsPage() {
     { month: "Apr", completions: 61, enrollments: 145 },
     { month: "May", completions: 58, enrollments: 142 },
     { month: "Jun", completions: 67, enrollments: 158 },
-  ];
+  ]
 
   const courseCompletionRates = [
     { course: "Blockchain Fundamentals", rate: 85, color: "#8884d8" },
@@ -221,7 +211,7 @@ export default function CourseCompletionsPage() {
     { course: "Smart Contracts", rate: 68, color: "#ffc658" },
     { course: "Web Development", rate: 79, color: "#ff7300" },
     { course: "3D Animation", rate: 81, color: "#00ff88" },
-  ];
+  ]
 
   const timeToCompletion = [
     { range: "< 1 week", count: 12 },
@@ -229,33 +219,28 @@ export default function CourseCompletionsPage() {
     { range: "2-4 weeks", count: 45 },
     { range: "1-2 months", count: 32 },
     { range: "> 2 months", count: 18 },
-  ];
+  ]
 
   const filteredCompletions = completions.filter((completion) => {
     const matchesSearch =
       completion.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       completion.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      completion.courseTitle.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse =
-      selectedCourse === "all" || completion.courseId === selectedCourse;
-    const matchesStatus =
-      selectedStatus === "all" || completion.status === selectedStatus;
-    return matchesSearch && matchesCourse && matchesStatus;
-  });
+      completion.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCourse = selectedCourse === "all" || completion.courseId === selectedCourse
+    const matchesStatus = selectedStatus === "all" || completion.status === selectedStatus
+    return matchesSearch && matchesCourse && matchesStatus
+  })
 
   const stats = {
-    totalCompletions: completions.filter((c) => c.status === "completed")
-      .length,
+    totalCompletions: completions.filter((c) => c.status === "completed").length,
     totalEnrollments: completions.length,
     averageCompletionRate: Math.round(
-      (completions.filter((c) => c.status === "completed").length /
-        completions.length) *
-        100
+      (completions.filter((c) => c.status === "completed").length / completions.length) * 100
     ),
     averageTimeToComplete: "3.2 weeks",
     certificatesIssued: completions.filter((c) => c.certificateIssued).length,
     totalTokensEarned: completions.reduce((sum, c) => sum + c.tokensEarned, 0),
-  };
+  }
 
   const exportData = (format: string) => {
     const dataToExport = filteredCompletions.map((completion) => ({
@@ -273,64 +258,50 @@ export default function CourseCompletionsPage() {
       "Certificate ID": completion.certificateId || "N/A",
       "Tokens Earned": completion.tokensEarned,
       Status: completion.status,
-    }));
+    }))
 
     if (format === "csv") {
       const csv = [
         Object.keys(dataToExport[0]).join(","),
         ...dataToExport.map((row) => Object.values(row).join(",")),
-      ].join("\n");
+      ].join("\n")
 
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `course-completions-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
-      a.click();
+      const blob = new Blob([csv], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `course-completions-${new Date().toISOString().split("T")[0]}.csv`
+      a.click()
     } else if (format === "excel") {
-      console.log("Mock: Exporting to Excel", dataToExport);
-      alert("Mock: Exporting to Excel. Check console for data.");
+      console.log("Mock: Exporting to Excel", dataToExport)
+      alert("Mock: Exporting to Excel. Check console for data.")
     } else if (format === "pdf") {
-      console.log("Mock: Exporting to PDF", dataToExport);
-      alert("Mock: Exporting to PDF. Check console for data.");
+      console.log("Mock: Exporting to PDF", dataToExport)
+      alert("Mock: Exporting to PDF. Check console for data.")
     }
     // Add other export formats as needed
-  };
+  }
 
   const handleViewDetails = (completion: any) => {
-    console.log(
-      "Mock: Viewing details for completion ID:",
-      completion.id,
-      completion
-    );
+    console.log("Mock: Viewing details for completion ID:", completion.id, completion)
     alert(
       `Mock: Viewing details for ${completion.userName}'s completion of ${completion.courseTitle}`
-    );
-  };
+    )
+  }
 
   const handleSendReminder = (completion: any) => {
-    console.log(
-      "Mock: Sending reminder to user:",
-      completion.userEmail,
-      completion.id
-    );
-    alert(
-      `Mock: Sending reminder to ${completion.userName} for ${completion.courseTitle}`
-    );
-  };
+    console.log("Mock: Sending reminder to user:", completion.userEmail, completion.id)
+    alert(`Mock: Sending reminder to ${completion.userName} for ${completion.courseTitle}`)
+  }
 
   const handleViewCertificate = (completion: any) => {
     console.log(
       "Mock: Viewing certificate for completion ID:",
       completion.certificateId,
       completion
-    );
-    alert(
-      `Mock: Viewing certificate ${completion.certificateId} for ${completion.userName}`
-    );
-  };
+    )
+    alert(`Mock: Viewing certificate ${completion.certificateId} for ${completion.userName}`)
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -339,15 +310,10 @@ export default function CourseCompletionsPage() {
         {/* Header */}
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">
-              Course Completion Tracking
-            </h1>
+            <h1 className="text-lg font-semibold">Course Completion Tracking</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Select
-              value={selectedTimeRange}
-              onValueChange={setSelectedTimeRange}
-            >
+            <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Time range" />
               </SelectTrigger>
@@ -407,15 +373,11 @@ export default function CourseCompletionsPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Completions
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Total Completions</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.totalCompletions}
-                </div>
+                <div className="text-2xl font-bold">{stats.totalCompletions}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-600">+12%</span> from last month
                 </p>
@@ -423,15 +385,11 @@ export default function CourseCompletionsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Completion Rate
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.averageCompletionRate}%
-                </div>
+                <div className="text-2xl font-bold">{stats.averageCompletionRate}%</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-600">+3%</span> from last month
                 </p>
@@ -439,15 +397,11 @@ export default function CourseCompletionsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg Time to Complete
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Avg Time to Complete</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.averageTimeToComplete}
-                </div>
+                <div className="text-2xl font-bold">{stats.averageTimeToComplete}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-red-600">+0.2w</span> from last month
                 </p>
@@ -455,15 +409,11 @@ export default function CourseCompletionsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Certificates Issued
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Certificates Issued</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.certificatesIssued}
-                </div>
+                <div className="text-2xl font-bold">{stats.certificatesIssued}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-600">+8</span> this week
                 </p>
@@ -471,15 +421,11 @@ export default function CourseCompletionsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Enrollments
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Total Enrollments</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.totalEnrollments}
-                </div>
+                <div className="text-2xl font-bold">{stats.totalEnrollments}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-600">+15</span> this week
                 </p>
@@ -487,15 +433,11 @@ export default function CourseCompletionsPage() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Tokens Earned
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Tokens Earned</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats.totalTokensEarned.toLocaleString()}
-                </div>
+                <div className="text-2xl font-bold">{stats.totalTokensEarned.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-green-600">+125</span> this week
                 </p>
@@ -529,10 +471,7 @@ export default function CourseCompletionsPage() {
                         className="pl-8"
                       />
                     </div>
-                    <Select
-                      value={selectedCourse}
-                      onValueChange={setSelectedCourse}
-                    >
+                    <Select value={selectedCourse} onValueChange={setSelectedCourse}>
                       <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Filter by course" />
                       </SelectTrigger>
@@ -545,10 +484,7 @@ export default function CourseCompletionsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select
-                      value={selectedStatus}
-                      onValueChange={setSelectedStatus}
-                    >
+                    <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by status" />
                       </SelectTrigger>
@@ -581,9 +517,7 @@ export default function CourseCompletionsPage() {
                           <TableRow key={completion.id}>
                             <TableCell className="font-medium">
                               <div>
-                                <div className="font-medium">
-                                  {completion.userName}
-                                </div>
+                                <div className="font-medium">{completion.userName}</div>
                                 <div className="text-sm text-muted-foreground">
                                   {completion.userEmail}
                                 </div>
@@ -591,9 +525,7 @@ export default function CourseCompletionsPage() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">
-                                  {completion.courseTitle}
-                                </div>
+                                <div className="font-medium">{completion.courseTitle}</div>
                                 <div className="text-sm text-muted-foreground">
                                   Enrolled: {completion.enrollmentDate}
                                 </div>
@@ -601,16 +533,10 @@ export default function CourseCompletionsPage() {
                             </TableCell>
                             <TableCell>
                               <div className="space-y-1">
-                                <Progress
-                                  value={completion.progress}
-                                  className="h-2 w-20"
-                                />
-                                <div className="text-sm">
-                                  {completion.progress}%
-                                </div>
+                                <Progress value={completion.progress} className="h-2 w-20" />
+                                <div className="text-sm">{completion.progress}%</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {completion.lessonsCompleted}/
-                                  {completion.totalLessons} lessons
+                                  {completion.lessonsCompleted}/{completion.totalLessons} lessons
                                 </div>
                               </div>
                             </TableCell>
@@ -618,18 +544,12 @@ export default function CourseCompletionsPage() {
                             <TableCell>
                               {completion.finalScore > 0 ? (
                                 <Badge
-                                  variant={
-                                    completion.finalScore >= 80
-                                      ? "default"
-                                      : "secondary"
-                                  }
+                                  variant={completion.finalScore >= 80 ? "default" : "secondary"}
                                 >
                                   {completion.finalScore}%
                                 </Badge>
                               ) : (
-                                <span className="text-muted-foreground">
-                                  N/A
-                                </span>
+                                <span className="text-muted-foreground">N/A</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -638,8 +558,8 @@ export default function CourseCompletionsPage() {
                                   completion.status === "completed"
                                     ? "default"
                                     : completion.status === "in_progress"
-                                    ? "secondary"
-                                    : "outline"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
                                 {completion.status.replace("_", " ")}
@@ -649,60 +569,41 @@ export default function CourseCompletionsPage() {
                               {completion.certificateIssued ? (
                                 <div className="flex items-center gap-1">
                                   <Award className="h-4 w-4 text-yellow-500" />
-                                  <span className="text-sm">
-                                    {completion.certificateId}
-                                  </span>
+                                  <span className="text-sm">{completion.certificateId}</span>
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">
-                                  Not issued
-                                </span>
+                                <span className="text-muted-foreground">Not issued</span>
                               )}
                             </TableCell>
                             <TableCell>{completion.tokensEarned}</TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    className="h-8 w-8 p-0"
-                                  >
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
                                     <span className="sr-only">Open menu</span>
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleViewDetails(completion)
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => handleViewDetails(completion)}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleSendReminder(completion)
-                                    }
-                                  >
+                                  <DropdownMenuItem onClick={() => handleSendReminder(completion)}>
                                     <Mail className="mr-2 h-4 w-4" />
                                     Send Reminder
                                   </DropdownMenuItem>
                                   {completion.certificateIssued && (
                                     <DropdownMenuItem
-                                      onClick={() =>
-                                        handleViewCertificate(completion)
-                                      }
+                                      onClick={() => handleViewCertificate(completion)}
                                     >
                                       <Award className="mr-2 h-4 w-4" />
                                       View Certificate
                                     </DropdownMenuItem>
                                   )}
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => exportData("csv")}
-                                  >
+                                  <DropdownMenuItem onClick={() => exportData("csv")}>
                                     <Download className="mr-2 h-4 w-4" />
                                     Export Data (CSV)
                                   </DropdownMenuItem>
@@ -723,9 +624,7 @@ export default function CourseCompletionsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Completion Trends</CardTitle>
-                    <CardDescription>
-                      Monthly completion vs enrollment trends
-                    </CardDescription>
+                    <CardDescription>Monthly completion vs enrollment trends</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -754,9 +653,7 @@ export default function CourseCompletionsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Course Completion Rates</CardTitle>
-                    <CardDescription>
-                      Completion percentage by course
-                    </CardDescription>
+                    <CardDescription>Completion percentage by course</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -776,9 +673,7 @@ export default function CourseCompletionsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Time to Completion</CardTitle>
-                    <CardDescription>
-                      Distribution of completion timeframes
-                    </CardDescription>
+                    <CardDescription>Distribution of completion timeframes</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -788,18 +683,13 @@ export default function CourseCompletionsPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) =>
-                            `${name} ${(percent * 100).toFixed(0)}%`
-                          }
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="count"
                         >
                           {timeToCompletion.map((entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={`hsl(${index * 45}, 70%, 60%)`}
-                            />
+                            <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -817,49 +707,31 @@ export default function CourseCompletionsPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">Average completion rate</span>
-                        <span className="font-medium">
-                          {stats.averageCompletionRate}%
-                        </span>
+                        <span className="font-medium">{stats.averageCompletionRate}%</span>
                       </div>
-                      <Progress
-                        value={stats.averageCompletionRate}
-                        className="h-2"
-                      />
+                      <Progress value={stats.averageCompletionRate} className="h-2" />
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-sm">
-                          Certificate issuance rate
-                        </span>
+                        <span className="text-sm">Certificate issuance rate</span>
                         <span className="font-medium">
-                          {Math.round(
-                            (stats.certificatesIssued /
-                              stats.totalCompletions) *
-                              100
-                          )}
-                          %
+                          {Math.round((stats.certificatesIssued / stats.totalCompletions) * 100)}%
                         </span>
                       </div>
                       <Progress
                         value={Math.round(
-                          (stats.certificatesIssued / stats.totalCompletions) *
-                            100
+                          (stats.certificatesIssued / stats.totalCompletions) * 100
                         )}
                         className="h-2"
                       />
                     </div>
                     <div className="pt-4 space-y-2">
-                      <div className="text-sm font-medium">
-                        Top performing courses:
-                      </div>
+                      <div className="text-sm font-medium">Top performing courses:</div>
                       {courseCompletionRates
                         .sort((a, b) => b.rate - a.rate)
                         .slice(0, 3)
                         .map((course, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between text-sm"
-                          >
+                          <div key={index} className="flex justify-between text-sm">
                             <span>{course.course}</span>
                             <span className="font-medium">{course.rate}%</span>
                           </div>
@@ -887,18 +759,10 @@ export default function CourseCompletionsPage() {
                           <SelectValue placeholder="Select report type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="completion-summary">
-                            Completion Summary
-                          </SelectItem>
-                          <SelectItem value="detailed-progress">
-                            Detailed Progress
-                          </SelectItem>
-                          <SelectItem value="certificate-report">
-                            Certificate Report
-                          </SelectItem>
-                          <SelectItem value="time-analysis">
-                            Time Analysis
-                          </SelectItem>
+                          <SelectItem value="completion-summary">Completion Summary</SelectItem>
+                          <SelectItem value="detailed-progress">Detailed Progress</SelectItem>
+                          <SelectItem value="certificate-report">Certificate Report</SelectItem>
+                          <SelectItem value="time-analysis">Time Analysis</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -911,9 +775,7 @@ export default function CourseCompletionsPage() {
                         <SelectContent>
                           <SelectItem value="last-week">Last Week</SelectItem>
                           <SelectItem value="last-month">Last Month</SelectItem>
-                          <SelectItem value="last-quarter">
-                            Last Quarter
-                          </SelectItem>
+                          <SelectItem value="last-quarter">Last Quarter</SelectItem>
                           <SelectItem value="last-year">Last Year</SelectItem>
                           <SelectItem value="custom">Custom Range</SelectItem>
                         </SelectContent>
@@ -923,44 +785,26 @@ export default function CourseCompletionsPage() {
                       <label className="text-sm font-medium">Include</label>
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="include-progress"
-                            defaultChecked
-                          />
+                          <input type="checkbox" id="include-progress" defaultChecked />
                           <label htmlFor="include-progress" className="text-sm">
                             Progress details
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="include-certificates"
-                            defaultChecked
-                          />
-                          <label
-                            htmlFor="include-certificates"
-                            className="text-sm"
-                          >
+                          <input type="checkbox" id="include-certificates" defaultChecked />
+                          <label htmlFor="include-certificates" className="text-sm">
                             Certificate information
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="include-tokens"
-                            defaultChecked
-                          />
+                          <input type="checkbox" id="include-tokens" defaultChecked />
                           <label htmlFor="include-tokens" className="text-sm">
                             Token earnings
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <input type="checkbox" id="include-analytics" />
-                          <label
-                            htmlFor="include-analytics"
-                            className="text-sm"
-                          >
+                          <label htmlFor="include-analytics" className="text-sm">
                             Analytics data
                           </label>
                         </div>
@@ -973,15 +817,11 @@ export default function CourseCompletionsPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Scheduled Reports</CardTitle>
-                    <CardDescription>
-                      Automate report generation and delivery
-                    </CardDescription>
+                    <CardDescription>Automate report generation and delivery</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Report Frequency
-                      </label>
+                      <label className="text-sm font-medium">Report Frequency</label>
                       <Select>
                         <SelectTrigger>
                           <SelectValue placeholder="Select frequency" />
@@ -995,24 +835,18 @@ export default function CourseCompletionsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Email Recipients
-                      </label>
+                      <label className="text-sm font-medium">Email Recipients</label>
                       <Input placeholder="admin@example.com, manager@example.com" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Report Format
-                      </label>
+                      <label className="text-sm font-medium">Report Format</label>
                       <Select>
                         <SelectTrigger>
                           <SelectValue placeholder="Select format" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pdf">PDF Report</SelectItem>
-                          <SelectItem value="excel">
-                            Excel Spreadsheet
-                          </SelectItem>
+                          <SelectItem value="excel">Excel Spreadsheet</SelectItem>
                           <SelectItem value="csv">CSV Data</SelectItem>
                         </SelectContent>
                       </Select>
@@ -1026,5 +860,5 @@ export default function CourseCompletionsPage() {
         </main>
       </div>
     </div>
-  );
+  )
 }

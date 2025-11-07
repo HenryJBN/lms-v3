@@ -98,14 +98,16 @@ const coursesData: Record<string, Course> = {
                 "Colorful Style Sheets",
               ],
               correctAnswer: 0,
-              explanation: "CSS stands for Cascading Style Sheets, which is used to style HTML elements.",
+              explanation:
+                "CSS stands for Cascading Style Sheets, which is used to style HTML elements.",
             },
             {
               id: "css-q2",
               question: "Which property is used to change the background color?",
               options: ["color", "bgcolor", "background-color", "background"],
               correctAnswer: 2,
-              explanation: "The background-color property is used to set the background color of an element.",
+              explanation:
+                "The background-color property is used to set the background color of an element.",
             },
           ],
           passingScore: 70,
@@ -125,10 +127,12 @@ const coursesData: Record<string, Course> = {
           questions: [
             {
               id: "js-q1",
-              question: "Which of the following is a correct way to declare a variable in JavaScript?",
+              question:
+                "Which of the following is a correct way to declare a variable in JavaScript?",
               options: ["var myVar = 5;", "variable myVar = 5;", "v myVar = 5;", "int myVar = 5;"],
               correctAnswer: 0,
-              explanation: "In JavaScript, variables can be declared using var, let, or const keywords.",
+              explanation:
+                "In JavaScript, variables can be declared using var, let, or const keywords.",
             },
             {
               id: "js-q2",
@@ -185,7 +189,8 @@ const coursesData: Record<string, Course> = {
                 "Digital Object Model",
               ],
               correctAnswer: 0,
-              explanation: "DOM stands for Document Object Model, which is a programming interface for web documents.",
+              explanation:
+                "DOM stands for Document Object Model, which is a programming interface for web documents.",
             },
           ],
           passingScore: 70,
@@ -241,7 +246,12 @@ const coursesData: Record<string, Course> = {
             {
               id: "py-q1",
               question: "Which of the following is a correct way to create a list in Python?",
-              options: ["list = (1, 2, 3)", "list = [1, 2, 3]", "list = {1, 2, 3}", "list = <1, 2, 3>"],
+              options: [
+                "list = (1, 2, 3)",
+                "list = [1, 2, 3]",
+                "list = {1, 2, 3}",
+                "list = <1, 2, 3>",
+              ],
               correctAnswer: 1,
               explanation: "In Python, lists are created using square brackets [].",
             },

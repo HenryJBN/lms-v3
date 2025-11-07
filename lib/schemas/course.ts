@@ -1,5 +1,5 @@
 // /schemas/course.ts
-import { z } from "zod";
+import { z } from "zod"
 
 export const CourseCreateSchema = z.object({
   title: z.string().min(3, "Title is required"),
@@ -20,22 +20,15 @@ export const CourseCreateSchema = z.object({
   thumbnail: z
     .instanceof(File)
     .optional()
-    .refine(
-      (file) => !file || file.size < 5 * 1024 * 1024,
-      "File size must be under 5MB"
-    )
-    .refine(
-      (file) =>
-        !file || ["image/jpeg", "image/png", "image/webp"].includes(file.type),
-      {
-        message: "Only .jpg, .png or .webp files allowed",
-      }
-    ),
-});
+    .refine((file) => !file || file.size < 5 * 1024 * 1024, "File size must be under 5MB")
+    .refine((file) => !file || ["image/jpeg", "image/png", "image/webp"].includes(file.type), {
+      message: "Only .jpg, .png or .webp files allowed",
+    }),
+})
 
 // ✅ Export TypeScript types derived from the Zod schema
-export type CourseCreate = z.infer<typeof CourseCreateSchema>;
+export type CourseCreate = z.infer<typeof CourseCreateSchema>
 
 // ✅ Define update schema
-export const CourseUpdateSchema = CourseCreateSchema.partial();
-export type CourseUpdate = z.infer<typeof CourseUpdateSchema>;
+export const CourseUpdateSchema = CourseCreateSchema.partial()
+export type CourseUpdate = z.infer<typeof CourseUpdateSchema>

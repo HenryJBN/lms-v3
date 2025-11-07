@@ -5,7 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { BrainCircuit, ChevronLeft, ChevronRight, HelpCircle, Lightbulb, ThumbsUp } from "lucide-react"
+import {
+  BrainCircuit,
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
+  Lightbulb,
+  ThumbsUp,
+} from "lucide-react"
 
 interface Question {
   id: string
@@ -116,17 +123,17 @@ export default function AdaptiveLearningEngine() {
 
       if (performance > 80) {
         setAdaptiveMessage(
-          "Based on your excellent performance, we recommend advancing to more complex blockchain topics like smart contracts and advanced cryptography.",
+          "Based on your excellent performance, we recommend advancing to more complex blockchain topics like smart contracts and advanced cryptography."
         )
         setDifficulty("hard")
       } else if (performance > 50) {
         setAdaptiveMessage(
-          "You're doing well! We suggest focusing more on consensus mechanisms and blockchain architecture.",
+          "You're doing well! We suggest focusing more on consensus mechanisms and blockchain architecture."
         )
         setDifficulty("medium")
       } else {
         setAdaptiveMessage(
-          "Let's reinforce your blockchain fundamentals before moving forward. We've recommended some additional resources for you.",
+          "Let's reinforce your blockchain fundamentals before moving forward. We've recommended some additional resources for you."
         )
         setDifficulty("easy")
       }
@@ -252,7 +259,9 @@ export default function AdaptiveLearningEngine() {
               >
                 <div className="flex items-start">
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border mr-2 mt-0.5">
-                    {selectedAnswer === index && <div className="h-2.5 w-2.5 rounded-full bg-current" />}
+                    {selectedAnswer === index && (
+                      <div className="h-2.5 w-2.5 rounded-full bg-current" />
+                    )}
                   </div>
                   <span>{option}</span>
                 </div>
@@ -283,7 +292,11 @@ export default function AdaptiveLearningEngine() {
         </div>
 
         <div className="pt-4 flex justify-between">
-          <Button variant="outline" onClick={handlePreviousQuestion} disabled={currentQuestionIndex === 0}>
+          <Button
+            variant="outline"
+            onClick={handlePreviousQuestion}
+            disabled={currentQuestionIndex === 0}
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Previous
           </Button>
@@ -300,7 +313,9 @@ export default function AdaptiveLearningEngine() {
               )}
             </Button>
           ) : (
-            <Button disabled>{currentQuestionIndex < questions.length - 1 ? "Next" : "Complete Quiz"}</Button>
+            <Button disabled>
+              {currentQuestionIndex < questions.length - 1 ? "Next" : "Complete Quiz"}
+            </Button>
           )}
         </div>
       </CardContent>

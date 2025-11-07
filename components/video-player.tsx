@@ -12,7 +12,11 @@ interface VideoPlayerProps {
   isCompleted?: boolean
 }
 
-export default function VideoPlayer({ videoUrl, onComplete, isCompleted = false }: VideoPlayerProps) {
+export default function VideoPlayer({
+  videoUrl,
+  onComplete,
+  isCompleted = false,
+}: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -150,7 +154,8 @@ export default function VideoPlayer({ videoUrl, onComplete, isCompleted = false 
       return url // Already an embed URL
     }
 
-    const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
+    const youtubeRegex =
+      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
     const match = url.match(youtubeRegex)
 
     if (match && match[1]) {
@@ -190,7 +195,13 @@ export default function VideoPlayer({ videoUrl, onComplete, isCompleted = false 
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      <video ref={videoRef} src={videoUrl} className="w-full h-full" onClick={togglePlay} playsInline />
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        className="w-full h-full"
+        onClick={togglePlay}
+        playsInline
+      />
 
       {hasWatched85Percent && (
         <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-md flex items-center text-xs">
@@ -206,17 +217,30 @@ export default function VideoPlayer({ videoUrl, onComplete, isCompleted = false 
         }`}
       >
         {/* Progress bar */}
-        <div className="h-2 bg-gray-600 rounded-full mb-3 cursor-pointer" onClick={handleProgressClick}>
+        <div
+          className="h-2 bg-gray-600 rounded-full mb-3 cursor-pointer"
+          onClick={handleProgressClick}
+        >
           <div className="h-full bg-red rounded-full" style={{ width: `${progress}%` }} />
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={togglePlay}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20"
+              onClick={togglePlay}
+            >
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
 
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleMute}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20"
+              onClick={toggleMute}
+            >
               {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </Button>
 

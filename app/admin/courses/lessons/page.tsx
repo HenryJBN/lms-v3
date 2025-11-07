@@ -1,16 +1,10 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -18,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -27,16 +21,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,10 +38,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+} from "@/components/ui/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Search,
   Plus,
@@ -68,16 +62,16 @@ import {
   File,
   Copy,
   Move,
-} from "lucide-react";
+} from "lucide-react"
 
 export default function LessonsManagement() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCourse, setSelectedCourse] = useState("all");
-  const [selectedType, setSelectedType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [sortField, setSortField] = useState("order");
-  const [sortDirection, setSortDirection] = useState("asc");
-  const [selectedLessons, setSelectedLessons] = useState<number[]>([]);
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCourse, setSelectedCourse] = useState("all")
+  const [selectedType, setSelectedType] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [sortField, setSortField] = useState("order")
+  const [sortDirection, setSortDirection] = useState("asc")
+  const [selectedLessons, setSelectedLessons] = useState<number[]>([])
 
   // Mock lesson data
   const lessons = [
@@ -191,7 +185,7 @@ export default function LessonsManagement() {
       videoUrl: "/videos/neural-networks.mp4",
       thumbnail: "/images/lessons/neural-networks.jpg",
     },
-  ];
+  ]
 
   const courses = [
     { id: 1, title: "Blockchain Fundamentals" },
@@ -199,34 +193,32 @@ export default function LessonsManagement() {
     { id: 3, title: "AI Fundamentals" },
     { id: 4, title: "Advanced Cinematography" },
     { id: 5, title: "3D Animation Basics" },
-  ];
+  ]
 
   const filteredLessons = lessons.filter((lesson) => {
     const matchesSearch =
       lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lesson.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lesson.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse =
-      selectedCourse === "all" || lesson.courseId.toString() === selectedCourse;
-    const matchesType = selectedType === "all" || lesson.type === selectedType;
-    const matchesStatus =
-      selectedStatus === "all" || lesson.status === selectedStatus;
-    return matchesSearch && matchesCourse && matchesType && matchesStatus;
-  });
+      lesson.author.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCourse = selectedCourse === "all" || lesson.courseId.toString() === selectedCourse
+    const matchesType = selectedType === "all" || lesson.type === selectedType
+    const matchesStatus = selectedStatus === "all" || lesson.status === selectedStatus
+    return matchesSearch && matchesCourse && matchesType && matchesStatus
+  })
 
   const sortedLessons = [...filteredLessons].sort((a, b) => {
-    let aValue = a[sortField as keyof typeof a];
-    let bValue = b[sortField as keyof typeof b];
+    let aValue = a[sortField as keyof typeof a]
+    let bValue = b[sortField as keyof typeof b]
 
-    if (typeof aValue === "string") aValue = aValue.toLowerCase();
-    if (typeof bValue === "string") bValue = bValue.toLowerCase();
+    if (typeof aValue === "string") aValue = aValue.toLowerCase()
+    if (typeof bValue === "string") bValue = bValue.toLowerCase()
 
     if (sortDirection === "asc") {
-      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
     } else {
-      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
     }
-  });
+  })
 
   const stats = {
     totalLessons: lessons.length,
@@ -239,34 +231,34 @@ export default function LessonsManagement() {
         .reduce((sum, lesson) => sum + lesson.completionRate, 0) /
       lessons.filter((l) => l.completionRate > 0).length,
     totalDuration: lessons.reduce((sum, lesson) => {
-      const [minutes, seconds] = lesson.duration.split(":").map(Number);
-      return sum + minutes + seconds / 60;
+      const [minutes, seconds] = lesson.duration.split(":").map(Number)
+      return sum + minutes + seconds / 60
     }, 0),
-  };
+  }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedLessons(sortedLessons.map((lesson) => lesson.id));
+      setSelectedLessons(sortedLessons.map((lesson) => lesson.id))
     } else {
-      setSelectedLessons([]);
+      setSelectedLessons([])
     }
-  };
+  }
 
   const handleSelectLesson = (lessonId: number, checked: boolean) => {
     if (checked) {
-      setSelectedLessons([...selectedLessons, lessonId]);
+      setSelectedLessons([...selectedLessons, lessonId])
     } else {
-      setSelectedLessons(selectedLessons.filter((id) => id !== lessonId));
+      setSelectedLessons(selectedLessons.filter((id) => id !== lessonId))
     }
-  };
+  }
 
   const exportLessons = (format: "csv" | "excel" | "pdf") => {
     const dataToExport =
       selectedLessons.length > 0
         ? sortedLessons.filter((lesson) => selectedLessons.includes(lesson.id))
-        : sortedLessons;
+        : sortedLessons
 
-    console.log(`Exporting ${dataToExport.length} lessons as ${format}`);
+    console.log(`Exporting ${dataToExport.length} lessons as ${format}`)
 
     if (format === "csv") {
       const csvContent = [
@@ -294,33 +286,31 @@ export default function LessonsManagement() {
             lesson.createdDate,
           ].join(",")
         ),
-      ].join("\n");
+      ].join("\n")
 
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `lessons-export-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
-      a.click();
+      const blob = new Blob([csvContent], { type: "text/csv" })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `lessons-export-${new Date().toISOString().split("T")[0]}.csv`
+      a.click()
     }
-  };
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "video":
-        return <Video className="h-4 w-4" />;
+        return <Video className="h-4 w-4" />
       case "text":
-        return <FileText className="h-4 w-4" />;
+        return <FileText className="h-4 w-4" />
       case "audio":
-        return <FileAudio className="h-4 w-4" />;
+        return <FileAudio className="h-4 w-4" />
       case "image":
-        return <ImageIcon className="h-4 w-4" />;
+        return <ImageIcon className="h-4 w-4" />
       default:
-        return <File className="h-4 w-4" />;
+        return <File className="h-4 w-4" />
     }
-  };
+  }
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
@@ -331,48 +321,34 @@ export default function LessonsManagement() {
           <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Total
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Total</CardTitle>
                 <Play className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">
-                  {stats.totalLessons}
-                </div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalLessons}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Published
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Published</CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">
-                  {stats.publishedLessons}
-                </div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.publishedLessons}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Drafts
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Drafts</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">
-                  {stats.draftLessons}
-                </div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.draftLessons}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Views
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Views</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -383,9 +359,7 @@ export default function LessonsManagement() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Completion
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Completion</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -396,9 +370,7 @@ export default function LessonsManagement() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">
-                  Duration
-                </CardTitle>
+                <CardTitle className="text-xs sm:text-sm font-medium">Duration</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -415,9 +387,7 @@ export default function LessonsManagement() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <CardTitle>Lessons</CardTitle>
-                  <CardDescription>
-                    Manage all lessons across courses
-                  </CardDescription>
+                  <CardDescription>Manage all lessons across courses</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <DropdownMenu>
@@ -468,8 +438,7 @@ export default function LessonsManagement() {
                         <DialogHeader>
                           <DialogTitle>Create New Lesson</DialogTitle>
                           <DialogDescription>
-                            Add a new lesson to a course. Fill in the lesson
-                            details below.
+                            Add a new lesson to a course. Fill in the lesson details below.
                           </DialogDescription>
                         </DialogHeader>
                         <Tabs defaultValue="content" className="w-full mt-4">
@@ -477,25 +446,17 @@ export default function LessonsManagement() {
                             <TabsTrigger value="content">Content</TabsTrigger>
                             <TabsTrigger value="settings">Settings</TabsTrigger>
                             <TabsTrigger value="media">Media</TabsTrigger>
-                            <TabsTrigger value="assessment">
-                              Assessment
-                            </TabsTrigger>
+                            <TabsTrigger value="assessment">Assessment</TabsTrigger>
                           </TabsList>
 
-                          <TabsContent
-                            value="content"
-                            className="space-y-4 mt-4"
-                          >
+                          <TabsContent value="content" className="space-y-4 mt-4">
                             <div className="grid gap-2">
                               <Label htmlFor="title">Title</Label>
                               <Input id="title" placeholder="Lesson title" />
                             </div>
                             <div className="grid gap-2">
                               <Label htmlFor="description">Description</Label>
-                              <Textarea
-                                id="description"
-                                placeholder="Lesson description"
-                              />
+                              <Textarea id="description" placeholder="Lesson description" />
                             </div>
                             <div className="grid gap-2">
                               <Label htmlFor="content">Content</Label>
@@ -507,10 +468,7 @@ export default function LessonsManagement() {
                             </div>
                           </TabsContent>
 
-                          <TabsContent
-                            value="settings"
-                            className="space-y-4 mt-4"
-                          >
+                          <TabsContent value="settings" className="space-y-4 mt-4">
                             <div className="grid gap-2">
                               <Label htmlFor="course">Course</Label>
                               <Select>
@@ -519,10 +477,7 @@ export default function LessonsManagement() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {courses.map((course) => (
-                                    <SelectItem
-                                      key={course.id}
-                                      value={course.id.toString()}
-                                    >
+                                    <SelectItem key={course.id} value={course.id.toString()}>
                                       {course.title}
                                     </SelectItem>
                                   ))}
@@ -537,13 +492,9 @@ export default function LessonsManagement() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="video">Video</SelectItem>
-                                  <SelectItem value="text">
-                                    Text/Article
-                                  </SelectItem>
+                                  <SelectItem value="text">Text/Article</SelectItem>
                                   <SelectItem value="audio">Audio</SelectItem>
-                                  <SelectItem value="image">
-                                    Image Gallery
-                                  </SelectItem>
+                                  <SelectItem value="image">Image Gallery</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -557,9 +508,7 @@ export default function LessonsManagement() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox id="preview" />
-                              <Label htmlFor="preview">
-                                Allow preview without enrollment
-                              </Label>
+                              <Label htmlFor="preview">Allow preview without enrollment</Label>
                             </div>
                           </TabsContent>
 
@@ -570,11 +519,7 @@ export default function LessonsManagement() {
                             </div>
                             <div className="grid gap-2">
                               <Label htmlFor="thumbnail">Thumbnail</Label>
-                              <Input
-                                id="thumbnail"
-                                type="file"
-                                accept="image/*"
-                              />
+                              <Input id="thumbnail" type="file" accept="image/*" />
                             </div>
                             <div className="grid gap-2">
                               <Label htmlFor="attachments">Attachments</Label>
@@ -582,29 +527,18 @@ export default function LessonsManagement() {
                             </div>
                           </TabsContent>
 
-                          <TabsContent
-                            value="assessment"
-                            className="space-y-4 mt-4"
-                          >
+                          <TabsContent value="assessment" className="space-y-4 mt-4">
                             <div className="flex items-center space-x-2">
                               <Checkbox id="hasQuiz" />
                               <Label htmlFor="hasQuiz">Include quiz</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox id="hasAssignment" />
-                              <Label htmlFor="hasAssignment">
-                                Include assignment
-                              </Label>
+                              <Label htmlFor="hasAssignment">Include assignment</Label>
                             </div>
                             <div className="grid gap-2">
-                              <Label htmlFor="passingScore">
-                                Passing Score
-                              </Label>
-                              <Input
-                                id="passingScore"
-                                type="number"
-                                placeholder="80"
-                              />
+                              <Label htmlFor="passingScore">Passing Score</Label>
+                              <Input id="passingScore" type="number" placeholder="80" />
                             </div>
                           </TabsContent>
                         </Tabs>
@@ -630,20 +564,14 @@ export default function LessonsManagement() {
                       className="pl-8"
                     />
                   </div>
-                  <Select
-                    value={selectedCourse}
-                    onValueChange={setSelectedCourse}
-                  >
+                  <Select value={selectedCourse} onValueChange={setSelectedCourse}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Filter by course" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Courses</SelectItem>
                       {courses.map((course) => (
-                        <SelectItem
-                          key={course.id}
-                          value={course.id.toString()}
-                        >
+                        <SelectItem key={course.id} value={course.id.toString()}>
                           {course.title}
                         </SelectItem>
                       ))}
@@ -660,10 +588,7 @@ export default function LessonsManagement() {
                       <SelectItem value="audio">Audio</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select
-                    value={selectedStatus}
-                    onValueChange={setSelectedStatus}
-                  >
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                     <SelectTrigger className="w-full sm:w-[150px]">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
@@ -703,9 +628,7 @@ export default function LessonsManagement() {
                     <TableRow>
                       <TableHead className="w-12">
                         <Checkbox
-                          checked={
-                            selectedLessons.length === sortedLessons.length
-                          }
+                          checked={selectedLessons.length === sortedLessons.length}
                           onCheckedChange={handleSelectAll}
                         />
                       </TableHead>
@@ -715,12 +638,8 @@ export default function LessonsManagement() {
                       <TableHead className="min-w-[100px]">Status</TableHead>
                       <TableHead className="min-w-[100px]">Duration</TableHead>
                       <TableHead className="min-w-[100px]">Views</TableHead>
-                      <TableHead className="min-w-[150px]">
-                        Completion
-                      </TableHead>
-                      <TableHead className="text-right w-[80px]">
-                        Actions
-                      </TableHead>
+                      <TableHead className="min-w-[150px]">Completion</TableHead>
+                      <TableHead className="text-right w-[80px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -742,9 +661,7 @@ export default function LessonsManagement() {
                               className="h-10 w-16 rounded object-cover flex-shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="font-medium truncate">
-                                {lesson.title}
-                              </div>
+                              <div className="font-medium truncate">{lesson.title}</div>
                               <div className="text-sm text-muted-foreground truncate">
                                 {lesson.description.substring(0, 50)}...
                               </div>
@@ -764,10 +681,7 @@ export default function LessonsManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="whitespace-nowrap"
-                          >
+                          <Badge variant="outline" className="whitespace-nowrap">
                             {lesson.course}
                           </Badge>
                         </TableCell>
@@ -779,11 +693,7 @@ export default function LessonsManagement() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              lesson.status === "published"
-                                ? "default"
-                                : "secondary"
-                            }
+                            variant={lesson.status === "published" ? "default" : "secondary"}
                             className="whitespace-nowrap"
                           >
                             {lesson.status}
@@ -800,9 +710,7 @@ export default function LessonsManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 whitespace-nowrap">
-                            <div className="text-sm">
-                              {lesson.completionRate.toFixed(1)}%
-                            </div>
+                            <div className="text-sm">{lesson.completionRate.toFixed(1)}%</div>
                             <div className="w-16 bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full"
@@ -846,5 +754,5 @@ export default function LessonsManagement() {
         </div>
       </div>
     </div>
-  );
+  )
 }

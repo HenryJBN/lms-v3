@@ -159,7 +159,9 @@ export default function AdminForgotPassword() {
             <Shield className="h-3 w-3" />
             <span>All password reset attempts are logged and monitored</span>
           </div>
-          <p className="text-xs text-slate-500">If you continue to have issues, contact your system administrator.</p>
+          <p className="text-xs text-slate-500">
+            If you continue to have issues, contact your system administrator.
+          </p>
         </div>
       </div>
     </div>

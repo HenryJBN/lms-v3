@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -7,11 +7,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function BlockchainCoursesPage() {
   // Mock data for blockchain courses
@@ -39,8 +39,7 @@ export default function BlockchainCoursesPage() {
     {
       id: "defi-applications",
       title: "DeFi Applications",
-      description:
-        "Understand decentralized finance protocols and applications",
+      description: "Understand decentralized finance protocols and applications",
       image: "/images/courses/defi-applications.png",
       level: "Advanced",
       price: "$79.99",
@@ -77,7 +76,7 @@ export default function BlockchainCoursesPage() {
       tokenReward: 80,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -90,8 +89,8 @@ export default function BlockchainCoursesPage() {
                   Blockchain & Cryptocurrency Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Master blockchain technology, smart contracts, and
-                  decentralized applications with our comprehensive courses.
+                  Master blockchain technology, smart contracts, and decentralized applications with
+                  our comprehensive courses.
                 </p>
               </div>
             </div>
@@ -123,8 +122,7 @@ export default function BlockchainCoursesPage() {
                   Blockchain Developer Path
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a professional
-                  blockchain developer.
+                  Follow our structured learning path to become a professional blockchain developer.
                 </p>
               </div>
             </div>
@@ -134,12 +132,10 @@ export default function BlockchainCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Blockchain Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Blockchain Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with the basics of blockchain technology, distributed
-                  ledgers, and cryptocurrencies.
+                  Start with the basics of blockchain technology, distributed ledgers, and
+                  cryptocurrencies.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/blockchain-fundamentals">
@@ -154,12 +150,9 @@ export default function BlockchainCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Smart Contract Development
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Smart Contract Development</h3>
                 <p className="text-muted-foreground mb-4">
-                  Learn to write, test, and deploy smart contracts on Ethereum
-                  and other platforms.
+                  Learn to write, test, and deploy smart contracts on Ethereum and other platforms.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/smart-contract-development">
@@ -176,8 +169,7 @@ export default function BlockchainCoursesPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">DeFi Applications</h3>
                 <p className="text-muted-foreground mb-4">
-                  Explore decentralized finance protocols and build DeFi
-                  applications.
+                  Explore decentralized finance protocols and build DeFi applications.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/defi-applications">
@@ -192,12 +184,9 @@ export default function BlockchainCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Full-Stack Web3 Development
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Full-Stack Web3 Development</h3>
                 <p className="text-muted-foreground mb-4">
-                  Build complete decentralized applications with front-end
-                  integration.
+                  Build complete decentralized applications with front-end integration.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/fullstack-web3-development">
@@ -218,7 +207,7 @@ export default function BlockchainCoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -232,14 +221,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -248,16 +237,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -284,5 +266,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

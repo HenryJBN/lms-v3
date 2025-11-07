@@ -5,7 +5,10 @@ export function middleware(request: NextRequest) {
   // Check if the request is for admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     // Skip middleware for login and forgot-password pages
-    if (request.nextUrl.pathname === "/admin/login" || request.nextUrl.pathname === "/admin/forgot-password") {
+    if (
+      request.nextUrl.pathname === "/admin/login" ||
+      request.nextUrl.pathname === "/admin/forgot-password"
+    ) {
       return NextResponse.next()
     }
 

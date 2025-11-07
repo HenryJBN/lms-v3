@@ -1,7 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Download, Upload, type LucideIcon } from "lucide-react"
 
 interface ActionButton {
@@ -27,7 +32,12 @@ export function ActionButtons({
   return (
     <div className="flex items-center space-x-2">
       {customActions.map((action, index) => (
-        <Button key={index} variant={action.variant || "outline"} size="sm" onClick={action.onClick}>
+        <Button
+          key={index}
+          variant={action.variant || "outline"}
+          size="sm"
+          onClick={action.onClick}
+        >
           <action.icon className="mr-2 h-4 w-4" />
           {action.label}
         </Button>

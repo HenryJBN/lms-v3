@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 import {
   GraduationCap,
   Mail,
@@ -12,7 +12,7 @@ import {
   Linkedin,
   Instagram,
   Youtube,
-} from "lucide-react";
+} from "lucide-react"
 
 const footerLinks = {
   courses: [
@@ -47,7 +47,7 @@ const footerLinks = {
     { name: "Webinars", href: "/webinars" },
     { name: "Downloads", href: "/downloads" },
   ],
-};
+}
 
 const socialLinks = [
   { name: "Facebook", href: "https://facebook.com/dcalms", icon: Facebook },
@@ -59,7 +59,7 @@ const socialLinks = [
   },
   { name: "Instagram", href: "https://instagram.com/dcalms", icon: Instagram },
   { name: "YouTube", href: "https://youtube.com/dcalms", icon: Youtube },
-];
+]
 
 export default function SiteFooter() {
   return (
@@ -74,9 +74,8 @@ export default function SiteFooter() {
               <span className="text-2xl font-bold">DCA LMS</span>
             </Link>
             <p className="text-muted-foreground mb-6 max-w-sm">
-              Empowering learners worldwide with blockchain-powered education.
-              Earn certificates, tokens, and transform your career with
-              cutting-edge technology courses.
+              Empowering learners worldwide with blockchain-powered education. Earn certificates,
+              tokens, and transform your career with cutting-edge technology courses.
             </p>
 
             {/* Contact Info */}
@@ -92,8 +91,8 @@ export default function SiteFooter() {
               <div className="flex items-center space-x-2">
                 <MapPin className="h-4 w-4" />
                 <span>
-                  108 Abibu Adetoro Street, Opposite Mt Horeb Pharmacy, Victoria
-                  Island 106104, Lagos.
+                  108 Abibu Adetoro Street, Opposite Mt Horeb Pharmacy, Victoria Island 106104,
+                  Lagos.
                 </span>
               </div>
             </div>
@@ -190,16 +189,12 @@ export default function SiteFooter() {
             <div>
               <h3 className="text-lg font-semibold mb-2">Stay Updated</h3>
               <p className="text-muted-foreground">
-                Get the latest course updates, industry insights, and exclusive
-                offers delivered to your inbox.
+                Get the latest course updates, industry insights, and exclusive offers delivered to
+                your inbox.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1"
-              />
+              <Input type="email" placeholder="Enter your email" className="flex-1" />
               <Button type="submit">Subscribe</Button>
             </div>
           </div>
@@ -220,5 +215,5 @@ export default function SiteFooter() {
         </div>
       </div>
     </footer>
-  );
+  )
 }

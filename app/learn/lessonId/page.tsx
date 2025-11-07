@@ -116,9 +116,10 @@ export default function LessonPage({ params }: { params: { lessonId: string } })
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-muted-foreground italic">
-                    This is a placeholder for the video transcript. In a real application, this would contain the full
-                    transcript of the lesson video with timestamps. This is important for accessibility and allows
-                    students to search for specific content within the video.
+                    This is a placeholder for the video transcript. In a real application, this
+                    would contain the full transcript of the lesson video with timestamps. This is
+                    important for accessibility and allows students to search for specific content
+                    within the video.
                   </p>
                 </CardContent>
               </Card>

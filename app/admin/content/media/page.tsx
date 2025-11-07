@@ -1,7 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { Upload, Download, ImageIcon, Video, FileText, Music, Folder, Grid, List } from "lucide-react"
+import {
+  Upload,
+  Download,
+  ImageIcon,
+  Video,
+  FileText,
+  Music,
+  Folder,
+  Grid,
+  List,
+} from "lucide-react"
 
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { StatsGrid } from "@/components/admin/stats-grid"
@@ -161,10 +171,18 @@ export default function MediaPage() {
         />
 
         <div className="flex items-center space-x-2">
-          <Button variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}>
+          <Button
+            variant={viewMode === "grid" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+          >
             <Grid className="h-4 w-4" />
           </Button>
-          <Button variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}>
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+          >
             <List className="h-4 w-4" />
           </Button>
 
@@ -214,7 +232,9 @@ export default function MediaPage() {
                         <span className="text-xs text-muted-foreground">{file.size}</span>
                       </div>
                       <h4 className="font-medium text-sm truncate">{file.name}</h4>
-                      <p className="text-xs text-muted-foreground">Used in: {file.usedIn.join(", ")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Used in: {file.usedIn.join(", ")}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

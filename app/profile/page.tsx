@@ -1,90 +1,73 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import {
-  Calendar,
-  MapPin,
-  Briefcase,
-  Award,
-  BookOpen,
-  Trophy,
-  Loader2,
-} from "lucide-react";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { usersService } from "@/lib/services/users";
-import {
-  enrollmentsService,
-  type Enrollment,
-} from "@/lib/services/enrollments";
-import { format } from "date-fns";
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import { Calendar, MapPin, Briefcase, Award, BookOpen, Trophy, Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/contexts/auth-context"
+import { usersService } from "@/lib/services/users"
+import { enrollmentsService, type Enrollment } from "@/lib/services/enrollments"
+import { format } from "date-fns"
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading, refreshUser, tokenBalance } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const { user, isLoading: authLoading, refreshUser, tokenBalance } = useAuth()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+    type: "success" | "error"
+    text: string
+  } | null>(null)
 
   // Form states
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [bio, setBio] = useState("");
-  const [phone, setPhone] = useState("");
-  const [location, setLocation] = useState("");
-  const [occupation, setOccupation] = useState("");
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [bio, setBio] = useState("")
+  const [phone, setPhone] = useState("")
+  const [location, setLocation] = useState("")
+  const [occupation, setOccupation] = useState("")
 
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name || "");
-      setLastName(user.last_name || "");
-      setEmail(user.email || "");
-      setBio(user.bio || "");
-      setPhone(user.phone || "");
-      setLocation(user.location || "");
-      setOccupation(user.occupation || "");
-      loadEnrollments();
+      setFirstName(user.first_name || "")
+      setLastName(user.last_name || "")
+      setEmail(user.email || "")
+      setBio(user.bio || "")
+      setPhone(user.phone || "")
+      setLocation(user.location || "")
+      setOccupation(user.occupation || "")
+      loadEnrollments()
     }
-  }, [user]);
+  }, [user])
 
   const loadEnrollments = async () => {
     try {
-      setIsLoading(true);
-      const response = await enrollmentsService.getUserEnrollments();
+      setIsLoading(true)
+      const response = await enrollmentsService.getUserEnrollments()
       if (response.success && response.data) {
-        setEnrollments(response.data);
+        setEnrollments(response.data)
       }
     } catch (error) {
-      console.error("Failed to load enrollments:", error);
+      console.error("Failed to load enrollments:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setMessage(null);
+    e.preventDefault()
+    setIsSaving(true)
+    setMessage(null)
 
     try {
       const response = await usersService.updateProfile({
@@ -94,36 +77,36 @@ export default function ProfilePage() {
         phone,
         location,
         occupation,
-      });
+      })
 
       if (response.success) {
-        await refreshUser();
-        setMessage({ type: "success", text: "Profile updated successfully!" });
+        await refreshUser()
+        setMessage({ type: "success", text: "Profile updated successfully!" })
       } else {
         setMessage({
           type: "error",
           text: response.error || "Failed to update profile",
-        });
+        })
       }
     } catch (error: any) {
       setMessage({
         type: "error",
         text: error.message || "Failed to update profile",
-      });
+      })
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  };
+  }
 
   const getUserInitials = () => {
-    if (!user) return "U";
-    const firstInitial = user.first_name?.[0] || "";
-    const lastInitial = user.last_name?.[0] || "";
-    return `${firstInitial}${lastInitial}`.toUpperCase() || "U";
-  };
+    if (!user) return "U"
+    const firstInitial = user.first_name?.[0] || ""
+    const lastInitial = user.last_name?.[0] || ""
+    return `${firstInitial}${lastInitial}`.toUpperCase() || "U"
+  }
 
   const calculateProfileCompletion = () => {
-    if (!user) return 0;
+    if (!user) return 0
     const fields = [
       user.first_name,
       user.last_name,
@@ -131,34 +114,30 @@ export default function ProfilePage() {
       user.phone,
       user.location,
       user.occupation,
-    ];
-    const filledFields = fields.filter(
-      (field) => field && field.trim() !== ""
-    ).length;
-    return Math.round((filledFields / fields.length) * 100);
-  };
+    ]
+    const filledFields = fields.filter((field) => field && field.trim() !== "").length
+    return Math.round((filledFields / fields.length) * 100)
+  }
 
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
-    );
+    )
   }
 
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Alert>
-          <AlertDescription>
-            Please log in to view your profile.
-          </AlertDescription>
+          <AlertDescription>Please log in to view your profile.</AlertDescription>
         </Alert>
       </div>
-    );
+    )
   }
 
-  const profileCompletion = calculateProfileCompletion();
+  const profileCompletion = calculateProfileCompletion()
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -169,9 +148,7 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={user.avatar_url || ""} alt={user.email} />
-                <AvatarFallback className="text-2xl">
-                  {getUserInitials()}
-                </AvatarFallback>
+                <AvatarFallback className="text-2xl">{getUserInitials()}</AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-2">
                 <div>
@@ -195,9 +172,7 @@ export default function ProfilePage() {
                   )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    <span>
-                      Joined {format(new Date(user.created_at), "MMMM yyyy")}
-                    </span>
+                    <span>Joined {format(new Date(user.created_at), "MMMM yyyy")}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -214,9 +189,7 @@ export default function ProfilePage() {
                 </Badge>
                 {tokenBalance && (
                   <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Token Balance
-                    </p>
+                    <p className="text-sm text-muted-foreground">Token Balance</p>
                     <p className="text-2xl font-bold">{tokenBalance.balance}</p>
                   </div>
                 )}
@@ -229,9 +202,7 @@ export default function ProfilePage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Enrolled Courses
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Enrolled Courses</CardTitle>
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -245,18 +216,13 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {
-                  enrollments.filter((e) => e.completion_percentage === 100)
-                    .length
-                }
+                {enrollments.filter((e) => e.completion_percentage === 100).length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Certificates
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Certificates</CardTitle>
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -285,11 +251,7 @@ export default function ProfilePage() {
               <CardContent>
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
                   {message && (
-                    <Alert
-                      variant={
-                        message.type === "error" ? "destructive" : "default"
-                      }
-                    >
+                    <Alert variant={message.type === "error" ? "destructive" : "default"}>
                       <AlertDescription>{message.text}</AlertDescription>
                     </Alert>
                   )}
@@ -318,9 +280,7 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" value={email} disabled />
-                    <p className="text-sm text-muted-foreground">
-                      Email cannot be changed
-                    </p>
+                    <p className="text-sm text-muted-foreground">Email cannot be changed</p>
                   </div>
 
                   <div className="space-y-2">
@@ -367,9 +327,7 @@ export default function ProfilePage() {
                   </div>
 
                   <Button type="submit" disabled={isSaving}>
-                    {isSaving && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>
                 </form>
@@ -383,9 +341,7 @@ export default function ProfilePage() {
                 <CardContent className="pt-6">
                   <div className="text-center py-12">
                     <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">
-                      No courses enrolled yet
-                    </h3>
+                    <h3 className="mt-4 text-lg font-semibold">No courses enrolled yet</h3>
                     <p className="text-muted-foreground mt-2">
                       Start learning by enrolling in a course
                     </p>
@@ -402,15 +358,9 @@ export default function ProfilePage() {
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold">
-                            {enrollment.course?.title || "Course"}
-                          </h3>
+                          <h3 className="font-semibold">{enrollment.course?.title || "Course"}</h3>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Enrolled on{" "}
-                            {format(
-                              new Date(enrollment.enrolled_at),
-                              "MMM dd, yyyy"
-                            )}
+                            Enrolled on {format(new Date(enrollment.enrolled_at), "MMM dd, yyyy")}
                           </p>
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between text-sm">
@@ -419,10 +369,7 @@ export default function ProfilePage() {
                                 {enrollment.completion_percentage}%
                               </span>
                             </div>
-                            <Progress
-                              value={enrollment.completion_percentage}
-                              className="h-2"
-                            />
+                            <Progress value={enrollment.completion_percentage} className="h-2" />
                           </div>
                         </div>
                         <div className="ml-4 flex items-center gap-2">
@@ -433,9 +380,7 @@ export default function ProfilePage() {
                             </Badge>
                           )}
                           <Button size="sm" asChild>
-                            <a href={`/learn/${enrollment.course_id}`}>
-                              Continue
-                            </a>
+                            <a href={`/learn/${enrollment.course_id}`}>Continue</a>
                           </Button>
                         </div>
                       </div>
@@ -448,5 +393,5 @@ export default function ProfilePage() {
         </Tabs>
       </div>
     </div>
-  );
+  )
 }

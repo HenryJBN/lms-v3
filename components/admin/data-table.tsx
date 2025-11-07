@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState } from "react";
+import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -10,43 +10,43 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, ChevronUp, ChevronDown } from "lucide-react";
+} from "@/components/ui/dropdown-menu"
+import { MoreHorizontal, ChevronUp, ChevronDown } from "lucide-react"
 
 interface Column {
-  key: string;
-  label: string;
-  sortable?: boolean;
-  render?: (value: any, row: any) => React.ReactNode;
+  key: string
+  label: string
+  sortable?: boolean
+  render?: (value: any, row: any) => React.ReactNode
 }
 
 interface Action {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  onClick: (row: any) => void;
-  variant?: "default" | "destructive";
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  onClick: (row: any) => void
+  variant?: "default" | "destructive"
 }
 
 interface DataTableProps {
-  data: any[];
-  columns: Column[];
-  actions?: Action[];
-  selectable?: boolean;
-  onSelectionChange?: (selectedIds: string[]) => void;
-  sortField?: string;
-  sortDirection?: "asc" | "desc";
-  onSort?: (field: string, direction: "asc" | "desc") => void;
-  loading?: boolean;
+  data: any[]
+  columns: Column[]
+  actions?: Action[]
+  selectable?: boolean
+  onSelectionChange?: (selectedIds: string[]) => void
+  sortField?: string
+  sortDirection?: "asc" | "desc"
+  onSort?: (field: string, direction: "asc" | "desc") => void
+  loading?: boolean
 }
 
 export function DataTable({
@@ -59,51 +59,46 @@ export function DataTable({
   sortDirection,
   onSort,
 }: DataTableProps) {
-  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [selectedRows, setSelectedRows] = useState<string[]>([])
 
   const handleSelectAll = (checked: boolean) => {
-    const newSelection = checked ? data.map((row) => row.id) : [];
-    setSelectedRows(newSelection);
-    onSelectionChange?.(newSelection);
-  };
+    const newSelection = checked ? data.map((row) => row.id) : []
+    setSelectedRows(newSelection)
+    onSelectionChange?.(newSelection)
+  }
 
   const handleSelectRow = (rowId: string, checked: boolean) => {
     const newSelection = checked
       ? [...selectedRows, rowId]
-      : selectedRows.filter((id) => id !== rowId);
-    setSelectedRows(newSelection);
-    onSelectionChange?.(newSelection);
-  };
+      : selectedRows.filter((id) => id !== rowId)
+    setSelectedRows(newSelection)
+    onSelectionChange?.(newSelection)
+  }
 
   const handleSort = (field: string) => {
-    if (!onSort) return;
-    const newDirection =
-      sortField === field && sortDirection === "asc" ? "desc" : "asc";
-    onSort(field, newDirection);
-  };
+    if (!onSort) return
+    const newDirection = sortField === field && sortDirection === "asc" ? "desc" : "asc"
+    onSort(field, newDirection)
+  }
 
   const renderCellValue = (column: Column, row: any) => {
-    const value = row[column.key];
+    const value = row[column.key]
 
     if (column.render) {
-      return column.render(value, row);
+      return column.render(value, row)
     }
 
     // Default rendering for common data types
     if (typeof value === "boolean") {
-      return (
-        <Badge variant={value ? "default" : "secondary"}>
-          {value ? "Yes" : "No"}
-        </Badge>
-      );
+      return <Badge variant={value ? "default" : "secondary"}>{value ? "Yes" : "No"}</Badge>
     }
 
     if (Array.isArray(value)) {
-      return value.join(", ");
+      return value.join(", ")
     }
 
-    return value;
-  };
+    return value
+  }
 
   return (
     <div className="rounded-md border">
@@ -139,9 +134,7 @@ export function DataTable({
                 )}
               </TableHead>
             ))}
-            {actions.length > 0 && (
-              <TableHead className="text-right">Actions</TableHead>
-            )}
+            {actions.length > 0 && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -151,16 +144,12 @@ export function DataTable({
                 <TableCell>
                   <Checkbox
                     checked={selectedRows.includes(row.id)}
-                    onCheckedChange={(checked) =>
-                      handleSelectRow(row.id, checked as boolean)
-                    }
+                    onCheckedChange={(checked) => handleSelectRow(row.id, checked as boolean)}
                   />
                 </TableCell>
               )}
               {columns.map((column) => (
-                <TableCell key={column.key}>
-                  {renderCellValue(column, row)}
-                </TableCell>
+                <TableCell key={column.key}>{renderCellValue(column, row)}</TableCell>
               ))}
               {actions.length > 0 && (
                 <TableCell className="text-right">
@@ -175,19 +164,14 @@ export function DataTable({
                         <div key={index}>
                           <DropdownMenuItem
                             onClick={() => action.onClick(row)}
-                            className={
-                              action.variant === "destructive"
-                                ? "text-destructive"
-                                : ""
-                            }
+                            className={action.variant === "destructive" ? "text-destructive" : ""}
                           >
                             <action.icon className="mr-2 h-4 w-4" />
                             {action.label}
                           </DropdownMenuItem>
-                          {index < actions.length - 1 &&
-                            action.variant === "destructive" && (
-                              <DropdownMenuSeparator />
-                            )}
+                          {index < actions.length - 1 && action.variant === "destructive" && (
+                            <DropdownMenuSeparator />
+                          )}
                         </div>
                       ))}
                     </DropdownMenuContent>
@@ -199,5 +183,5 @@ export function DataTable({
         </TableBody>
       </Table>
     </div>
-  );
+  )
 }

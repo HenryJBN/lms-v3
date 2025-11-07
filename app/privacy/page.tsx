@@ -19,39 +19,43 @@ export default function PrivacyPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">1. Introduction</h2>
               <p>
-                At DCA LMS, we respect your privacy and are committed to protecting your personal data. This Privacy
-                Policy explains how we collect, use, disclose, and safeguard your information when you use our website,
-                platform, and services (collectively, the "Services").
+                At DCA LMS, we respect your privacy and are committed to protecting your personal
+                data. This Privacy Policy explains how we collect, use, disclose, and safeguard your
+                information when you use our website, platform, and services (collectively, the
+                "Services").
               </p>
               <p>
-                Please read this Privacy Policy carefully. If you do not agree with the terms of this Privacy Policy,
-                please do not access our Services.
+                Please read this Privacy Policy carefully. If you do not agree with the terms of
+                this Privacy Policy, please do not access our Services.
               </p>
             </section>
 
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">2. Information We Collect</h2>
-              <p>We collect several types of information from and about users of our Services, including:</p>
+              <p>
+                We collect several types of information from and about users of our Services,
+                including:
+              </p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>
-                  <strong>Personal Data:</strong> Personal identifiers such as name, email address, postal address,
-                  phone number, and billing information.
+                  <strong>Personal Data:</strong> Personal identifiers such as name, email address,
+                  postal address, phone number, and billing information.
                 </li>
                 <li>
-                  <strong>Profile Data:</strong> Your username, password, purchases, course progress, certificates
-                  earned, and preferences.
+                  <strong>Profile Data:</strong> Your username, password, purchases, course
+                  progress, certificates earned, and preferences.
                 </li>
                 <li>
-                  <strong>Blockchain Data:</strong> Wallet addresses and transaction information related to blockchain
-                  certificates and L-Tokens.
+                  <strong>Blockchain Data:</strong> Wallet addresses and transaction information
+                  related to blockchain certificates and L-Tokens.
                 </li>
                 <li>
-                  <strong>Usage Data:</strong> Information about how you use our Services, including your browsing
-                  history, search queries, and interaction with features.
+                  <strong>Usage Data:</strong> Information about how you use our Services, including
+                  your browsing history, search queries, and interaction with features.
                 </li>
                 <li>
-                  <strong>Device Data:</strong> Information about your device, browser, IP address, and operating
-                  system.
+                  <strong>Device Data:</strong> Information about your device, browser, IP address,
+                  and operating system.
                 </li>
               </ul>
             </section>
@@ -61,20 +65,20 @@ export default function PrivacyPage() {
               <p>We collect information through:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>
-                  <strong>Direct Interactions:</strong> Information you provide when you register, create a profile,
-                  enroll in courses, or communicate with us.
+                  <strong>Direct Interactions:</strong> Information you provide when you register,
+                  create a profile, enroll in courses, or communicate with us.
                 </li>
                 <li>
-                  <strong>Automated Technologies:</strong> Cookies, web beacons, and similar technologies that collect
-                  information about your browsing behavior.
+                  <strong>Automated Technologies:</strong> Cookies, web beacons, and similar
+                  technologies that collect information about your browsing behavior.
                 </li>
                 <li>
-                  <strong>Third Parties:</strong> Information from third-party services you connect to our platform,
-                  such as social media or wallet providers.
+                  <strong>Third Parties:</strong> Information from third-party services you connect
+                  to our platform, such as social media or wallet providers.
                 </li>
                 <li>
-                  <strong>AI Learning Systems:</strong> Data generated by our adaptive learning algorithms about your
-                  learning patterns and preferences.
+                  <strong>AI Learning Systems:</strong> Data generated by our adaptive learning
+                  algorithms about your learning patterns and preferences.
                 </li>
               </ul>
             </section>
@@ -84,7 +88,10 @@ export default function PrivacyPage() {
               <p>We use your information for various purposes, including:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Providing, maintaining, and improving our Services.</li>
-                <li>Personalizing your learning experience through our AI-powered adaptive learning system.</li>
+                <li>
+                  Personalizing your learning experience through our AI-powered adaptive learning
+                  system.
+                </li>
                 <li>Processing transactions and managing your account.</li>
                 <li>Issuing and verifying blockchain certificates.</li>
                 <li>Managing L-Token balances and transactions.</li>
@@ -98,23 +105,27 @@ export default function PrivacyPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-semibold">5. Blockchain Data and Privacy</h2>
               <p>
-                Please be aware that blockchain technology is inherently transparent and public. When we issue
-                certificates as NFTs or manage L-Tokens on a blockchain:
+                Please be aware that blockchain technology is inherently transparent and public.
+                When we issue certificates as NFTs or manage L-Tokens on a blockchain:
               </p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Transaction data, including wallet addresses, is publicly visible on the blockchain.</li>
                 <li>
-                  While we do not directly link your personal identity to your wallet address in public blockchain data,
-                  it may be possible for others to infer connections between your wallet address and your identity.
+                  Transaction data, including wallet addresses, is publicly visible on the
+                  blockchain.
                 </li>
                 <li>
-                  Blockchain data cannot be deleted or modified once recorded, as this is a fundamental characteristic
-                  of blockchain technology.
+                  While we do not directly link your personal identity to your wallet address in
+                  public blockchain data, it may be possible for others to infer connections between
+                  your wallet address and your identity.
+                </li>
+                <li>
+                  Blockchain data cannot be deleted or modified once recorded, as this is a
+                  fundamental characteristic of blockchain technology.
                 </li>
               </ul>
               <p>
-                By using our blockchain-based features, you acknowledge and accept these inherent characteristics of
-                blockchain technology.
+                By using our blockchain-based features, you acknowledge and accept these inherent
+                characteristics of blockchain technology.
               </p>
             </section>
 
@@ -123,18 +134,20 @@ export default function PrivacyPage() {
               <p>We may share your information with:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>
-                  <strong>Service Providers:</strong> Third parties that perform services on our behalf, such as payment
-                  processing, data analysis, and customer service.
+                  <strong>Service Providers:</strong> Third parties that perform services on our
+                  behalf, such as payment processing, data analysis, and customer service.
                 </li>
                 <li>
-                  <strong>Business Partners:</strong> Educational institutions, employers, or certification authorities
-                  that verify your credentials.
+                  <strong>Business Partners:</strong> Educational institutions, employers, or
+                  certification authorities that verify your credentials.
                 </li>
                 <li>
-                  <strong>Legal Requirements:</strong> When required by law, court order, or governmental regulation.
+                  <strong>Legal Requirements:</strong> When required by law, court order, or
+                  governmental regulation.
                 </li>
                 <li>
-                  <strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets.
+                  <strong>Business Transfers:</strong> In connection with a merger, acquisition, or
+                  sale of assets.
                 </li>
               </ul>
               <p>We do not sell your personal information to third parties.</p>

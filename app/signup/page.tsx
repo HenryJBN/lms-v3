@@ -1,7 +1,14 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { GraduationCap, User, WalletIcon } from "lucide-react"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
+import RegistrationForm from "./components/RegistrationForm"
 
 export const metadata: Metadata = {
   title: "Sign Up - DCA LMS",
@@ -18,8 +26,6 @@ export const metadata: Metadata = {
 export default function SignupPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         <div className="container relative min-h-[calc(100vh-64px-200px)] flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
           <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
@@ -34,8 +40,8 @@ export default function SignupPage() {
             <div className="relative z-20 mt-auto">
               <blockquote className="space-y-2">
                 <p className="text-lg">
-                  "Join our community of learners and start your journey to earning blockchain-verified credentials that
-                  stand out in the job market."
+                  "Join our community of learners and start your journey to earning
+                  blockchain-verified credentials that stand out in the job market."
                 </p>
                 <footer className="text-sm">The DCA Team</footer>
               </blockquote>
@@ -45,7 +51,9 @@ export default function SignupPage() {
             <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
               <div className="flex flex-col space-y-2 text-center">
                 <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-                <p className="text-sm text-muted-foreground">Sign up to start learning and earning credentials</p>
+                <p className="text-sm text-muted-foreground">
+                  Sign up to start learning and earning credentials
+                </p>
               </div>
 
               <Tabs defaultValue="email" className="w-full">
@@ -55,73 +63,16 @@ export default function SignupPage() {
                 </TabsList>
 
                 <TabsContent value="email">
-                  <Card>
-                    <CardHeader className="space-y-1">
-                      <CardTitle className="text-xl">Sign up with email</CardTitle>
-                      <CardDescription>Enter your information to create an account</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="first-name">First name</Label>
-                          <Input id="first-name" placeholder="John" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="last-name">Last name</Label>
-                          <Input id="last-name" placeholder="Doe" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="your@email.com" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm password</Label>
-                        <Input id="confirm-password" type="password" />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox id="terms" />
-                        <label
-                          htmlFor="terms"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          I agree to the{" "}
-                          <Link
-                            href="/terms"
-                            className="text-primary underline underline-offset-4 hover:text-primary/90"
-                          >
-                            terms of service
-                          </Link>{" "}
-                          and{" "}
-                          <Link
-                            href="/privacy"
-                            className="text-primary underline underline-offset-4 hover:text-primary/90"
-                          >
-                            privacy policy
-                          </Link>
-                        </label>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Link href="/dashboard" className="w-full">
-                        <Button className="w-full">
-                          <User className="mr-2 h-4 w-4" />
-                          Create Account
-                        </Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
+                  <RegistrationForm />
                 </TabsContent>
 
                 <TabsContent value="wallet">
                   <Card>
                     <CardHeader className="space-y-1">
                       <CardTitle className="text-xl">Connect your wallet</CardTitle>
-                      <CardDescription>Use your Web3 wallet to create an account securely</CardDescription>
+                      <CardDescription>
+                        Use your Web3 wallet to create an account securely
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <Button className="w-full bg-transparent" variant="outline">
@@ -141,7 +92,10 @@ export default function SignupPage() {
 
                       <div className="text-center text-sm text-muted-foreground">
                         By connecting your wallet, you agree to our{" "}
-                        <Link href="/terms" className="text-primary underline underline-offset-4 hover:text-primary/90">
+                        <Link
+                          href="/terms"
+                          className="text-primary underline underline-offset-4 hover:text-primary/90"
+                        >
                           terms of service
                         </Link>{" "}
                         and{" "}

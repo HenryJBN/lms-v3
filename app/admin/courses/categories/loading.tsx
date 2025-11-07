@@ -19,7 +19,9 @@ export default function CategoriesLoading() {
           <div className="h-10 w-[300px] bg-gray-200 rounded animate-pulse" />
           <div className="h-10 w-[200px] bg-gray-200 rounded animate-pulse" />
         </div>
-        <div className="flex items-center space-x-2">{/* Placeholder for additional filter elements */}</div>
+        <div className="flex items-center space-x-2">
+          {/* Placeholder for additional filter elements */}
+        </div>
       </div>
 
       {/* Categories Table */}

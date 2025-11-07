@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +24,13 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -203,7 +216,9 @@ export default function ContentManagement() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Create New Content</DialogTitle>
-                <DialogDescription>Add a new page, upload media, or create a certificate template.</DialogDescription>
+                <DialogDescription>
+                  Add a new page, upload media, or create a certificate template.
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
@@ -372,7 +387,9 @@ export default function ContentManagement() {
                           <code className="text-sm bg-muted px-2 py-1 rounded">{page.slug}</code>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={page.status === "published" ? "default" : "secondary"}>{page.status}</Badge>
+                          <Badge variant={page.status === "published" ? "default" : "secondary"}>
+                            {page.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>{page.author}</TableCell>
                         <TableCell>{page.lastModified}</TableCell>
@@ -532,7 +549,9 @@ export default function ContentManagement() {
                         </TableCell>
                         <TableCell>{cert.issued}</TableCell>
                         <TableCell>
-                          <Badge variant={cert.status === "active" ? "default" : "secondary"}>{cert.status}</Badge>
+                          <Badge variant={cert.status === "active" ? "default" : "secondary"}>
+                            {cert.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>{cert.createdDate}</TableCell>
                         <TableCell>{cert.lastModified}</TableCell>

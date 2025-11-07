@@ -133,9 +133,15 @@ export default function HeroCarousel() {
               <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                 {currentSlideData.badge}
               </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">{currentSlideData.title}</h1>
-              <h2 className="text-xl md:text-2xl text-white/90 font-medium">{currentSlideData.subtitle}</h2>
-              <p className="text-lg text-white/80 max-w-lg leading-relaxed">{currentSlideData.description}</p>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                {currentSlideData.title}
+              </h1>
+              <h2 className="text-xl md:text-2xl text-white/90 font-medium">
+                {currentSlideData.subtitle}
+              </h2>
+              <p className="text-lg text-white/80 max-w-lg leading-relaxed">
+                {currentSlideData.description}
+              </p>
             </div>
 
             {/* Stats */}

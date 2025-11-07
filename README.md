@@ -5,24 +5,28 @@ A comprehensive, blockchain-integrated Learning Management System built with Nex
 ## ✨ Features
 
 ### 🎯 **Core Learning Platform**
+
 - **Interactive Courses**: Video lessons, quizzes, and hands-on projects
 - **Progress Tracking**: Real-time learning analytics and completion tracking
 - **Adaptive Learning**: AI-powered personalized learning paths
 - **Multi-Category Support**: Blockchain, AI/ML, Web Development, Filmmaking, 3D Animation, Business
 
 ### 🔗 **Web3 Integration**
+
 - **NFT Certificates**: Blockchain-verified course completion certificates
 - **Token Rewards**: Earn tokens for course completion and achievements
 - **Wallet Integration**: MetaMask and other Web3 wallet support
 - **Decentralized Identity**: Blockchain-based user authentication
 
 ### 🤖 **AI-Powered Features**
+
 - **Smart Recommendations**: Personalized course suggestions
 - **AI Chat Assistant**: 24/7 learning support and Q&A
 - **Adaptive Assessments**: Dynamic difficulty adjustment
 - **Learning Analytics**: Intelligent progress insights
 
 ### 👨‍💼 **Admin Management**
+
 - **User Management**: Comprehensive user and instructor administration
 - **Course Management**: Content creation, editing, and publishing tools
 - **Analytics Dashboard**: Detailed platform and learning analytics
@@ -31,6 +35,7 @@ A comprehensive, blockchain-integrated Learning Management System built with Nex
 ## 🛠️ Tech Stack
 
 ### **Frontend**
+
 - **Framework**: Next.js 14 (App Router)
 - **Styling**: Tailwind CSS + shadcn/ui
 - **State Management**: React Context + Zustand
@@ -39,6 +44,7 @@ A comprehensive, blockchain-integrated Learning Management System built with Nex
 - **Forms**: React Hook Form + Zod
 
 ### **Backend**
+
 - **API**: FastAPI (Python)
 - **Database**: PostgreSQL
 - **Authentication**: JWT + OAuth2
@@ -46,6 +52,7 @@ A comprehensive, blockchain-integrated Learning Management System built with Nex
 - **Blockchain**: Ethereum, Polygon
 
 ### **Infrastructure**
+
 - **Frontend Deployment**: Vercel
 - **Backend Deployment**: Railway / Heroku
 - **Database**: Supabase / Railway PostgreSQL
@@ -74,49 +81,67 @@ cd web3-lms
 ### 2. **Frontend Setup**
 
 \`\`\`bash
+
 # Install dependencies
+
 npm install
 
 # Copy environment variables
+
 cp .env.example .env.local
 
 # Configure environment variables (see Environment Configuration section)
+
 \`\`\`
 
 ### 3. **Backend Setup**
 
 \`\`\`bash
+
 # Navigate to backend directory
+
 cd backend
 
 # Create virtual environment
+
 python -m venv venv
 
 # Activate virtual environment
+
 # On Windows:
+
 venv\Scripts\activate
+
 # On macOS/Linux:
+
 source venv/bin/activate
 
 # Install dependencies
+
 pip install -r requirements.txt
 
 # Copy environment variables
+
 cp .env.example .env
 
 # Configure environment variables (see Environment Configuration section)
+
 \`\`\`
 
 ### 4. **Database Setup**
 
 \`\`\`bash
+
 # Create PostgreSQL database
+
 createdb web3_lms
 
 # Run migrations (from backend directory)
+
 python -m alembic upgrade head
 
 # Seed initial data
+
 python scripts/seed_data.py
 \`\`\`
 
@@ -125,25 +150,31 @@ python scripts/seed_data.py
 ### **Frontend (.env.local)**
 
 \`\`\`env
+
 # App Configuration
+
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME="Web3 LMS"
 
 # API Configuration
+
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_API_VERSION=v1
 
 # Web3 Configuration
+
 NEXT_PUBLIC_CHAIN_ID=1
 NEXT_PUBLIC_INFURA_PROJECT_ID=your_infura_project_id
 NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 
 # Third-party Services
+
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_name
 
 # Analytics
+
 NEXT_PUBLIC_GA_MEASUREMENT_ID=your_google_analytics_id
 NEXT_PUBLIC_MIXPANEL_TOKEN=your_mixpanel_token
 \`\`\`
@@ -151,7 +182,9 @@ NEXT_PUBLIC_MIXPANEL_TOKEN=your_mixpanel_token
 ### **Backend (.env)**
 
 \`\`\`env
+
 # Database
+
 DATABASE_URL=postgresql://username:password@localhost:5432/web3_lms
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
@@ -160,15 +193,18 @@ DATABASE_USER=your_db_user
 DATABASE_PASSWORD=your_db_password
 
 # Security
+
 SECRET_KEY=your_super_secret_key_here
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # CORS
+
 ALLOWED_ORIGINS=["http://localhost:3000", "https://yourdomain.com"]
 
 # Email Configuration
+
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
@@ -176,21 +212,25 @@ SMTP_PASSWORD=your_app_password
 FROM_EMAIL=noreply@yourdomain.com
 
 # File Storage
+
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_BUCKET_NAME=your_s3_bucket
 AWS_REGION=us-east-1
 
 # Blockchain
+
 ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/your_project_id
 POLYGON_RPC_URL=https://polygon-rpc.com
 PRIVATE_KEY=your_wallet_private_key
 CONTRACT_ADDRESS=your_deployed_contract_address
 
 # Redis (Optional - for caching)
+
 REDIS_URL=redis://localhost:6379
 
 # External APIs
+
 OPENAI_API_KEY=your_openai_api_key
 PINATA_API_KEY=your_pinata_api_key
 PINATA_SECRET_KEY=your_pinata_secret_key
@@ -201,15 +241,15 @@ PINATA_SECRET_KEY=your_pinata_secret_key
 ### **Development Mode**
 
 1. **Start the Backend**:
-\`\`\`bash
-cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-\`\`\`
+   \`\`\`bash
+   cd backend
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   \`\`\`
 
 2. **Start the Frontend** (in a new terminal):
-\`\`\`bash
-npm run dev
-\`\`\`
+   \`\`\`bash
+   npm run dev
+   \`\`\`
 
 3. **Access the Application**:
    - Frontend: http://localhost:3000
@@ -219,48 +259,48 @@ npm run dev
 ### **Production Mode**
 
 1. **Build the Frontend**:
-\`\`\`bash
-npm run build
-npm start
-\`\`\`
+   \`\`\`bash
+   npm run build
+   npm start
+   \`\`\`
 
 2. **Run the Backend**:
-\`\`\`bash
-cd backend
-gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-\`\`\`
+   \`\`\`bash
+   cd backend
+   gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+   \`\`\`
 
 ## 🚀 Deployment
 
 ### **Frontend Deployment (Vercel)**
 
 1. **Connect to Vercel**:
-\`\`\`bash
-npm install -g vercel
-vercel login
-vercel
-\`\`\`
+   \`\`\`bash
+   npm install -g vercel
+   vercel login
+   vercel
+   \`\`\`
 
 2. **Configure Environment Variables** in Vercel Dashboard
 
 3. **Deploy**:
-\`\`\`bash
-vercel --prod
-\`\`\`
+   \`\`\`bash
+   vercel --prod
+   \`\`\`
 
 ### **Backend Deployment (Railway)**
 
 1. **Install Railway CLI**:
-\`\`\`bash
-npm install -g @railway/cli
-\`\`\`
+   \`\`\`bash
+   npm install -g @railway/cli
+   \`\`\`
 
 2. **Login and Deploy**:
-\`\`\`bash
-railway login
-railway init
-railway up
-\`\`\`
+   \`\`\`bash
+   railway login
+   railway init
+   railway up
+   \`\`\`
 
 3. **Configure Environment Variables** in Railway Dashboard
 
@@ -268,22 +308,26 @@ railway up
 
 1. **Create Supabase Project**: https://supabase.com
 2. **Run Migrations**:
-\`\`\`bash
-supabase db push
-\`\`\`
+   \`\`\`bash
+   supabase db push
+   \`\`\`
 3. **Update Connection Strings** in environment variables
 
 ### **Alternative Deployment Options**
 
 #### **Backend on Heroku**
+
 \`\`\`bash
+
 # Install Heroku CLI
+
 heroku create your-app-name
 heroku addons:create heroku-postgresql:hobby-dev
 git push heroku main
 \`\`\`
 
 #### **Database on Railway**
+
 \`\`\`bash
 railway add postgresql
 railway connect
@@ -305,38 +349,38 @@ POST /api/v1/auth/reset-password
 ### **User Management**
 
 \`\`\`http
-GET    /api/v1/users/profile
-PUT    /api/v1/users/profile
-GET    /api/v1/users/{user_id}
+GET /api/v1/users/profile
+PUT /api/v1/users/profile
+GET /api/v1/users/{user_id}
 DELETE /api/v1/users/{user_id}
 \`\`\`
 
 ### **Course Management**
 
 \`\`\`http
-GET    /api/v1/courses
-POST   /api/v1/courses
-GET    /api/v1/courses/{course_id}
-PUT    /api/v1/courses/{course_id}
+GET /api/v1/courses
+POST /api/v1/courses
+GET /api/v1/courses/{course_id}
+PUT /api/v1/courses/{course_id}
 DELETE /api/v1/courses/{course_id}
 \`\`\`
 
 ### **Enrollment & Progress**
 
 \`\`\`http
-POST   /api/v1/enrollments
-GET    /api/v1/enrollments/user/{user_id}
-PUT    /api/v1/progress/{enrollment_id}
-GET    /api/v1/progress/{enrollment_id}
+POST /api/v1/enrollments
+GET /api/v1/enrollments/user/{user_id}
+PUT /api/v1/progress/{enrollment_id}
+GET /api/v1/progress/{enrollment_id}
 \`\`\`
 
 ### **Blockchain Integration**
 
 \`\`\`http
-POST   /api/v1/blockchain/mint-certificate
-GET    /api/v1/blockchain/certificates/{user_id}
-POST   /api/v1/blockchain/reward-tokens
-GET    /api/v1/blockchain/token-balance/{wallet_address}
+POST /api/v1/blockchain/mint-certificate
+GET /api/v1/blockchain/certificates/{user_id}
+POST /api/v1/blockchain/reward-tokens
+GET /api/v1/blockchain/token-balance/{wallet_address}
 \`\`\`
 
 ## 🧪 Testing
@@ -344,27 +388,35 @@ GET    /api/v1/blockchain/token-balance/{wallet_address}
 ### **Frontend Testing**
 
 \`\`\`bash
+
 # Unit tests
+
 npm run test
 
 # E2E tests
+
 npm run test:e2e
 
 # Coverage report
+
 npm run test:coverage
 \`\`\`
 
 ### **Backend Testing**
 
 \`\`\`bash
+
 # Unit tests
+
 cd backend
 pytest
 
 # With coverage
+
 pytest --cov=app tests/
 
 # Integration tests
+
 pytest tests/integration/
 \`\`\`
 
@@ -372,29 +424,29 @@ pytest tests/integration/
 
 \`\`\`
 web3-lms/
-├── app/                          # Next.js app directory
-│   ├── (auth)/                   # Authentication pages
-│   ├── admin/                    # Admin panel
-│   ├── courses/                  # Course pages
-│   ├── dashboard/                # User dashboard
-│   └── api/                      # API routes
-├── components/                   # React components
-│   ├── ui/                       # shadcn/ui components
-│   ├── admin/                    # Admin-specific components
-│   └── course/                   # Course-related components
-├── lib/                          # Utility libraries
-│   ├── services/                 # API service functions
-│   ├── contexts/                 # React contexts
-│   └── utils/                    # Helper functions
-├── backend/                      # FastAPI backend
-│   ├── routers/                  # API route handlers
-│   ├── models/                   # Database models
-│   ├── middleware/               # Custom middleware
-│   ├── utils/                    # Backend utilities
-│   └── database/                 # Database configuration
-├── scripts/                      # Database scripts
-├── public/                       # Static assets
-└── docs/                         # Documentation
+├── app/ # Next.js app directory
+│ ├── (auth)/ # Authentication pages
+│ ├── admin/ # Admin panel
+│ ├── courses/ # Course pages
+│ ├── dashboard/ # User dashboard
+│ └── api/ # API routes
+├── components/ # React components
+│ ├── ui/ # shadcn/ui components
+│ ├── admin/ # Admin-specific components
+│ └── course/ # Course-related components
+├── lib/ # Utility libraries
+│ ├── services/ # API service functions
+│ ├── contexts/ # React contexts
+│ └── utils/ # Helper functions
+├── backend/ # FastAPI backend
+│ ├── routers/ # API route handlers
+│ ├── models/ # Database models
+│ ├── middleware/ # Custom middleware
+│ ├── utils/ # Backend utilities
+│ └── database/ # Database configuration
+├── scripts/ # Database scripts
+├── public/ # Static assets
+└── docs/ # Documentation
 \`\`\`
 
 ## 🤝 Contributing
@@ -438,14 +490,18 @@ We welcome contributions! Please follow these steps:
 
 **Build Errors**:
 \`\`\`bash
+
 # Clear Next.js cache
+
 rm -rf .next
 npm run build
 \`\`\`
 
 **Module Not Found**:
 \`\`\`bash
+
 # Reinstall dependencies
+
 rm -rf node_modules package-lock.json
 npm install
 \`\`\`
@@ -454,16 +510,21 @@ npm install
 
 **Database Connection**:
 \`\`\`bash
+
 # Check PostgreSQL status
+
 pg_ctl status
 
 # Restart PostgreSQL
+
 sudo service postgresql restart
 \`\`\`
 
 **Migration Issues**:
 \`\`\`bash
+
 # Reset migrations
+
 alembic downgrade base
 alembic upgrade head
 \`\`\`
@@ -471,11 +532,13 @@ alembic upgrade head
 #### **Web3 Integration**
 
 **Wallet Connection Issues**:
+
 - Ensure MetaMask is installed and unlocked
 - Check network configuration
 - Verify contract addresses
 
 **Transaction Failures**:
+
 - Check gas fees and limits
 - Verify wallet has sufficient balance
 - Ensure correct network selection
@@ -506,7 +569,6 @@ alembic upgrade head
 - **Discussions**: Use GitHub Discussions for questions
 - **Email**: contact@yourdomain.com
 
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -521,6 +583,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-
 # dca-lms
+
 # lms-v3

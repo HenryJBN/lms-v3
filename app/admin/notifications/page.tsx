@@ -23,9 +23,29 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -101,7 +121,8 @@ const notifications = [
   {
     id: "4",
     title: "Certificate Awarded",
-    content: "Congratulations! You've earned a certificate for completing the AI Fundamentals course.",
+    content:
+      "Congratulations! You've earned a certificate for completing the AI Fundamentals course.",
     type: "achievement",
     status: "sent",
     recipients: "course_completers",
@@ -317,13 +338,21 @@ export default function NotificationsPage() {
           </Select>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[240px] justify-start text-left font-normal bg-transparent">
+              <Button
+                variant="outline"
+                className="w-[240px] justify-start text-left font-normal bg-transparent"
+              >
                 <Calendar className="mr-2 h-4 w-4" />
                 {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -377,9 +406,13 @@ export default function NotificationsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(notification.status)}</TableCell>
-                      <TableCell className="capitalize">{notification.recipients.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="capitalize">
+                        {notification.recipients.replace(/_/g, " ")}
+                      </TableCell>
                       <TableCell>
-                        {notification.sentAt !== "-" ? new Date(notification.sentAt).toLocaleDateString() : "-"}
+                        {notification.sentAt !== "-"
+                          ? new Date(notification.sentAt).toLocaleDateString()
+                          : "-"}
                       </TableCell>
                       <TableCell>{notification.openRate}</TableCell>
                       <TableCell>{notification.clickRate}</TableCell>
@@ -406,7 +439,10 @@ export default function NotificationsPage() {
                             <DropdownMenuSeparator />
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="text-destructive"
+                                >
                                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                               </AlertDialogTrigger>
@@ -414,13 +450,16 @@ export default function NotificationsPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the notification &quot;
+                                    This action cannot be undone. This will permanently delete the
+                                    notification &quot;
                                     {notification.title}&quot; and remove its data from our servers.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteNotification(notification)}>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteNotification(notification)}
+                                  >
                                     Continue
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -443,7 +482,9 @@ export default function NotificationsPage() {
               <Card key={template.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <CardTitle>{template.name}</CardTitle>
-                  <CardDescription className="capitalize">{template.category} Template</CardDescription>
+                  <CardDescription className="capitalize">
+                    {template.category} Template
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm">
                   <p>Use this template for {template.category} notifications.</p>
@@ -570,7 +611,9 @@ export default function NotificationsPage() {
                           {new Date(notification.sentAt).toLocaleDateString()} at{" "}
                           {new Date(notification.sentAt).toLocaleTimeString()}
                         </p>
-                        <p className="text-xs mt-1 capitalize">To: {notification.recipients.replace(/_/g, " ")}</p>
+                        <p className="text-xs mt-1 capitalize">
+                          To: {notification.recipients.replace(/_/g, " ")}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -589,7 +632,9 @@ export default function NotificationsPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{selectedNotification ? "Edit Notification" : "Create New Notification"}</DialogTitle>
+            <DialogTitle>
+              {selectedNotification ? "Edit Notification" : "Create New Notification"}
+            </DialogTitle>
             <DialogDescription>
               {selectedNotification
                 ? "Update the notification details below."
@@ -704,7 +749,9 @@ export default function NotificationsPage() {
                       id="send-now"
                       name="delivery-schedule"
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      defaultChecked={!selectedNotification || selectedNotification.status === "sent"}
+                      defaultChecked={
+                        !selectedNotification || selectedNotification.status === "sent"
+                      }
                     />
                     <label htmlFor="send-now" className="text-sm font-medium leading-none">
                       Send Immediately

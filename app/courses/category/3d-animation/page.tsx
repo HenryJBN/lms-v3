@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -7,11 +7,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function ThreeDAnimationCoursesPage() {
   // Mock data for 3D animation courses
@@ -19,8 +19,7 @@ export default function ThreeDAnimationCoursesPage() {
     {
       id: "3d-animation-basics",
       title: "3D Animation Fundamentals",
-      description:
-        "Introduction to 3D modeling, rigging, and animation principles",
+      description: "Introduction to 3D modeling, rigging, and animation principles",
       image: "/images/courses/3d-animation-basics.png",
       level: "Beginner",
       price: "Free",
@@ -40,8 +39,7 @@ export default function ThreeDAnimationCoursesPage() {
     {
       id: "character-animation",
       title: "Character Animation",
-      description:
-        "Bring characters to life with advanced animation techniques",
+      description: "Bring characters to life with advanced animation techniques",
       image: "/images/courses/character-animation.png",
       level: "Advanced",
       price: "$99.99",
@@ -78,7 +76,7 @@ export default function ThreeDAnimationCoursesPage() {
       tokenReward: 70,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -91,9 +89,8 @@ export default function ThreeDAnimationCoursesPage() {
                   3D Animation Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Master 3D animation, modeling, and visual effects with our
-                  comprehensive courses covering industry-standard tools and
-                  techniques.
+                  Master 3D animation, modeling, and visual effects with our comprehensive courses
+                  covering industry-standard tools and techniques.
                 </p>
               </div>
             </div>
@@ -121,12 +118,10 @@ export default function ThreeDAnimationCoursesPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                  3D Artist Path
-                </h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">3D Artist Path</h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a professional
-                  3D artist and animator.
+                  Follow our structured learning path to become a professional 3D artist and
+                  animator.
                 </p>
               </div>
             </div>
@@ -136,12 +131,9 @@ export default function ThreeDAnimationCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  3D Animation Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">3D Animation Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with the basics of 3D modeling, rigging, and animation
-                  principles.
+                  Start with the basics of 3D modeling, rigging, and animation principles.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/3d-animation-basics">
@@ -156,9 +148,7 @@ export default function ThreeDAnimationCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  3D Modeling Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">3D Modeling Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
                   Learn to create detailed 3D models and environments.
                 </p>
@@ -192,9 +182,7 @@ export default function ThreeDAnimationCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Character Animation & VFX
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Character Animation & VFX</h3>
                 <p className="text-muted-foreground mb-4">
                   Bring characters to life and create stunning visual effects.
                 </p>
@@ -217,7 +205,7 @@ export default function ThreeDAnimationCoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -231,14 +219,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -247,16 +235,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -283,5 +264,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

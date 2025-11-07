@@ -16,7 +16,13 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 
 // Mock data
@@ -138,7 +144,9 @@ export default function CategoriesPage() {
     {
       key: "status",
       label: "Status",
-      render: (value: string) => <Badge variant={value === "active" ? "default" : "secondary"}>{value}</Badge>,
+      render: (value: string) => (
+        <Badge variant={value === "active" ? "default" : "secondary"}>{value}</Badge>
+      ),
     },
     {
       key: "courseCount",
@@ -205,7 +213,11 @@ export default function CategoriesPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Category Name</Label>
-              <Input id="name" placeholder="Enter category name" defaultValue={editingCategory?.name} />
+              <Input
+                id="name"
+                placeholder="Enter category name"
+                defaultValue={editingCategory?.name}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="slug">Slug</Label>
@@ -214,7 +226,11 @@ export default function CategoriesPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" placeholder="Category description" defaultValue={editingCategory?.description} />
+            <Textarea
+              id="description"
+              placeholder="Category description"
+              defaultValue={editingCategory?.description}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="parent">Parent Category</Label>

@@ -1,59 +1,45 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  ArrowRight,
-  BookOpen,
-  Award,
-  Users,
-  TrendingUp,
-  Star,
-  Play,
-} from "lucide-react";
-import HeroCarousel from "@/components/hero-carousel";
-import { courseService } from "@/lib/services/courses";
-import { useToast } from "@/components/ui/use-toast";
-import { Toaster } from "@/components/ui/toaster";
+import Link from "next/link"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ArrowRight, BookOpen, Award, Users, TrendingUp, Star, Play } from "lucide-react"
+import HeroCarousel from "@/components/hero-carousel"
+import { courseService } from "@/lib/services/courses"
+import { useToast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function HomePage() {
-  const { toast } = useToast();
-  const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+  const { toast } = useToast()
+  const [featuredCourses, setFeaturedCourses] = useState<any[]>([])
 
   useEffect(() => {
-    loadFeaturedCourses();
-  }, []);
+    loadFeaturedCourses()
+  }, [])
 
   const loadFeaturedCourses = async () => {
     try {
-      const loadedFeaturedCourses = await courseService.getFeaturedCourses();
-      setFeaturedCourses(loadedFeaturedCourses.items);
-      console.log("Featured courses", loadedFeaturedCourses.items);
+      const loadedFeaturedCourses = await courseService.getFeaturedCourses()
+      setFeaturedCourses(loadedFeaturedCourses.items)
+      console.log("Featured courses", loadedFeaturedCourses.items)
     } catch (err) {
-      console.error("❌ Failed to load data", err);
+      console.error("❌ Failed to load data", err)
       toast({
         title: "Course Loading Error",
         description: "Failed to load featured courses.",
         variant: "destructive",
-      });
+      })
     }
-  };
+  }
 
   const stats = [
     { label: "Active Students", value: "50,000+", icon: Users },
     { label: "Courses Available", value: "500+", icon: BookOpen },
     { label: "Certificates Issued", value: "25,000+", icon: Award },
     { label: "Success Rate", value: "94%", icon: TrendingUp },
-  ];
+  ]
 
   const testimonials = [
     {
@@ -80,7 +66,7 @@ export default function HomePage() {
         "Learning web development through DCA was an amazing experience. The instructors are industry experts and the content is always current.",
       rating: 5,
     },
-  ];
+  ]
 
   const features = [
     {
@@ -90,8 +76,7 @@ export default function HomePage() {
     },
     {
       title: "Token Rewards System",
-      description:
-        "Get L-Tokens for completing courses and achieving milestones",
+      description: "Get L-Tokens for completing courses and achieving milestones",
       icon: TrendingUp,
     },
     {
@@ -104,7 +89,7 @@ export default function HomePage() {
       description: "Learn from industry professionals and thought leaders",
       icon: Users,
     },
-  ];
+  ]
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -142,10 +127,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {featuredCourses.map((course) => (
-              <Card
-                key={course.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
-              >
+              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-video relative">
                   <img
                     src={course.image || "/placeholder.svg"}
@@ -158,9 +140,7 @@ export default function HomePage() {
                 </div>
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {course.description}
-                  </CardDescription>
+                  <CardDescription className="line-clamp-2">{course.description}</CardDescription>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <span>{course.instructor}</span>
                   </div>
@@ -190,11 +170,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="flex space-x-2">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="flex-1 bg-transparent"
-                    >
+                    <Button asChild variant="outline" className="flex-1 bg-transparent">
                       <Link href={`/courses/${course.slug}`}>
                         <BookOpen className="h-4 w-4 mr-2" />
                         View Details
@@ -226,8 +202,7 @@ export default function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Why Choose DCA LMS?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Experience the future of education with blockchain-powered
-              learning
+              Experience the future of education with blockchain-powered learning
             </p>
           </div>
 
@@ -253,8 +228,7 @@ export default function HomePage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">What Our Students Say</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Join thousands of successful learners who transformed their
-              careers
+              Join thousands of successful learners who transformed their careers
             </p>
           </div>
 
@@ -269,18 +243,13 @@ export default function HomePage() {
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div>
-                      <CardTitle className="text-lg">
-                        {testimonial.name}
-                      </CardTitle>
+                      <CardTitle className="text-lg">{testimonial.name}</CardTitle>
                       <CardDescription>{testimonial.role}</CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center">
                     {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                      />
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
                 </CardHeader>
@@ -298,8 +267,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Start Learning?</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            Join our community of learners and start earning blockchain
-            certificates today
+            Join our community of learners and start earning blockchain certificates today
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild size="lg" variant="secondary">
@@ -320,5 +288,5 @@ export default function HomePage() {
         </div>
       </section>
     </div>
-  );
+  )
 }

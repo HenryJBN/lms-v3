@@ -42,7 +42,10 @@ export default function AIChatAssistant() {
     <div className="flex flex-col h-64">
       <div className="flex-1 overflow-y-auto space-y-3 mb-3">
         {chatHistory.map((chat, index) => (
-          <div key={index} className={`flex ${chat.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div
+            key={index}
+            className={`flex ${chat.role === "user" ? "justify-end" : "justify-start"}`}
+          >
             <div
               className={`px-3 py-2 rounded-lg max-w-[80%] ${
                 chat.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"

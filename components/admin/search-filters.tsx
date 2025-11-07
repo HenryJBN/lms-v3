@@ -1,33 +1,33 @@
-"use client";
+"use client"
 
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 
 interface FilterOption {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 interface SearchFiltersProps {
-  searchValue: string;
-  onSearchChange: (value: string) => void;
-  searchPlaceholder?: string;
+  searchValue: string
+  onSearchChange: (value: string) => void
+  searchPlaceholder?: string
   filters?: {
-    value: string;
-    onChange?: (value: string) => void;
-    onValueChange?: (value: string) => void;
-    placeholder: string;
-    options: FilterOption[];
-    type?: string;
-    label?: string;
-  }[];
+    value: string
+    onChange?: (value: string) => void
+    onValueChange?: (value: string) => void
+    placeholder: string
+    options: FilterOption[]
+    type?: string
+    label?: string
+  }[]
 }
 
 export function SearchFilters({
@@ -49,11 +49,7 @@ export function SearchFilters({
       </div>
 
       {filters.map((filter, index) => (
-        <Select
-          key={index}
-          value={filter.value}
-          onValueChange={filter.onChange}
-        >
+        <Select key={index} value={filter.value} onValueChange={filter.onChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder={filter.placeholder} />
           </SelectTrigger>
@@ -67,5 +63,5 @@ export function SearchFilters({
         </Select>
       ))}
     </div>
-  );
+  )
 }

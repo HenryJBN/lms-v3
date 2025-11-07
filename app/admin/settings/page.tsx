@@ -125,7 +125,9 @@ export default function AdminSettings() {
                     <Textarea
                       id="siteDescription"
                       value={settings.siteDescription}
-                      onChange={(e) => setSettings({ ...settings, siteDescription: e.target.value })}
+                      onChange={(e) =>
+                        setSettings({ ...settings, siteDescription: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -155,7 +157,9 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={settings.maintenanceMode}
-                      onCheckedChange={(checked) => setSettings({ ...settings, maintenanceMode: checked })}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, maintenanceMode: checked })
+                      }
                     />
                   </div>
                 </CardContent>
@@ -166,27 +170,37 @@ export default function AdminSettings() {
               <Card>
                 <CardHeader>
                   <CardTitle>User Registration</CardTitle>
-                  <CardDescription>Configure user registration and verification settings</CardDescription>
+                  <CardDescription>
+                    Configure user registration and verification settings
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Allow User Registration</Label>
-                      <div className="text-sm text-muted-foreground">Allow new users to register for accounts</div>
+                      <div className="text-sm text-muted-foreground">
+                        Allow new users to register for accounts
+                      </div>
                     </div>
                     <Switch
                       checked={settings.allowRegistration}
-                      onCheckedChange={(checked) => setSettings({ ...settings, allowRegistration: checked })}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, allowRegistration: checked })
+                      }
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Require Email Verification</Label>
-                      <div className="text-sm text-muted-foreground">Require users to verify their email address</div>
+                      <div className="text-sm text-muted-foreground">
+                        Require users to verify their email address
+                      </div>
                     </div>
                     <Switch
                       checked={settings.requireEmailVerification}
-                      onCheckedChange={(checked) => setSettings({ ...settings, requireEmailVerification: checked })}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, requireEmailVerification: checked })
+                      }
                     />
                   </div>
                 </CardContent>
@@ -209,7 +223,9 @@ export default function AdminSettings() {
                     </div>
                     <Switch
                       checked={settings.enableTokenRewards}
-                      onCheckedChange={(checked) => setSettings({ ...settings, enableTokenRewards: checked })}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, enableTokenRewards: checked })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -219,7 +235,10 @@ export default function AdminSettings() {
                       type="number"
                       value={settings.defaultTokenReward}
                       onChange={(e) =>
-                        setSettings({ ...settings, defaultTokenReward: Number.parseInt(e.target.value) })
+                        setSettings({
+                          ...settings,
+                          defaultTokenReward: Number.parseInt(e.target.value),
+                        })
                       }
                     />
                     <div className="text-sm text-muted-foreground">
@@ -240,11 +259,15 @@ export default function AdminSettings() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Enable Notifications</Label>
-                      <div className="text-sm text-muted-foreground">Send email notifications to users</div>
+                      <div className="text-sm text-muted-foreground">
+                        Send email notifications to users
+                      </div>
                     </div>
                     <Switch
                       checked={settings.enableNotifications}
-                      onCheckedChange={(checked) => setSettings({ ...settings, enableNotifications: checked })}
+                      onCheckedChange={(checked) =>
+                        setSettings({ ...settings, enableNotifications: checked })
+                      }
                     />
                   </div>
                 </CardContent>

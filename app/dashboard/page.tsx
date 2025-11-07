@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -10,8 +10,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   BrainCircuit,
   ChevronRight,
@@ -22,39 +22,39 @@ import {
   Settings,
   Trophy,
   User,
-} from "lucide-react";
+} from "lucide-react"
 
-import CourseCard from "@/components/course-card";
-import TokenBalance from "@/components/token-balance";
-import RecommendedCourses from "@/components/recommended-courses";
-import LearningPathProgress from "@/components/learning-path-progress";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { apiClient } from "@/lib/api-client";
-import { API_ENDPOINTS } from "@/lib/api-config";
+import CourseCard from "@/components/course-card"
+import TokenBalance from "@/components/token-balance"
+import RecommendedCourses from "@/components/recommended-courses"
+import LearningPathProgress from "@/components/learning-path-progress"
+import { useAuth } from "@/lib/contexts/auth-context"
+import { apiClient } from "@/lib/api-client"
+import { API_ENDPOINTS } from "@/lib/api-config"
 
 // Course type definition
 interface Course {
-  id: string;
-  title: string;
-  description: string;
-  image?: string;
-  progress: number;
-  tokens: number;
-  completed?: boolean;
+  id: string
+  title: string
+  description: string
+  image?: string
+  progress: number
+  tokens: number
+  completed?: boolean
 }
 
 export default function DashboardPage() {
-  const { user, tokenBalance, isLoading } = useAuth();
-  const [inProgressCourses, setInProgressCourses] = useState<Course[]>([]);
-  const [completedCourses, setCompletedCourses] = useState<Course[]>([]);
+  const { user, tokenBalance, isLoading } = useAuth()
+  const [inProgressCourses, setInProgressCourses] = useState<Course[]>([])
+  const [completedCourses, setCompletedCourses] = useState<Course[]>([])
   const [userProgress, setUserProgress] = useState<{
-    lastAccessedLessonId?: string;
-  }>({});
+    lastAccessedLessonId?: string
+  }>({})
 
   useEffect(() => {
-    if (!user) return;
-    fetchDashboardData();
-  }, [user]);
+    if (!user) return
+    fetchDashboardData()
+  }, [user])
 
   const fetchDashboardData = async () => {
     try {
@@ -62,22 +62,22 @@ export default function DashboardPage() {
         apiClient.get(API_ENDPOINTS.userProgress),
         apiClient.get(API_ENDPOINTS.inProgressCourses),
         apiClient.get(API_ENDPOINTS.completedCourses),
-      ]);
+      ])
 
-      setUserProgress(progressRes || {});
-      setInProgressCourses(inProgressRes || []);
-      setCompletedCourses(completedRes || []);
+      setUserProgress(progressRes || {})
+      setInProgressCourses(inProgressRes || [])
+      setCompletedCourses(completedRes || [])
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+      console.error("Failed to fetch dashboard data:", error)
     }
-  };
+  }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p>Loading dashboard...</p>
       </div>
-    );
+    )
   }
 
   if (!user) {
@@ -88,7 +88,7 @@ export default function DashboardPage() {
           <Button className="mt-4">Go to Login</Button>
         </Link>
       </div>
-    );
+    )
   }
 
   const userProgressStats = {
@@ -96,7 +96,7 @@ export default function DashboardPage() {
     coursesInProgress: inProgressCourses.length,
     certificatesEarned: user?.certificates?.length || 0,
     tokensEarned: tokenBalance?.balance || 0,
-  };
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -178,12 +178,8 @@ export default function DashboardPage() {
             {/* Welcome Card */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>
-                  Welcome back, {user.first_name || user.email}
-                </CardTitle>
-                <CardDescription>
-                  Here's an overview of your learning progress
-                </CardDescription>
+                <CardTitle>Welcome back, {user.first_name || user.email}</CardTitle>
+                <CardDescription>Here's an overview of your learning progress</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -217,9 +213,7 @@ export default function DashboardPage() {
                         ? `/learn/${
                             inProgressCourses[0]?.id || "default-course"
                           }?lesson=${userProgress.lastAccessedLessonId}`
-                        : `/learn/${
-                            inProgressCourses[0]?.id || "default-course"
-                          }`
+                        : `/learn/${inProgressCourses[0]?.id || "default-course"}`
                     }
                   >
                     Continue Learning
@@ -236,23 +230,16 @@ export default function DashboardPage() {
                   <TabsTrigger value="in-progress">In Progress</TabsTrigger>
                   <TabsTrigger value="completed">Completed</TabsTrigger>
                 </TabsList>
-                <Link
-                  href="/courses"
-                  className="text-sm text-red hover:underline"
-                >
+                <Link href="/courses" className="text-sm text-red hover:underline">
                   View All
                 </Link>
               </div>
 
               <TabsContent value="in-progress" className="mt-4 space-y-4">
                 {inProgressCourses.length > 0 ? (
-                  inProgressCourses.map((course) => (
-                    <CourseCard key={course.id} {...course} />
-                  ))
+                  inProgressCourses.map((course) => <CourseCard key={course.id} {...course} />)
                 ) : (
-                  <p className="text-muted-foreground">
-                    No courses in progress.
-                  </p>
+                  <p className="text-muted-foreground">No courses in progress.</p>
                 )}
               </TabsContent>
 
@@ -293,9 +280,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Recommended For You</CardTitle>
-                    <CardDescription>
-                      Based on your learning history
-                    </CardDescription>
+                    <CardDescription>Based on your learning history</CardDescription>
                   </div>
                   <BrainCircuit className="h-4 w-4 text-red" />
                 </div>
@@ -308,23 +293,15 @@ export default function DashboardPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
-function StatCard({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-}) {
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border bg-background p-3">
       {icon}
       <div className="text-2xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
-  );
+  )
 }

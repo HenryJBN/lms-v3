@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +24,13 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,7 +103,8 @@ export default function PagesManagement() {
       lastModified: "2024-01-20",
       publishedDate: "2024-01-16",
       views: 1250,
-      content: "Learn about our mission and vision to revolutionize education through blockchain technology...",
+      content:
+        "Learn about our mission and vision to revolutionize education through blockchain technology...",
       excerpt: "Discover our mission to transform education",
       featuredImage: "/images/about-hero.jpg",
       seoTitle: "About Us - Revolutionary Learning Platform",
@@ -117,7 +131,8 @@ export default function PagesManagement() {
       lastModified: "2024-01-15",
       publishedDate: "2024-01-12",
       views: 890,
-      content: "Our privacy policy outlines how we collect, use, and protect your personal information...",
+      content:
+        "Our privacy policy outlines how we collect, use, and protect your personal information...",
       excerpt: "How we protect your privacy and data",
       featuredImage: null,
       seoTitle: "Privacy Policy - Your Data Protection Rights",
@@ -171,7 +186,8 @@ export default function PagesManagement() {
       lastModified: "2024-01-20",
       publishedDate: null,
       views: 0,
-      content: "Explore our comprehensive course catalog featuring blockchain, AI, and creative technologies...",
+      content:
+        "Explore our comprehensive course catalog featuring blockchain, AI, and creative technologies...",
       excerpt: "Browse our complete course offerings",
       featuredImage: "/images/courses-hero.jpg",
       seoTitle: "Course Catalog - Learn Blockchain, AI & More",
@@ -360,7 +376,9 @@ export default function PagesManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pages Management</h1>
-          <p className="text-muted-foreground">Create and manage website pages, content, and navigation</p>
+          <p className="text-muted-foreground">
+            Create and manage website pages, content, and navigation
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
@@ -381,7 +399,9 @@ export default function PagesManagement() {
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Page</DialogTitle>
-                <DialogDescription>Add a new page to your website with content and SEO settings.</DialogDescription>
+                <DialogDescription>
+                  Add a new page to your website with content and SEO settings.
+                </DialogDescription>
               </DialogHeader>
               <Tabs defaultValue="content" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
@@ -404,11 +424,19 @@ export default function PagesManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="excerpt">Excerpt</Label>
-                    <Textarea id="excerpt" placeholder="Brief description of the page" className="h-20" />
+                    <Textarea
+                      id="excerpt"
+                      placeholder="Brief description of the page"
+                      className="h-20"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="content">Page Content</Label>
-                    <Textarea id="content" placeholder="Enter page content..." className="min-h-[200px]" />
+                    <Textarea
+                      id="content"
+                      placeholder="Enter page content..."
+                      className="min-h-[200px]"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="featured-image">Featured Image URL</Label>
@@ -524,7 +552,11 @@ export default function PagesManagement() {
                 <TabsContent value="advanced" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="custom-css">Custom CSS</Label>
-                    <Textarea id="custom-css" placeholder="/* Custom CSS for this page */" className="h-32 font-mono" />
+                    <Textarea
+                      id="custom-css"
+                      placeholder="/* Custom CSS for this page */"
+                      className="h-32 font-mono"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="custom-js">Custom JavaScript</Label>
@@ -684,8 +716,16 @@ export default function PagesManagement() {
                   <SelectItem value="status">Status</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
-                {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              >
+                {sortOrder === "asc" ? (
+                  <SortAsc className="h-4 w-4" />
+                ) : (
+                  <SortDesc className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -786,7 +826,10 @@ export default function PagesManagement() {
                           <DropdownMenuSeparator />
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-red-600"
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                               </DropdownMenuItem>
                             </AlertDialogTrigger>
@@ -794,7 +837,8 @@ export default function PagesManagement() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete the page &quot;{page.title}
+                                  This action cannot be undone. This will permanently delete the
+                                  page &quot;{page.title}
                                   &quot; and remove its data from our servers.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -830,7 +874,9 @@ export default function PagesManagement() {
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Page: {selectedPage?.title}</DialogTitle>
-            <DialogDescription>Update page content, settings, and SEO information.</DialogDescription>
+            <DialogDescription>
+              Update page content, settings, and SEO information.
+            </DialogDescription>
           </DialogHeader>
           {selectedPage && (
             <Tabs defaultValue="content" className="w-full">
@@ -854,11 +900,19 @@ export default function PagesManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-excerpt">Excerpt</Label>
-                  <Textarea id="edit-excerpt" defaultValue={selectedPage.excerpt} className="h-20" />
+                  <Textarea
+                    id="edit-excerpt"
+                    defaultValue={selectedPage.excerpt}
+                    className="h-20"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-content">Page Content</Label>
-                  <Textarea id="edit-content" defaultValue={selectedPage.content} className="min-h-[200px]" />
+                  <Textarea
+                    id="edit-content"
+                    defaultValue={selectedPage.content}
+                    className="min-h-[200px]"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-featured-image">Featured Image URL</Label>
@@ -921,7 +975,11 @@ export default function PagesManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-seo-description">Meta Description</Label>
-                  <Textarea id="edit-seo-description" defaultValue={selectedPage.seoDescription} className="h-20" />
+                  <Textarea
+                    id="edit-seo-description"
+                    defaultValue={selectedPage.seoDescription}
+                    className="h-20"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-seo-keywords">Keywords</Label>

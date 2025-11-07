@@ -1,12 +1,12 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Search, Star, Clock, Users, BookOpen } from "lucide-react";
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { Search, Star, Clock, Users, BookOpen } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -14,91 +14,78 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/contexts/auth-context";
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/contexts/auth-context"
 
-import {
-  courseService,
-  type Course,
-  type CourseFilters,
-} from "@/lib/services/courses";
-import { enrollmentsService } from "@/lib/services/enrollments";
-import { useDebounce } from "@/hooks/use-debounce";
-import { categoryService, type Category } from "@/lib/services/categories";
+import { courseService, type Course, type CourseFilters } from "@/lib/services/courses"
+import { enrollmentsService } from "@/lib/services/enrollments"
+import { useDebounce } from "@/hooks/use-debounce"
+import { categoryService, type Category } from "@/lib/services/categories"
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] =
-    useState<string>("all-categories");
-  const [selectedLevel, setSelectedLevel] = useState<string>("all-levels");
-  const [enrollingCourses, setEnrollingCourses] = useState<Set<number>>(
-    new Set()
-  );
+  const [courses, setCourses] = useState<Course[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all-categories")
+  const [selectedLevel, setSelectedLevel] = useState<string>("all-levels")
+  const [enrollingCourses, setEnrollingCourses] = useState<Set<number>>(new Set())
 
-  const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
-  const debouncedSearch = useDebounce(searchQuery, 400);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { isAuthenticated } = useAuth()
+  const { toast } = useToast()
+  const debouncedSearch = useDebounce(searchQuery, 400)
+  const [categories, setCategories] = useState<Category[]>([])
 
   useEffect(() => {
-    loadCategories();
-    loadCourses();
-  }, [debouncedSearch, selectedCategory, selectedLevel]);
+    loadCategories()
+    loadCourses()
+  }, [debouncedSearch, selectedCategory, selectedLevel])
 
   const loadCategories = async () => {
     try {
-      const response = await categoryService.getAllCategories();
-      console.log(`Categories: ${response}`);
+      const response = await categoryService.getAllCategories()
+      console.log(`Categories: ${response}`)
 
-      setCategories(response || []);
+      setCategories(response || [])
     } catch (err) {
-      console.error("Error loading categories:", err);
+      console.error("Error loading categories:", err)
     }
-  };
+  }
 
   const loadCourses = async () => {
     try {
-      setIsLoading(true);
-      setError("");
+      setIsLoading(true)
+      setError("")
 
-      const filters: CourseFilters = {};
-      if (searchQuery) filters.search = debouncedSearch;
-      if (selectedCategory !== "all-categories")
-        filters.category_id = selectedCategory;
+      const filters: CourseFilters = {}
+      if (searchQuery) filters.search = debouncedSearch
+      if (selectedCategory !== "all-categories") filters.category_id = selectedCategory
       if (selectedLevel !== "all-levels")
-        filters.level = selectedLevel as
-          | "beginner"
-          | "intermediate"
-          | "advanced";
+        filters.level = selectedLevel as "beginner" | "intermediate" | "advanced"
 
-      const response = await courseService.getCourses(filters);
-      console.log("Course API Response:", response);
+      const response = await courseService.getCourses(filters)
+      console.log("Course API Response:", response)
 
-      const validCourses = (response.items || []).filter(
-        (c): c is Course => c !== null
-      );
+      const validCourses = (response.items || []).filter((c): c is Course => c !== null)
 
-      setCourses(validCourses);
+      setCourses(validCourses)
     } catch (err: any) {
-      console.error("Error loading courses:", err);
-      setError(err.message || "Failed to load courses");
+      console.error("Error loading courses:", err)
+      setError(err.message || "Failed to load courses")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleEnroll = async (courseId: number) => {
     if (!isAuthenticated) {
@@ -106,46 +93,44 @@ export default function CoursesPage() {
         title: "Authentication Required",
         description: "Please sign in to enroll in courses.",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     try {
-      setEnrollingCourses((prev) => new Set(prev).add(courseId));
+      setEnrollingCourses((prev) => new Set(prev).add(courseId))
 
-      await enrollmentsService.enrollInCourse(courseId);
+      await enrollmentsService.enrollInCourse(courseId)
 
       toast({
         title: "Enrollment Successful",
         description: "You have been enrolled in the course!",
-      });
+      })
 
       setCourses((prev) =>
-        prev.map((course) =>
-          course.id === courseId ? { ...course, is_enrolled: true } : course
-        )
-      );
+        prev.map((course) => (course.id === courseId ? { ...course, is_enrolled: true } : course))
+      )
     } catch (err: any) {
       toast({
         title: "Enrollment Failed",
         description: err.message || "Failed to enroll in course.",
         variant: "destructive",
-      });
+      })
     } finally {
       setEnrollingCourses((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(courseId);
-        return newSet;
-      });
+        const newSet = new Set(prev)
+        newSet.delete(courseId)
+        return newSet
+      })
     }
-  };
+  }
 
   const formatDuration = (hours: number) => {
     if (hours < 1) {
-      return `${Math.round(hours * 60)}m`;
+      return `${Math.round(hours * 60)}m`
     }
-    return `${hours}h`;
-  };
+    return `${hours}h`
+  }
 
   if (error) {
     return (
@@ -154,7 +139,7 @@ export default function CoursesPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       </div>
-    );
+    )
   }
 
   return (
@@ -162,8 +147,7 @@ export default function CoursesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Explore Courses</h1>
         <p className="text-muted-foreground">
-          Discover our comprehensive catalog of blockchain, AI, and technology
-          courses
+          Discover our comprehensive catalog of blockchain, AI, and technology courses
         </p>
       </div>
 
@@ -231,10 +215,7 @@ export default function CoursesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course) => (
-            <Card
-              key={course.id}
-              className="overflow-hidden hover:shadow-lg transition-shadow"
-            >
+            <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-video relative overflow-hidden">
                 <img
                   src={course.thumbnail_url || "/placeholder.svg"}
@@ -247,8 +228,8 @@ export default function CoursesPage() {
                     course.level === "beginner"
                       ? "secondary"
                       : course.level === "intermediate"
-                      ? "default"
-                      : "destructive"
+                        ? "default"
+                        : "destructive"
                   }
                 >
                   {course.level}
@@ -286,23 +267,15 @@ export default function CoursesPage() {
                     {course.price > 0 ? (
                       <span className="text-lg font-bold">${course.price}</span>
                     ) : (
-                      <span className="text-lg font-bold text-green-600">
-                        Free
-                      </span>
+                      <span className="text-lg font-bold text-green-600">Free</span>
                     )}
                   </div>
-                  <Badge variant="outline">
-                    +{course.token_reward} L-Tokens
-                  </Badge>
+                  <Badge variant="outline">+{course.token_reward} L-Tokens</Badge>
                 </div>
               </CardContent>
 
               <CardFooter className="flex gap-2">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="flex-1 bg-transparent"
-                >
+                <Button asChild variant="outline" className="flex-1 bg-transparent">
                   <Link href={`/courses/${course.slug}`}>
                     <BookOpen className="h-4 w-4 mr-2" />
                     View Details
@@ -319,9 +292,7 @@ export default function CoursesPage() {
                     disabled={enrollingCourses.has(course.id)}
                     className="flex-1"
                   >
-                    {enrollingCourses.has(course.id)
-                      ? "Enrolling..."
-                      : "Enroll Now"}
+                    {enrollingCourses.has(course.id) ? "Enrolling..." : "Enroll Now"}
                   </Button>
                 )}
               </CardFooter>
@@ -340,5 +311,5 @@ export default function CoursesPage() {
         </div>
       )}
     </div>
-  );
+  )
 }

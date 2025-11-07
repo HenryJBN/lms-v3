@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useRef, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react"
 import {
   Dialog,
   DialogContent,
@@ -8,35 +8,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface FormTab {
-  value: string;
-  label: string;
-  content: ReactNode;
+  value: string
+  label: string
+  content: ReactNode
 }
 
 interface FormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description?: string;
-  tabs?: FormTab[];
-  children?: ReactNode;
-  onSave?: (formData: FormData) => void; // Updated to expect FormData
-  onCancel?: () => void;
-  saveLabel?: string;
-  isLoading?: boolean;
-  formId?: string; // Added formId prop
-  onSubmit?: (formData: FormData) => void | Promise<void>;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description?: string
+  tabs?: FormTab[]
+  children?: ReactNode
+  onSave?: (formData: FormData) => void // Updated to expect FormData
+  onCancel?: () => void
+  saveLabel?: string
+  isLoading?: boolean
+  formId?: string // Added formId prop
+  onSubmit?: (formData: FormData) => void | Promise<void>
   fields?: {
-    value: string;
-    label: string;
-    content: JSX.Element;
-  }[];
-  initialData?: any;
+    value: string
+    label: string
+    content: JSX.Element
+  }[]
+  initialData?: any
 }
 
 export function FormDialog({
@@ -52,14 +52,14 @@ export function FormDialog({
   isLoading = false,
   formId, // Destructure formId
 }: FormDialogProps) {
-  const formRef = useRef<HTMLFormElement>(null); // Ref to the form element
+  const formRef = useRef<HTMLFormElement>(null) // Ref to the form element
 
   const handleSaveClick = () => {
     if (formRef.current) {
-      const formData = new FormData(formRef.current);
-      onSave(formData);
+      const formData = new FormData(formRef.current)
+      onSave(formData)
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,11 +82,7 @@ export function FormDialog({
                 ))}
               </TabsList>
               {tabs.map((tab) => (
-                <TabsContent
-                  key={tab.value}
-                  value={tab.value}
-                  className="space-y-4"
-                >
+                <TabsContent key={tab.value} value={tab.value} className="space-y-4">
                   {tab.content}
                 </TabsContent>
               ))}
@@ -108,5 +104,5 @@ export function FormDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

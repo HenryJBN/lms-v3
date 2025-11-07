@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -28,7 +35,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,7 +104,11 @@ export default function InstructorsManagement() {
       responseTime: "2 hours",
       avatar: "/placeholder.svg?height=40&width=40",
       bio: "Blockchain expert with 10+ years in cryptocurrency and DeFi development.",
-      qualifications: ["PhD Computer Science", "Certified Blockchain Developer", "Former CTO at CryptoTech"],
+      qualifications: [
+        "PhD Computer Science",
+        "Certified Blockchain Developer",
+        "Former CTO at CryptoTech",
+      ],
       socialProof: {
         linkedin: "https://linkedin.com/in/sarahchen",
         twitter: "https://twitter.com/sarahchen",
@@ -139,7 +156,11 @@ export default function InstructorsManagement() {
       responseTime: "N/A",
       avatar: "/placeholder.svg?height=40&width=40",
       bio: "Award-winning filmmaker with experience in documentary and narrative films.",
-      qualifications: ["MFA Film Production", "Sundance Film Festival Winner", "10+ Years Experience"],
+      qualifications: [
+        "MFA Film Production",
+        "Sundance Film Festival Winner",
+        "10+ Years Experience",
+      ],
       socialProof: {
         linkedin: "https://linkedin.com/in/emmathompson",
         twitter: "https://twitter.com/emmathompsonfilm",
@@ -163,7 +184,11 @@ export default function InstructorsManagement() {
       responseTime: "24 hours",
       avatar: "/placeholder.svg?height=40&width=40",
       bio: "Full-stack developer with expertise in React, Node.js, and modern web technologies.",
-      qualifications: ["BS Computer Science", "Senior Developer at TechCorp", "5+ Years Experience"],
+      qualifications: [
+        "BS Computer Science",
+        "Senior Developer at TechCorp",
+        "5+ Years Experience",
+      ],
       socialProof: {
         linkedin: "https://linkedin.com/in/jameswilson",
         twitter: "https://twitter.com/jameswilsondev",
@@ -229,7 +254,8 @@ export default function InstructorsManagement() {
       instructor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       instructor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = selectedStatus === "all" || instructor.status === selectedStatus
-    const matchesSpecialty = selectedSpecialty === "all" || instructor.specialty === selectedSpecialty
+    const matchesSpecialty =
+      selectedSpecialty === "all" || instructor.specialty === selectedSpecialty
     return matchesSearch && matchesStatus && matchesSpecialty
   })
 
@@ -359,7 +385,9 @@ export default function InstructorsManagement() {
             <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Add New Instructor</DialogTitle>
-                <DialogDescription>Create a new instructor account or send an invitation.</DialogDescription>
+                <DialogDescription>
+                  Create a new instructor account or send an invitation.
+                </DialogDescription>
               </DialogHeader>
               <form id="add-instructor-form">
                 <div className="grid gap-4 py-4">
@@ -397,7 +425,11 @@ export default function InstructorsManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bio">Bio</Label>
-                    <Textarea id="bio" name="bio" placeholder="Brief description of expertise and background..." />
+                    <Textarea
+                      id="bio"
+                      name="bio"
+                      placeholder="Brief description of expertise and background..."
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="qualifications">Qualifications</Label>
@@ -415,7 +447,9 @@ export default function InstructorsManagement() {
                   variant="outline"
                   onClick={() =>
                     handleSendInvitation(
-                      new FormData(document.getElementById("add-instructor-form") as HTMLFormElement),
+                      new FormData(
+                        document.getElementById("add-instructor-form") as HTMLFormElement
+                      )
                     )
                   }
                 >
@@ -424,7 +458,11 @@ export default function InstructorsManagement() {
                 <Button
                   type="button"
                   onClick={() =>
-                    handleAddInstructor(new FormData(document.getElementById("add-instructor-form") as HTMLFormElement))
+                    handleAddInstructor(
+                      new FormData(
+                        document.getElementById("add-instructor-form") as HTMLFormElement
+                      )
+                    )
                   }
                 >
                   Create Account
@@ -497,7 +535,9 @@ export default function InstructorsManagement() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="active">Active Instructors</TabsTrigger>
-          <TabsTrigger value="applications">Applications ({pendingApplications.length})</TabsTrigger>
+          <TabsTrigger value="applications">
+            Applications ({pendingApplications.length})
+          </TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
         </TabsList>
 
@@ -571,7 +611,9 @@ export default function InstructorsManagement() {
                             />
                             <div>
                               <div className="font-medium">{instructor.name}</div>
-                              <div className="text-sm text-muted-foreground">{instructor.email}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {instructor.email}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
@@ -596,13 +638,19 @@ export default function InstructorsManagement() {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>{instructor.rating > 0 ? instructor.rating.toFixed(1) : "N/A"}</span>
+                            <span>
+                              {instructor.rating > 0 ? instructor.rating.toFixed(1) : "N/A"}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div className="font-medium">${instructor.totalEarnings.toLocaleString()}</div>
-                            <div className="text-muted-foreground">${instructor.monthlyEarnings}/month</div>
+                            <div className="font-medium">
+                              ${instructor.totalEarnings.toLocaleString()}
+                            </div>
+                            <div className="text-muted-foreground">
+                              ${instructor.monthlyEarnings}/month
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -611,7 +659,9 @@ export default function InstructorsManagement() {
                               <Progress value={instructor.completionRate} className="h-2 w-16" />
                               <span className="text-sm">{instructor.completionRate}%</span>
                             </div>
-                            <div className="text-xs text-muted-foreground">Response: {instructor.responseTime}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Response: {instructor.responseTime}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -646,19 +696,26 @@ export default function InstructorsManagement() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {instructor.status === "active" ? (
-                                <DropdownMenuItem onClick={() => handleDeactivateInstructor(instructor)}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeactivateInstructor(instructor)}
+                                >
                                   <UserX className="mr-2 h-4 w-4" />
                                   Deactivate
                                 </DropdownMenuItem>
                               ) : (
-                                <DropdownMenuItem onClick={() => handleActivateInstructor(instructor)}>
+                                <DropdownMenuItem
+                                  onClick={() => handleActivateInstructor(instructor)}
+                                >
                                   <UserCheck className="mr-2 h-4 w-4" />
                                   Activate
                                 </DropdownMenuItem>
                               )}
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-red-600"
+                                  >
                                     <Trash2 className="mr-2 h-4 w-4" /> Remove
                                   </DropdownMenuItem>
                                 </AlertDialogTrigger>
@@ -666,13 +723,16 @@ export default function InstructorsManagement() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently remove instructor &quot;
+                                      This action cannot be undone. This will permanently remove
+                                      instructor &quot;
                                       {instructor.name}&quot; and all their associated data.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleRemoveInstructor(instructor)}>
+                                    <AlertDialogAction
+                                      onClick={() => handleRemoveInstructor(instructor)}
+                                    >
                                       Continue
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
@@ -716,7 +776,10 @@ export default function InstructorsManagement() {
                             <span>Applied {application.appliedDate}</span>
                           </div>
                           <p className="text-sm">{application.previousRole}</p>
-                          <Link href={application.portfolio} className="text-sm text-blue-600 hover:underline">
+                          <Link
+                            href={application.portfolio}
+                            className="text-sm text-blue-600 hover:underline"
+                          >
                             View Portfolio →
                           </Link>
                         </div>
@@ -796,7 +859,9 @@ export default function InstructorsManagement() {
                         />
                         <div className="flex-1">
                           <div className="font-medium">{instructor.name}</div>
-                          <div className="text-sm text-muted-foreground">{instructor.specialty}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {instructor.specialty}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -830,11 +895,17 @@ export default function InstructorsManagement() {
                         />
                         <div className="flex-1">
                           <div className="font-medium">{instructor.name}</div>
-                          <div className="text-sm text-muted-foreground">{instructor.specialty}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {instructor.specialty}
+                          </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium">${instructor.totalEarnings.toLocaleString()}</div>
-                          <div className="text-sm text-muted-foreground">${instructor.monthlyEarnings}/mo</div>
+                          <div className="font-medium">
+                            ${instructor.totalEarnings.toLocaleString()}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            ${instructor.monthlyEarnings}/mo
+                          </div>
                         </div>
                       </div>
                     ))}

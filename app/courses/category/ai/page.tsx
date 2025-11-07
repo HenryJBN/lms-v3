@@ -1,17 +1,11 @@
-import { CardFooter } from "@/components/ui/card";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import { CardFooter } from "@/components/ui/card"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function AICoursesPage() {
   // Mock data for AI courses
@@ -76,7 +70,7 @@ export default function AICoursesPage() {
       tokenReward: 50,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,8 +83,8 @@ export default function AICoursesPage() {
                   AI & Machine Learning Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Explore artificial intelligence, machine learning, and data
-                  science with our comprehensive courses.
+                  Explore artificial intelligence, machine learning, and data science with our
+                  comprehensive courses.
                 </p>
               </div>
             </div>
@@ -122,8 +116,7 @@ export default function AICoursesPage() {
                   AI Engineer Path
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a professional
-                  AI engineer.
+                  Follow our structured learning path to become a professional AI engineer.
                 </p>
               </div>
             </div>
@@ -135,8 +128,7 @@ export default function AICoursesPage() {
                 </div>
                 <h3 className="text-xl font-bold mb-2">AI Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with the basics of artificial intelligence, algorithms,
-                  and problem-solving.
+                  Start with the basics of artificial intelligence, algorithms, and problem-solving.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/ai-fundamentals">
@@ -151,12 +143,9 @@ export default function AICoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Machine Learning Basics
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Machine Learning Basics</h3>
                 <p className="text-muted-foreground mb-4">
-                  Learn fundamental machine learning algorithms and their
-                  applications.
+                  Learn fundamental machine learning algorithms and their applications.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/machine-learning-basics">
@@ -171,9 +160,7 @@ export default function AICoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   3
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Deep Learning with PyTorch
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Deep Learning with PyTorch</h3>
                 <p className="text-muted-foreground mb-4">
                   Master neural networks and deep learning frameworks.
                 </p>
@@ -190,9 +177,7 @@ export default function AICoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  AI Applications & Deployment
-                </h3>
+                <h3 className="text-xl font-bold mb-2">AI Applications & Deployment</h3>
                 <p className="text-muted-foreground mb-4">
                   Build and deploy AI applications in real-world scenarios.
                 </p>
@@ -215,7 +200,7 @@ export default function AICoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -229,14 +214,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -245,16 +230,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -281,5 +259,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

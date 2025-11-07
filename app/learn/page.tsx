@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "next/link"
 import {
   Card,
   CardContent,
@@ -6,11 +6,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { GraduationCap, Code, Database } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { GraduationCap, Code, Database } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function CoursesPage() {
   // In a real app, this would be fetched from an API
@@ -18,8 +18,7 @@ export default function CoursesPage() {
     {
       id: "web-development",
       title: "Web Development Fundamentals",
-      description:
-        "Learn the basics of web development with HTML, CSS, and JavaScript",
+      description: "Learn the basics of web development with HTML, CSS, and JavaScript",
       lessons: 5,
       duration: "2 hours",
       icon: Code,
@@ -34,7 +33,7 @@ export default function CoursesPage() {
       icon: Database,
       level: "Beginner",
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -44,8 +43,8 @@ export default function CoursesPage() {
             Available Courses
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-3xl">
-            Explore our courses with video lessons, quizzes, and interactive
-            content. Track your progress and earn certificates as you learn.
+            Explore our courses with video lessons, quizzes, and interactive content. Track your
+            progress and earn certificates as you learn.
           </p>
         </div>
 
@@ -57,9 +56,7 @@ export default function CoursesPage() {
                   <div className="p-2 rounded-md bg-primary/10">
                     <course.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {course.level}
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">{course.level}</span>
                 </div>
                 <CardTitle>{course.title}</CardTitle>
                 <CardDescription>{course.description}</CardDescription>
@@ -83,5 +80,5 @@ export default function CoursesPage() {
         </div>
       </main>
     </div>
-  );
+  )
 }

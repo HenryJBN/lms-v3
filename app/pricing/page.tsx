@@ -1,6 +1,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Check, Gem, HelpCircle } from "lucide-react"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
@@ -15,9 +22,12 @@ export default function PricingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Flexible Plans for Everyone</h1>
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  Flexible Plans for Everyone
+                </h1>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                  Choose the perfect plan for your learning journey, from free courses to premium certifications.
+                  Choose the perfect plan for your learning journey, from free courses to premium
+                  certifications.
                 </p>
               </div>
             </div>
@@ -159,7 +169,9 @@ export default function PricingPage() {
             <div className="mt-8 flex flex-col items-center justify-center space-y-4 text-center">
               <div className="flex items-center space-x-2">
                 <Gem className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">All plans earn L-Tokens that can be redeemed for rewards</span>
+                <span className="text-sm font-medium">
+                  All plans earn L-Tokens that can be redeemed for rewards
+                </span>
               </div>
               <div className="flex items-center">
                 <Button variant="link" className="text-sm">
@@ -176,7 +188,9 @@ export default function PricingPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Frequently Asked Questions</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+                  Frequently Asked Questions
+                </h2>
                 <p className="max-w-[700px] text-muted-foreground">
                   Find answers to common questions about our pricing plans and features.
                 </p>
@@ -190,9 +204,9 @@ export default function PricingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access
-                    to new features. When downgrading, changes will take effect at the end of your current billing
-                    cycle.
+                    Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll
+                    get immediate access to new features. When downgrading, changes will take effect
+                    at the end of your current billing cycle.
                   </p>
                 </CardContent>
               </Card>
@@ -203,33 +217,40 @@ export default function PricingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    L-Tokens are earned by completing courses, quizzes, and other learning activities. They can be
-                    redeemed for premium content, certificate fees, or exclusive learning resources. Higher-tier plans
-                    earn tokens at an accelerated rate.
+                    L-Tokens are earned by completing courses, quizzes, and other learning
+                    activities. They can be redeemed for premium content, certificate fees, or
+                    exclusive learning resources. Higher-tier plans earn tokens at an accelerated
+                    rate.
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Are blockchain certificates included in all plans?</CardTitle>
+                  <CardTitle className="text-lg">
+                    Are blockchain certificates included in all plans?
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Free users can purchase blockchain certificates for completed courses at $15 each. Pro Learners get
-                    3 free certificates per month. Enterprise users get unlimited certificates for their team members.
+                    Free users can purchase blockchain certificates for completed courses at $15
+                    each. Pro Learners get 3 free certificates per month. Enterprise users get
+                    unlimited certificates for their team members.
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Do you offer discounts for students or educators?</CardTitle>
+                  <CardTitle className="text-lg">
+                    Do you offer discounts for students or educators?
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Yes, we offer a 50% discount on Pro Learner plans for verified students and educators. Contact our
-                    support team with your academic credentials to apply for the discount.
+                    Yes, we offer a 50% discount on Pro Learner plans for verified students and
+                    educators. Contact our support team with your academic credentials to apply for
+                    the discount.
                   </p>
                 </CardContent>
               </Card>

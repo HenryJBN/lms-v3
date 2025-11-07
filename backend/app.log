@@ -121,3 +121,6 @@ AttributeError: module 'bcrypt' has no attribute '__about__'
 2025-10-18 23:31:57,740 - databases - INFO - Disconnected from database postgresql+asyncpg://henry:********@localhost:5432/lms_database
 2025-10-21 12:46:58,159 - databases - INFO - Connected to database postgresql+asyncpg://henry:********@localhost:5432/lms_database
 2025-11-03 16:23:35,127 - databases - INFO - Connected to database postgresql+asyncpg://henry:********@localhost:5432/lms_database
+2025-11-06 16:24:27,855 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2025-11-06 16:28:02,363 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2025-11-06 16:28:08,265 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database

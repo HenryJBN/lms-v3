@@ -1,45 +1,81 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Welcome to {{ platform_name }}</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .content {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .button {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #666;
+        font-size: 14px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div class="header">
-            <h1>Welcome to {{ platform_name }}! 🎉</h1>
-        </div>
-        <div class="content">
-            <h2>Hi {{ first_name }},</h2>
-            <p>Welcome to {{ platform_name }}! We're excited to have you join our learning community.</p>
-            
-            <p>With {{ platform_name }}, you can:</p>
-            <ul>
-                <li>📚 Access hundreds of courses across multiple categories</li>
-                <li>🏆 Earn blockchain-verified certificates</li>
-                <li>🪙 Collect L-Tokens for your achievements</li>
-                <li>🤝 Connect with instructors and fellow learners</li>
-            </ul>
-            
-            <p>Ready to start your learning journey?</p>
-            <a href="{{ login_url }}" class="button">Start Learning Now</a>
-            
-            <p>If you have any questions, feel free to reach out to our support team at {{ support_email }}.</p>
-            
-            <p>Happy learning!<br>The {{ platform_name }} Team</p>
-        </div>
-        <div class="footer">
-            <p>© 2025 {{ platform_name }}. All rights reserved.</p>
-        </div>
+      <div class="header">
+        <h1>Welcome to {{ platform_name }}! 🎉</h1>
+      </div>
+      <div class="content">
+        <h2>Hi {{ first_name }},</h2>
+        <p>
+          Welcome to {{ platform_name }}! We're excited to have you join our learning community.
+        </p>
+
+        <p>With {{ platform_name }}, you can:</p>
+        <ul>
+          <li>📚 Access hundreds of courses across multiple categories</li>
+          <li>🏆 Earn blockchain-verified certificates</li>
+          <li>🪙 Collect L-Tokens for your achievements</li>
+          <li>🤝 Connect with instructors and fellow learners</li>
+        </ul>
+
+        <p>Ready to start your learning journey?</p>
+        <a href="{{ login_url }}" class="button">Start Learning Now</a>
+
+        <p>
+          If you have any questions, feel free to reach out to our support team at {{ support_email
+          }}.
+        </p>
+
+        <p>Happy learning!<br />The {{ platform_name }} Team</p>
+      </div>
+      <div class="footer">
+        <p>© 2025 {{ platform_name }}. All rights reserved.</p>
+      </div>
     </div>
-</body>
+  </body>
 </html>

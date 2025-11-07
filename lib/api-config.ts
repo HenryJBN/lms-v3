@@ -1,7 +1,6 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export const REQUEST_TIMEOUT = 10000;
+export const REQUEST_TIMEOUT = 10000
 export const API_ENDPOINTS = {
   // Auth endpoints
   login: "/api/auth/login",
@@ -50,20 +49,20 @@ export const API_ENDPOINTS = {
 
   // Categories endpoints
   categories: "/api/categories",
-};
+}
 
 export const COOKIE_NAMES = {
   accessToken: "access_token",
   refreshToken: "refresh_token",
   userId: "user_id",
-} as const;
+} as const
 
 export const COOKIE_OPTIONS = {
   maxAge: 60 * 60 * 24 * 7, // 7 days
   path: "/",
   sameSite: "lax" as const,
   secure: process.env.NODE_ENV === "production",
-};
+}
 
 // Export for backwards compatibility
 export const API_CONFIG = {
@@ -71,4 +70,4 @@ export const API_CONFIG = {
   ENDPOINTS: API_ENDPOINTS,
   COOKIE_NAMES,
   COOKIE_OPTIONS,
-};
+}

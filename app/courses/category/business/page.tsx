@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -7,11 +7,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function BusinessCoursesPage() {
   // Mock data for business courses
@@ -69,15 +69,14 @@ export default function BusinessCoursesPage() {
     {
       id: "blockchain-for-business",
       title: "Blockchain for Business",
-      description:
-        "Implementing blockchain solutions in traditional businesses",
+      description: "Implementing blockchain solutions in traditional businesses",
       image: "/images/courses/blockchain-for-business.png",
       level: "Intermediate",
       price: "$69.99",
       tokenReward: 65,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -90,8 +89,8 @@ export default function BusinessCoursesPage() {
                   Business & Finance Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Learn essential business skills, crypto economics, and
-                  entrepreneurship with our comprehensive courses.
+                  Learn essential business skills, crypto economics, and entrepreneurship with our
+                  comprehensive courses.
                 </p>
               </div>
             </div>
@@ -123,8 +122,7 @@ export default function BusinessCoursesPage() {
                   Web3 Entrepreneur Path
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a successful
-                  Web3 entrepreneur.
+                  Follow our structured learning path to become a successful Web3 entrepreneur.
                 </p>
               </div>
             </div>
@@ -134,12 +132,9 @@ export default function BusinessCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Business Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Business Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with essential business concepts and entrepreneurial
-                  mindset.
+                  Start with essential business concepts and entrepreneurial mindset.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/business-fundamentals">
@@ -154,12 +149,9 @@ export default function BusinessCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Blockchain for Business
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Blockchain for Business</h3>
                 <p className="text-muted-foreground mb-4">
-                  Understand how blockchain technology can transform business
-                  models.
+                  Understand how blockchain technology can transform business models.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/blockchain-for-business">
@@ -191,12 +183,9 @@ export default function BusinessCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Web3 Business Strategy
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Web3 Business Strategy</h3>
                 <p className="text-muted-foreground mb-4">
-                  Develop strategies for building and scaling blockchain-based
-                  businesses.
+                  Develop strategies for building and scaling blockchain-based businesses.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/web3-business-strategy">
@@ -217,7 +206,7 @@ export default function BusinessCoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -231,14 +220,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -247,16 +236,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -283,5 +265,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

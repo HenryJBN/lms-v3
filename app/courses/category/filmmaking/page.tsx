@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -7,11 +7,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Gem } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Gem } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function FilmmakingCoursesPage() {
   // Mock data for filmmaking courses
@@ -19,8 +19,7 @@ export default function FilmmakingCoursesPage() {
     {
       id: "filmmaking-fundamentals",
       title: "Filmmaking Fundamentals",
-      description:
-        "Learn the basics of storytelling, cinematography, and film production",
+      description: "Learn the basics of storytelling, cinematography, and film production",
       image: "/images/courses/filmmaking-fundamentals.png",
       level: "Beginner",
       price: "Free",
@@ -77,7 +76,7 @@ export default function FilmmakingCoursesPage() {
       tokenReward: 65,
       featured: false,
     },
-  ];
+  ]
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -90,8 +89,8 @@ export default function FilmmakingCoursesPage() {
                   Filmmaking Courses
                 </h1>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Master the art of filmmaking with our comprehensive courses
-                  covering storytelling, cinematography, and post-production.
+                  Master the art of filmmaking with our comprehensive courses covering storytelling,
+                  cinematography, and post-production.
                 </p>
               </div>
             </div>
@@ -119,12 +118,9 @@ export default function FilmmakingCoursesPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                  Filmmaker Path
-                </h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Filmmaker Path</h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Follow our structured learning path to become a professional
-                  filmmaker.
+                  Follow our structured learning path to become a professional filmmaker.
                 </p>
               </div>
             </div>
@@ -134,12 +130,9 @@ export default function FilmmakingCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   1
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Filmmaking Fundamentals
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Filmmaking Fundamentals</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start with the basics of storytelling, cinematography, and
-                  film production.
+                  Start with the basics of storytelling, cinematography, and film production.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/filmmaking-fundamentals">
@@ -154,9 +147,7 @@ export default function FilmmakingCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   2
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Screenwriting Essentials
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Screenwriting Essentials</h3>
                 <p className="text-muted-foreground mb-4">
                   Learn to write compelling scripts that engage audiences.
                 </p>
@@ -173,9 +164,7 @@ export default function FilmmakingCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   3
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Advanced Cinematography
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Advanced Cinematography</h3>
                 <p className="text-muted-foreground mb-4">
                   Master camera techniques, lighting, and visual composition.
                 </p>
@@ -192,12 +181,9 @@ export default function FilmmakingCoursesPage() {
                 <div className="absolute -left-6 flex h-6 w-6 items-center justify-center rounded-full bg-red text-red-foreground">
                   4
                 </div>
-                <h3 className="text-xl font-bold mb-2">
-                  Video Editing & Post-Production
-                </h3>
+                <h3 className="text-xl font-bold mb-2">Video Editing & Post-Production</h3>
                 <p className="text-muted-foreground mb-4">
-                  Learn professional editing techniques and post-production
-                  workflows.
+                  Learn professional editing techniques and post-production workflows.
                 </p>
                 <div className="flex gap-2">
                   <Link href="/courses/video-editing-premiere">
@@ -218,7 +204,7 @@ export default function FilmmakingCoursesPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }
 
 // Course Card Component
@@ -232,14 +218,14 @@ function CourseCard({
   tokenReward,
   featured,
 }: {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  level: string;
-  price: string;
-  tokenReward: number;
-  featured?: boolean;
+  id: string
+  title: string
+  description: string
+  image: string
+  level: string
+  price: string
+  tokenReward: number
+  featured?: boolean
 }) {
   return (
     <Card
@@ -248,16 +234,9 @@ function CourseCard({
       }`}
     >
       <div className="relative">
-        <img
-          src={image || "/placeholder.svg"}
-          alt={title}
-          className="h-40 w-full object-cover"
-        />
+        <img src={image || "/placeholder.svg"} alt={title} className="h-40 w-full object-cover" />
         <div className="absolute top-2 right-2">
-          <Badge
-            variant="secondary"
-            className="bg-background/80 backdrop-blur-sm"
-          >
+          <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
             {level}
           </Badge>
         </div>
@@ -284,5 +263,5 @@ function CourseCard({
         </Link>
       </CardFooter>
     </Card>
-  );
+  )
 }

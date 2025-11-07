@@ -1,8 +1,8 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -10,148 +10,124 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Lock,
-  CheckCircle,
-  Play,
-  AlertCircle,
-} from "lucide-react";
-import VideoPlayer from "@/components/video-player";
-import LessonQuiz from "@/components/lesson-quiz";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
+import { ChevronLeft, ChevronRight, Lock, CheckCircle, Play, AlertCircle } from "lucide-react"
+import VideoPlayer from "@/components/video-player"
+import LessonQuiz from "@/components/lesson-quiz"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 import {
   getCourseData,
   getUserProgress,
   markLessonAsCompleted,
   markQuizAsCompleted,
-} from "@/lib/course-progress";
+} from "@/lib/course-progress"
 
-export default function CourseLessonPage({
-  params,
-}: {
-  params: { courseId: string };
-}) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const courseId = params.courseId;
-  const lessonParam = searchParams.get("lesson");
+export default function CourseLessonPage({ params }: { params: { courseId: string } }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const courseId = params.courseId
+  const lessonParam = searchParams.get("lesson")
 
-  const [course, setCourse] = useState<any>(null);
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-  const [userProgress, setUserProgress] = useState<any>(null);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [videoCompleted, setVideoCompleted] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [course, setCourse] = useState<any>(null)
+  const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
+  const [userProgress, setUserProgress] = useState<any>(null)
+  const [showQuiz, setShowQuiz] = useState(false)
+  const [videoCompleted, setVideoCompleted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Load course data and user progress
-    const courseData = getCourseData(courseId);
+    const courseData = getCourseData(courseId)
     if (!courseData) {
-      router.push("/learn");
-      return;
+      router.push("/learn")
+      return
     }
 
-    const progress = getUserProgress(courseId);
+    const progress = getUserProgress(courseId)
 
-    setCourse(courseData);
-    setUserProgress(progress);
+    setCourse(courseData)
+    setUserProgress(progress)
 
     // If there's a lesson ID in the URL, set the current lesson
     if (lessonParam) {
-      const lessonIndex = courseData.lessons.findIndex(
-        (lesson: any) => lesson.id === lessonParam
-      );
+      const lessonIndex = courseData.lessons.findIndex((lesson: any) => lesson.id === lessonParam)
       if (lessonIndex !== -1) {
-        setCurrentLessonIndex(lessonIndex);
+        setCurrentLessonIndex(lessonIndex)
       }
     }
 
-    setLoading(false);
-  }, [courseId, lessonParam, router]);
+    setLoading(false)
+  }, [courseId, lessonParam, router])
 
   // Early return for loading state
   if (loading || !course || !userProgress) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        Loading course...
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen">Loading course...</div>
   }
 
-  const currentLesson = course.lessons[currentLessonIndex];
+  const currentLesson = course.lessons[currentLessonIndex]
   const nextLesson =
-    currentLessonIndex < course.lessons.length - 1
-      ? course.lessons[currentLessonIndex + 1]
-      : null;
-  const previousLesson =
-    currentLessonIndex > 0 ? course.lessons[currentLessonIndex - 1] : null;
+    currentLessonIndex < course.lessons.length - 1 ? course.lessons[currentLessonIndex + 1] : null
+  const previousLesson = currentLessonIndex > 0 ? course.lessons[currentLessonIndex - 1] : null
 
-  const isLessonCompleted = userProgress.completedLessons.includes(
-    currentLesson.id
-  );
+  const isLessonCompleted = userProgress.completedLessons.includes(currentLesson.id)
   const isQuizCompleted = currentLesson.hasQuiz
     ? userProgress.completedQuizzes.includes(currentLesson.id)
-    : true;
+    : true
 
   // Check if the current lesson is accessible (either no prerequisites or all prerequisites completed)
   const isLessonAccessible =
     !currentLesson.prerequisites ||
     currentLesson.prerequisites.every((prereqId: string) =>
       userProgress.completedLessons.includes(prereqId)
-    );
+    )
 
   const handleVideoComplete = () => {
-    setVideoCompleted(true);
+    setVideoCompleted(true)
     if (!isLessonCompleted) {
-      const updatedProgress = markLessonAsCompleted(courseId, currentLesson.id);
-      setUserProgress(updatedProgress);
+      const updatedProgress = markLessonAsCompleted(courseId, currentLesson.id)
+      setUserProgress(updatedProgress)
     }
 
     // If the lesson has a quiz, show it after video completion
     if (currentLesson.hasQuiz && !isQuizCompleted) {
-      setShowQuiz(true);
+      setShowQuiz(true)
     }
-  };
+  }
 
   const handleQuizComplete = (passed: boolean) => {
     if (passed) {
-      const updatedProgress = markQuizAsCompleted(courseId, currentLesson.id);
-      setUserProgress(updatedProgress);
-      setShowQuiz(false);
+      const updatedProgress = markQuizAsCompleted(courseId, currentLesson.id)
+      setUserProgress(updatedProgress)
+      setShowQuiz(false)
     }
-  };
+  }
 
   const navigateToLesson = (index: number) => {
     // Check if the lesson is accessible
-    const targetLesson = course.lessons[index];
+    const targetLesson = course.lessons[index]
     const isAccessible =
       !targetLesson.prerequisites ||
       targetLesson.prerequisites.every((prereqId: string) =>
         userProgress.completedLessons.includes(prereqId)
-      );
+      )
 
     if (isAccessible) {
-      setCurrentLessonIndex(index);
-      setShowQuiz(false);
-      setVideoCompleted(
-        userProgress.completedLessons.includes(targetLesson.id)
-      );
-      router.push(`/learn/${courseId}?lesson=${targetLesson.id}`);
+      setCurrentLessonIndex(index)
+      setShowQuiz(false)
+      setVideoCompleted(userProgress.completedLessons.includes(targetLesson.id))
+      router.push(`/learn/${courseId}?lesson=${targetLesson.id}`)
     }
-  };
+  }
 
   const canNavigateToNext =
     nextLesson &&
     (!nextLesson.prerequisites ||
       nextLesson.prerequisites.every((prereqId: string) =>
         userProgress.completedLessons.includes(prereqId)
-      ));
+      ))
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -164,18 +140,12 @@ export default function CourseLessonPage({
             </span>
             <Separator orientation="vertical" className="mx-2 h-4" />
             <span>
-              {Math.round(
-                (userProgress.completedLessons.length / course.lessons.length) *
-                  100
-              )}
-              % Complete
+              {Math.round((userProgress.completedLessons.length / course.lessons.length) * 100)}%
+              Complete
             </span>
           </div>
           <Progress
-            value={
-              (userProgress.completedLessons.length / course.lessons.length) *
-              100
-            }
+            value={(userProgress.completedLessons.length / course.lessons.length) * 100}
             className="h-2 mt-2"
           />
         </div>
@@ -190,8 +160,7 @@ export default function CourseLessonPage({
                     Lesson Locked
                   </CardTitle>
                   <CardDescription>
-                    You need to complete the prerequisite lessons before
-                    accessing this content.
+                    You need to complete the prerequisite lessons before accessing this content.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -199,39 +168,30 @@ export default function CourseLessonPage({
                     <h3 className="font-medium">Required Prerequisites:</h3>
                     <ul className="list-disc pl-5 space-y-1">
                       {currentLesson.prerequisites?.map((prereqId: string) => {
-                        const prereq = course.lessons.find(
-                          (l: any) => l.id === prereqId
-                        );
+                        const prereq = course.lessons.find((l: any) => l.id === prereqId)
                         return (
                           <li key={prereqId} className="text-sm">
                             {prereq?.title}
-                            {userProgress.completedLessons.includes(
-                              prereqId
-                            ) ? (
+                            {userProgress.completedLessons.includes(prereqId) ? (
                               <CheckCircle className="inline ml-2 h-4 w-4 text-green-500" />
                             ) : (
                               <AlertCircle className="inline ml-2 h-4 w-4 text-amber-500" />
                             )}
                           </li>
-                        );
+                        )
                       })}
                     </ul>
                   </div>
                 </CardContent>
               </Card>
             ) : showQuiz ? (
-              <LessonQuiz
-                quiz={currentLesson.quiz}
-                onComplete={handleQuizComplete}
-              />
+              <LessonQuiz quiz={currentLesson.quiz} onComplete={handleQuizComplete} />
             ) : (
               <>
                 <Card>
                   <CardHeader>
                     <CardTitle>{currentLesson.title}</CardTitle>
-                    <CardDescription>
-                      {currentLesson.description}
-                    </CardDescription>
+                    <CardDescription>{currentLesson.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <VideoPlayer
@@ -264,24 +224,19 @@ export default function CourseLessonPage({
                   </CardFooter>
                 </Card>
 
-                {currentLesson.hasQuiz &&
-                  !isQuizCompleted &&
-                  videoCompleted && (
-                    <Card className="border-red">
-                      <CardHeader>
-                        <CardTitle>Quiz Available</CardTitle>
-                        <CardDescription>
-                          You've completed the video lesson. Take the quiz to
-                          test your knowledge.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardFooter>
-                        <Button onClick={() => setShowQuiz(true)}>
-                          Start Quiz
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  )}
+                {currentLesson.hasQuiz && !isQuizCompleted && videoCompleted && (
+                  <Card className="border-red">
+                    <CardHeader>
+                      <CardTitle>Quiz Available</CardTitle>
+                      <CardDescription>
+                        You've completed the video lesson. Take the quiz to test your knowledge.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter>
+                      <Button onClick={() => setShowQuiz(true)}>Start Quiz</Button>
+                    </CardFooter>
+                  </Card>
+                )}
               </>
             )}
           </div>
@@ -294,17 +249,15 @@ export default function CourseLessonPage({
               <CardContent>
                 <div className="space-y-2">
                   {course.lessons.map((lesson: any, index: number) => {
-                    const isCompleted = userProgress.completedLessons.includes(
-                      lesson.id
-                    );
+                    const isCompleted = userProgress.completedLessons.includes(lesson.id)
                     const hasCompletedQuiz = lesson.hasQuiz
                       ? userProgress.completedQuizzes.includes(lesson.id)
-                      : true;
+                      : true
                     const isAccessible =
                       !lesson.prerequisites ||
                       lesson.prerequisites.every((prereqId: string) =>
                         userProgress.completedLessons.includes(prereqId)
-                      );
+                      )
 
                     return (
                       <div
@@ -324,16 +277,13 @@ export default function CourseLessonPage({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {lesson.title}
-                          </p>
+                          <p className="text-sm font-medium truncate">{lesson.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {lesson.duration}{" "}
-                            {lesson.hasQuiz && "• Includes Quiz"}
+                            {lesson.duration} {lesson.hasQuiz && "• Includes Quiz"}
                           </p>
                         </div>
                       </div>
-                    );
+                    )
                   })}
                 </div>
               </CardContent>
@@ -342,5 +292,5 @@ export default function CourseLessonPage({
         </div>
       </main>
     </div>
-  );
+  )
 }

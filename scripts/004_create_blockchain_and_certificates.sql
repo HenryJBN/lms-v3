@@ -7,7 +7,7 @@ CREATE TYPE certificate_status AS ENUM ('pending', 'minted', 'failed', 'revoked'
 CREATE TYPE blockchain_network AS ENUM ('ethereum', 'polygon', 'binance_smart_chain', 'avalanche');
 
 -- L-Tokens (Learning Tokens) table
-CREATE TABLE l_tokens (
+CREATE TABLE IF NOT EXISTS l_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     balance DECIMAL(18,8) NOT NULL DEFAULT 0,
@@ -19,7 +19,7 @@ CREATE TABLE l_tokens (
 );
 
 -- Token transactions table
-CREATE TABLE token_transactions (
+CREATE TABLE IF NOT EXISTS token_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type token_transaction_type NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE token_transactions (
 );
 
 -- NFT Certificates table
-CREATE TABLE certificates (
+CREATE TABLE IF NOT EXISTS certificates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
@@ -57,7 +57,7 @@ CREATE TABLE certificates (
 );
 
 -- Blockchain wallets table (for users who connect external wallets)
-CREATE TABLE user_wallets (
+CREATE TABLE IF NOT EXISTS user_wallets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     wallet_address VARCHAR(42) NOT NULL, -- Ethereum address format
@@ -70,7 +70,7 @@ CREATE TABLE user_wallets (
 );
 
 -- Smart contract interactions log
-CREATE TABLE blockchain_transactions (
+CREATE TABLE IF NOT EXISTS blockchain_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     transaction_hash VARCHAR(66) NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE blockchain_transactions (
 );
 
 -- Token rewards configuration
-CREATE TABLE token_rewards (
+CREATE TABLE IF NOT EXISTS token_rewards (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     action_type VARCHAR(50) NOT NULL, -- 'lesson_completed', 'quiz_passed', 'course_completed', etc.
     reward_amount DECIMAL(18,8) NOT NULL,
@@ -101,30 +101,30 @@ CREATE TABLE token_rewards (
 );
 
 -- Create indexes
-CREATE INDEX idx_l_tokens_user_id ON l_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_l_tokens_user_id ON l_tokens(user_id);
 
-CREATE INDEX idx_token_transactions_user_id ON token_transactions(user_id);
-CREATE INDEX idx_token_transactions_type ON token_transactions(type);
-CREATE INDEX idx_token_transactions_reference ON token_transactions(reference_type, reference_id);
-CREATE INDEX idx_token_transactions_created_at ON token_transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_user_id ON token_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_type ON token_transactions(type);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_reference ON token_transactions(reference_type, reference_id);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_created_at ON token_transactions(created_at);
 
-CREATE INDEX idx_certificates_user_id ON certificates(user_id);
-CREATE INDEX idx_certificates_course_id ON certificates(course_id);
-CREATE INDEX idx_certificates_status ON certificates(status);
-CREATE INDEX idx_certificates_blockchain_network ON certificates(blockchain_network);
-CREATE INDEX idx_certificates_token_id ON certificates(token_id);
+CREATE INDEX IF NOT EXISTS idx_certificates_user_id ON certificates(user_id);
+CREATE INDEX IF NOT EXISTS idx_certificates_course_id ON certificates(course_id);
+CREATE INDEX IF NOT EXISTS idx_certificates_status ON certificates(status);
+CREATE INDEX IF NOT EXISTS idx_certificates_blockchain_network ON certificates(blockchain_network);
+CREATE INDEX IF NOT EXISTS idx_certificates_token_id ON certificates(token_id);
 
-CREATE INDEX idx_user_wallets_user_id ON user_wallets(user_id);
-CREATE INDEX idx_user_wallets_address ON user_wallets(wallet_address);
-CREATE INDEX idx_user_wallets_is_primary ON user_wallets(user_id, is_primary);
+CREATE INDEX IF NOT EXISTS idx_user_wallets_user_id ON user_wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_wallets_address ON user_wallets(wallet_address);
+CREATE INDEX IF NOT EXISTS idx_user_wallets_is_primary ON user_wallets(user_id, is_primary);
 
-CREATE INDEX idx_blockchain_transactions_hash ON blockchain_transactions(transaction_hash);
-CREATE INDEX idx_blockchain_transactions_user_id ON blockchain_transactions(user_id);
-CREATE INDEX idx_blockchain_transactions_network ON blockchain_transactions(blockchain_network);
-CREATE INDEX idx_blockchain_transactions_status ON blockchain_transactions(status);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_hash ON blockchain_transactions(transaction_hash);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_user_id ON blockchain_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_network ON blockchain_transactions(blockchain_network);
+CREATE INDEX IF NOT EXISTS idx_blockchain_transactions_status ON blockchain_transactions(status);
 
-CREATE INDEX idx_token_rewards_action_type ON token_rewards(action_type);
-CREATE INDEX idx_token_rewards_is_active ON token_rewards(is_active);
+CREATE INDEX IF NOT EXISTS idx_token_rewards_action_type ON token_rewards(action_type);
+CREATE INDEX IF NOT EXISTS idx_token_rewards_is_active ON token_rewards(is_active);
 
 -- Apply updated_at triggers
 CREATE TRIGGER update_l_tokens_updated_at BEFORE UPDATE ON l_tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

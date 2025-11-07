@@ -18,7 +18,14 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -154,7 +161,9 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's an overview of your learning platform.</p>
+          <p className="text-muted-foreground">
+            Welcome back! Here's an overview of your learning platform.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
@@ -278,7 +287,12 @@ export default function AdminDashboard() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="users" stroke="var(--color-users)" activeDot={{ r: 8 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="users"
+                    stroke="var(--color-users)"
+                    activeDot={{ r: 8 }}
+                  />
                   <Line type="monotone" dataKey="courses" stroke="var(--color-courses)" />
                 </RechartsLineChart>
               </ResponsiveContainer>
@@ -299,8 +313,12 @@ export default function AdminDashboard() {
                     <div className="flex items-start gap-4 rounded-lg border p-3">
                       {alert.type === "info" && <Bell className="h-5 w-5 text-blue-500" />}
                       {alert.type === "error" && <XCircle className="h-5 w-5 text-red-500" />}
-                      {alert.type === "success" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                      {alert.type === "warning" && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+                      {alert.type === "success" && (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      )}
+                      {alert.type === "warning" && (
+                        <AlertCircle className="h-5 w-5 text-yellow-500" />
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-semibold">{alert.title}</h4>
@@ -327,7 +345,10 @@ export default function AdminDashboard() {
             <ScrollArea className="h-[350px]">
               <div className="px-4 py-2">
                 {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-4 py-3 border-b last:border-0">
+                  <div
+                    key={activity.id}
+                    className="flex items-center gap-4 py-3 border-b last:border-0"
+                  >
                     <div className="w-8 h-8 rounded-full overflow-hidden">
                       <img
                         src={activity.avatar || "/placeholder.svg"}

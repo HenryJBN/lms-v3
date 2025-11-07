@@ -75,7 +75,9 @@ export default function SiteHeader() {
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                         >
                           <div className="text-sm font-medium leading-none">Blockchain</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Web3 and crypto</p>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Web3 and crypto
+                          </p>
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
@@ -95,7 +97,9 @@ export default function SiteHeader() {
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                         >
                           <div className="text-sm font-medium leading-none">Web Dev</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Frontend & backend</p>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Frontend & backend
+                          </p>
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
@@ -104,7 +108,9 @@ export default function SiteHeader() {
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                         >
                           <div className="text-sm font-medium leading-none">Filmmaking</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Video production</p>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            Video production
+                          </p>
                         </Link>
                       </NavigationMenuLink>
                     </div>

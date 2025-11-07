@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -6,20 +6,20 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Mail, MapPin, Phone } from "lucide-react";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+} from "@/components/ui/select"
+import { Mail, MapPin, Phone } from "lucide-react"
+import SiteHeader from "@/components/site-header"
+import SiteFooter from "@/components/site-footer"
 
 export default function ContactPage() {
   return (
@@ -29,12 +29,10 @@ export default function ContactPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Contact Us
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Contact Us</h1>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl">
-                  Have questions or feedback? We'd love to hear from you. Get in
-                  touch with our team.
+                  Have questions or feedback? We'd love to hear from you. Get in touch with our
+                  team.
                 </p>
               </div>
             </div>
@@ -44,9 +42,7 @@ export default function ContactPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Contact Information</CardTitle>
-                    <CardDescription>
-                      Reach out to us through any of these channels
-                    </CardDescription>
+                    <CardDescription>Reach out to us through any of these channels</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-start space-x-4">
@@ -68,9 +64,7 @@ export default function ContactPage() {
                         <p className="text-sm text-muted-foreground">
                           +2349133820024,+2349165666255,+2349047218313
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          Monday-Friday, 9AM-5PM WAT
-                        </p>
+                        <p className="text-sm text-muted-foreground">Monday-Friday, 9AM-5PM WAT</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-4">
@@ -91,37 +85,28 @@ export default function ContactPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Frequently Asked Questions</CardTitle>
-                    <CardDescription>
-                      Quick answers to common questions
-                    </CardDescription>
+                    <CardDescription>Quick answers to common questions</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <h3 className="font-medium">
-                        How do I reset my password?
-                      </h3>
+                      <h3 className="font-medium">How do I reset my password?</h3>
                       <p className="text-sm text-muted-foreground">
-                        Visit the login page and click on "Forgot Password" to
-                        receive a password reset link.
+                        Visit the login page and click on "Forgot Password" to receive a password
+                        reset link.
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-medium">
-                        How do blockchain certificates work?
-                      </h3>
+                      <h3 className="font-medium">How do blockchain certificates work?</h3>
                       <p className="text-sm text-muted-foreground">
-                        Our certificates are stored as NFTs on the blockchain,
-                        providing tamper-proof verification of your
-                        achievements.
+                        Our certificates are stored as NFTs on the blockchain, providing
+                        tamper-proof verification of your achievements.
                       </p>
                     </div>
                     <div>
-                      <h3 className="font-medium">
-                        Can I transfer my L-Tokens?
-                      </h3>
+                      <h3 className="font-medium">Can I transfer my L-Tokens?</h3>
                       <p className="text-sm text-muted-foreground">
-                        L-Tokens are non-transferable and can only be earned and
-                        used within the DCA LMS platform.
+                        L-Tokens are non-transferable and can only be earned and used within the DCA
+                        LMS platform.
                       </p>
                     </div>
                   </CardContent>
@@ -132,8 +117,7 @@ export default function ContactPage() {
                 <CardHeader>
                   <CardTitle>Send Us a Message</CardTitle>
                   <CardDescription>
-                    Fill out the form below and we'll get back to you as soon as
-                    possible
+                    Fill out the form below and we'll get back to you as soon as possible
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -149,11 +133,7 @@ export default function ContactPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                    />
+                    <Input id="email" type="email" placeholder="your@email.com" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="subject">Subject</Label>
@@ -163,15 +143,9 @@ export default function ContactPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="general">General Inquiry</SelectItem>
-                        <SelectItem value="support">
-                          Technical Support
-                        </SelectItem>
-                        <SelectItem value="billing">
-                          Billing Question
-                        </SelectItem>
-                        <SelectItem value="partnership">
-                          Partnership Opportunity
-                        </SelectItem>
+                        <SelectItem value="support">Technical Support</SelectItem>
+                        <SelectItem value="billing">Billing Question</SelectItem>
+                        <SelectItem value="partnership">Partnership Opportunity</SelectItem>
                         <SelectItem value="feedback">Feedback</SelectItem>
                       </SelectContent>
                     </Select>
@@ -194,5 +168,5 @@ export default function ContactPage() {
         </section>
       </main>
     </div>
-  );
+  )
 }

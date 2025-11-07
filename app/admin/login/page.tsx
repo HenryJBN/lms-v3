@@ -12,7 +12,17 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
-import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle2, ArrowLeft, Smartphone } from "lucide-react"
+import {
+  Shield,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  AlertCircle,
+  CheckCircle2,
+  ArrowLeft,
+  Smartphone,
+} from "lucide-react"
 import Cookies from "js-cookie" // Import js-cookie
 
 export default function AdminLogin() {
@@ -101,7 +111,10 @@ export default function AdminLogin() {
 
         {/* Back to main site */}
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center text-sm text-slate-300 hover:text-white transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-slate-300 hover:text-white transition-colors"
+          >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to main site
           </Link>
@@ -224,12 +237,30 @@ export default function AdminLogin() {
                   <div className="flex justify-center">
                     <InputOTP maxLength={6} value={otpCode} onChange={(value) => setOtpCode(value)}>
                       <InputOTPGroup>
-                        <InputOTPSlot index={0} className="bg-slate-700 border-slate-600 text-white" />
-                        <InputOTPSlot index={1} className="bg-slate-700 border-slate-600 text-white" />
-                        <InputOTPSlot index={2} className="bg-slate-700 border-slate-600 text-white" />
-                        <InputOTPSlot index={3} className="bg-slate-700 border-slate-600 text-white" />
-                        <InputOTPSlot index={4} className="bg-slate-700 border-slate-600 text-white" />
-                        <InputOTPSlot index={5} className="bg-slate-700 border-slate-600 text-white" />
+                        <InputOTPSlot
+                          index={0}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <InputOTPSlot
+                          index={1}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <InputOTPSlot
+                          index={2}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <InputOTPSlot
+                          index={3}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <InputOTPSlot
+                          index={4}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
+                        <InputOTPSlot
+                          index={5}
+                          className="bg-slate-700 border-slate-600 text-white"
+                        />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
