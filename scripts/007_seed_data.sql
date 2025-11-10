@@ -16,7 +16,7 @@ INSERT INTO users (id, email, username, password_hash, first_name, last_name, ro
 
 -- Insert default system settings
 INSERT INTO system_settings (key, value, data_type, description, is_public, category) VALUES
-    ('site_name', 'MagikPro LMS', 'string', 'Name of the learning platform', true, 'general'),
+    ('site_name', 'DCA LMS', 'string', 'Name of the learning platform', true, 'general'),
     ('site_description', 'Advanced Learning Management System with Blockchain Integration', 'string', 'Site description for SEO', true, 'general'),
     ('default_currency', 'USD', 'string', 'Default currency for course pricing', true, 'payments'),
     ('platform_fee_percentage', '10', 'number', 'Platform commission percentage', false, 'payments'),
@@ -77,10 +77,10 @@ INSERT INTO feature_flags (name, description, is_enabled, rollout_percentage, cr
 -- Insert sample content pages
 INSERT INTO content_pages (title, slug, content, excerpt, meta_title, meta_description, status, type, author_id, published_at) VALUES
     ('About Us', 'about', 
-     '<h1>About MagikPro LMS</h1><p>We are revolutionizing online education through blockchain technology and innovative learning experiences.</p><p>Our platform combines traditional learning management with cutting-edge Web3 features, including NFT certificates and learning tokens.</p>', 
+     '<h1>About DCA LMS</h1><p>We are revolutionizing online education through blockchain technology and innovative learning experiences.</p><p>Our platform combines traditional learning management with cutting-edge Web3 features, including NFT certificates and learning tokens.</p>', 
      'Learn about our mission to revolutionize online education', 
-     'About MagikPro LMS - Blockchain-Powered Learning', 
-     'Discover how MagikPro LMS is transforming online education with blockchain technology, NFT certificates, and innovative learning experiences.', 
+     'About DCA LMS - Blockchain-Powered Learning', 
+     'Discover how DCA LMS is transforming online education with blockchain technology, NFT certificates, and innovative learning experiences.', 
      'published', 'static', 
      (SELECT id FROM users WHERE role = 'admin' LIMIT 1), 
      NOW()),
@@ -88,8 +88,8 @@ INSERT INTO content_pages (title, slug, content, excerpt, meta_title, meta_descr
     ('Privacy Policy', 'privacy', 
      '<h1>Privacy Policy</h1><p>This privacy policy explains how we collect, use, and protect your personal information.</p><p>Last updated: ' || TO_CHAR(NOW(), 'Month DD, YYYY') || '</p>', 
      'Our commitment to protecting your privacy and personal data', 
-     'Privacy Policy - MagikPro LMS', 
-     'Learn about how MagikPro LMS protects your privacy and handles your personal information.', 
+     'Privacy Policy - DCA LMS', 
+     'Learn about how DCA LMS protects your privacy and handles your personal information.', 
      'published', 'legal', 
      (SELECT id FROM users WHERE role = 'admin' LIMIT 1), 
      NOW()),
@@ -97,8 +97,8 @@ INSERT INTO content_pages (title, slug, content, excerpt, meta_title, meta_descr
     ('Terms of Service', 'terms', 
      '<h1>Terms of Service</h1><p>By using our platform, you agree to these terms and conditions.</p><p>Last updated: ' || TO_CHAR(NOW(), 'Month DD, YYYY') || '</p>', 
      'Terms and conditions for using our learning platform', 
-     'Terms of Service - MagikPro LMS', 
-     'Read the terms and conditions for using MagikPro LMS learning platform.', 
+     'Terms of Service - DCA LMS', 
+     'Read the terms and conditions for using DCA LMS learning platform.', 
      'published', 'legal', 
      (SELECT id FROM users WHERE role = 'admin' LIMIT 1), 
      NOW());

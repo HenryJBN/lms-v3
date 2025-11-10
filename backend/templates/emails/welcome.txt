@@ -1,0 +1,25 @@
+Welcome to {{ platform_name }}!
+
+Hi {{ first_name }},
+
+Welcome to {{ platform_name }}! We're excited to have you join our learning community.
+
+With {{ platform_name }}, you can:
+
+* Access hundreds of courses across multiple categories
+* Earn blockchain-verified certificates
+* Collect L-Tokens for your achievements
+* Connect with instructors and fellow learners
+
+Ready to start your learning journey?
+
+Visit: {{ login_url }}
+
+If you have any questions, feel free to reach out to our support team at {{ support_email }}.
+
+Happy learning!
+The {{ platform_name }} Team
+
+---
+© 2025 {{ platform_name }}. All rights reserved.
+

@@ -1,11 +1,10 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import Optional
+from email.mime.base import MIMEBase
 import os
 from dotenv import load_dotenv
 import jinja2
-from email.mime.base import MIMEBase
 from email import encoders
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -13,13 +12,17 @@ import httpx
 
 load_dotenv()
 
-# Email configuration
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+# Email configuration - Support both naming conventions
+SMTP_SERVER = os.getenv("SMTP_SERVER") or os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
-FROM_NAME = os.getenv("FROM_NAME", "MagikPro LMS")
+FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL") or os.getenv("SMTP_MAIL_FROM", SMTP_USERNAME)
+FROM_NAME = os.getenv("SMTP_FROM_NAME", "DCA LMS")
+
+# SMTP timeout settings (in seconds)
+SMTP_TIMEOUT = int(os.getenv("SMTP_TIMEOUT", "30"))
+SMTP_CONNECTION_TIMEOUT = int(os.getenv("SMTP_CONNECTION_TIMEOUT", "10"))
 
 # SendGrid configuration (alternative)
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
@@ -44,7 +47,7 @@ class EmailService:
             print(f"Failed to render template {template_name}: {e}")
             return ""
     
-    async def send_smtp_email(
+    def send_smtp_email(
         self,
         to_email: str,
         subject: str,
@@ -52,61 +55,111 @@ class EmailService:
         text_content: Optional[str] = None,
         attachments: Optional[List[Dict[str, Any]]] = None
     ) -> bool:
-        """Send email using SMTP"""
+        """Send email using SMTP with proper timeout handling (synchronous)"""
+        server = None
         try:
+            print(f"[SMTP] Starting SMTP send to {to_email}")
+            print(f"[SMTP] SMTP_SERVER: {SMTP_SERVER}")
+            print(f"[SMTP] SMTP_PORT: {SMTP_PORT}")
+            print(f"[SMTP] SMTP_USERNAME: {SMTP_USERNAME}")
+            print(f"[SMTP] FROM_EMAIL: {FROM_EMAIL}")
+
             if not SMTP_USERNAME or not SMTP_PASSWORD:
-                print("SMTP credentials not configured")
+                print("[SMTP] ERROR: SMTP credentials not configured")
                 return False
-            
+
             # Create message
             msg = MIMEMultipart('alternative')
             msg['From'] = f"{FROM_NAME} <{FROM_EMAIL}>"
             msg['To'] = to_email
             msg['Subject'] = subject
-            
+
             # Add text content
             if text_content:
                 text_part = MIMEText(text_content, 'plain')
                 msg.attach(text_part)
-            
+
             # Add HTML content
             html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
-            
+
             # Add attachments
             if attachments:
                 for attachment in attachments:
-                    with open(attachment['path'], 'rb') as f:
-                        part = MIMEBase('application', 'octet-stream')
-                        part.set_payload(f.read())
-                        encoders.encode_base64(part)
-                        part.add_header(
-                            'Content-Disposition',
-                            f'attachment; filename= {attachment["filename"]}'
-                        )
-                        msg.attach(part)
-            
-            # Send email
-            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-            server.starttls()
+                    try:
+                        with open(attachment['path'], 'rb') as f:
+                            part = MIMEBase('application', 'octet-stream')
+                            part.set_payload(f.read())
+                            encoders.encode_base64(part)
+                            part.add_header(
+                                'Content-Disposition',
+                                f'attachment; filename= {attachment["filename"]}'
+                            )
+                            msg.attach(part)
+                    except FileNotFoundError:
+                        print(f"Attachment file not found: {attachment['path']}")
+                        continue
+
+            # Send email with timeout
+            print(f"Connecting to SMTP server: {SMTP_SERVER}:{SMTP_PORT}")
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_CONNECTION_TIMEOUT)
+            server.set_debuglevel(0)  # Set to 1 for debugging
+
+            # Try STARTTLS if supported (optional for some servers)
+            try:
+                if server.has_extn('STARTTLS'):
+                    print("Starting TLS...")
+                    server.starttls()
+                else:
+                    print("STARTTLS not supported by server, continuing without TLS...")
+            except smtplib.SMTPNotSupportedError:
+                print("STARTTLS not supported by server, continuing without TLS...")
+
+            print("Logging in...")
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
+
+            print(f"Sending email to {to_email}...")
             server.send_message(msg)
-            server.quit()
-            
+
+            print("Email sent successfully!")
             return True
-            
-        except Exception as e:
-            print(f"SMTP email sending failed: {e}")
+
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"SMTP Authentication failed: {e}")
+            print("Please check your SMTP_USERNAME and SMTP_PASSWORD")
             return False
+        except smtplib.SMTPConnectError as e:
+            print(f"SMTP Connection failed: {e}")
+            print(f"Could not connect to {SMTP_SERVER}:{SMTP_PORT}")
+            return False
+        except smtplib.SMTPServerDisconnected as e:
+            print(f"SMTP Server disconnected: {e}")
+            return False
+        except TimeoutError as e:
+            print(f"SMTP Timeout: {e}")
+            print(f"Connection timed out after {SMTP_CONNECTION_TIMEOUT} seconds")
+            return False
+        except Exception as e:
+            print(f"SMTP email sending failed: {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            # Always close the connection
+            if server:
+                try:
+                    server.quit()
+                except:
+                    pass
     
-    async def send_sendgrid_email(
+    def send_sendgrid_email(
         self,
         to_email: str,
         subject: str,
         html_content: str,
         text_content: Optional[str] = None
     ) -> bool:
-        """Send email using SendGrid API"""
+        """Send email using SendGrid API (synchronous)"""
         try:
             if not SENDGRID_API_KEY:
                 print("SendGrid API key not configured")
@@ -141,21 +194,21 @@ class EmailService:
                     "type": "text/plain",
                     "value": text_content
                 })
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
+
+            with httpx.Client() as client:
+                response = client.post(
                     "https://api.sendgrid.com/v3/mail/send",
                     headers=headers,
                     json=data
                 )
-                
+
                 return response.status_code == 202
                 
         except Exception as e:
             print(f"SendGrid email sending failed: {e}")
             return False
     
-    async def send_email(
+    def send_email(
         self,
         to_email: str,
         subject: str,
@@ -163,164 +216,273 @@ class EmailService:
         context: Dict[str, Any],
         attachments: Optional[List[Dict[str, Any]]] = None
     ) -> bool:
-        """Send email using configured service"""
-        
+        """Send email using configured service (synchronous)"""
+
+        print(f"[EmailService] send_email called:")
+        print(f"  to_email: {to_email}")
+        print(f"  subject: {subject}")
+        print(f"  template_name: {template_name}")
+        print(f"  context keys: {list(context.keys())}")
+        print(f"  attachments: {attachments}")
+
         # Render template
         html_content = self.render_template(template_name, context)
         if not html_content:
+            print(f"[EmailService] ERROR: Template rendering failed for {template_name}")
             return False
-        
+
+        print(f"[EmailService] Template rendered successfully ({len(html_content)} chars)")
+
         # Try to render text version
         text_template_name = template_name.replace('.html', '.txt')
         text_content = self.render_template(text_template_name, context)
-        
+
         # Send email
         if USE_SENDGRID:
-            return await self.send_sendgrid_email(to_email, subject, html_content, text_content)
+            return self.send_sendgrid_email(to_email, subject, html_content, text_content)
         else:
-            return await self.send_smtp_email(to_email, subject, html_content, text_content, attachments)
+            return self.send_smtp_email(to_email, subject, html_content, text_content, attachments)
 
 # Initialize email service
 email_service = EmailService()
 
-# Email template functions
-async def send_welcome_email(email: str, first_name: str) -> bool:
-    """Send welcome email to new user"""
-    
+# Synchronous email functions (used by Celery and can be called directly)
+def send_welcome_email_sync(
+    email: str,
+    first_name: str,
+    include_guide: bool = False,
+    guide_path: Optional[str] = None
+) -> bool:
+    """
+    Send welcome email to new user (synchronous)
+
+    Args:
+        email: User's email address
+        first_name: User's first name
+        include_guide: Whether to include a getting started guide attachment
+        guide_path: Path to the guide file (if include_guide is True)
+
+    Returns:
+        bool: True if email was sent successfully
+    """
+
     context = {
         "first_name": first_name,
-        "platform_name": "MagikPro LMS",
-        "login_url": "https://magikpro.com/login",
-        "support_email": "support@magikpro.com"
+        "platform_name": "DCA LMS",
+        "login_url": "https://DCA.com/login",
+        "support_email": "support@DCA.com",
+        "welcome_tokens": 25,
+        "has_attachment": include_guide,
+        "social_twitter": "https://twitter.com/DCA",
+        "social_linkedin": "https://linkedin.com/company/DCA",
+        "social_facebook": "https://facebook.com/DCA"
     }
-    
-    return await email_service.send_email(
+
+    # Prepare attachments if guide is included
+    attachments = None
+    if include_guide and guide_path and os.path.exists(guide_path):
+        attachments = [{
+            "path": guide_path,
+            "filename": "DCA_Getting_Started_Guide.pdf"
+        }]
+
+    # Use enhanced template if guide is included
+    template_name = "welcome_with_guide.html" if include_guide else "welcome.html"
+
+    return email_service.send_email(
         to_email=email,
-        subject="Welcome to MagikPro LMS! 🎉",
-        template_name="welcome.html",
-        context=context
+        subject="Welcome to DCA LMS! 🎉",
+        template_name=template_name,
+        context=context,
+        attachments=attachments
     )
 
-async def send_password_reset_email(email: str, first_name: str, reset_token: str) -> bool:
-    """Send password reset email"""
-    
-    reset_url = f"https://magikpro.com/reset-password?token={reset_token}"
-    
+# Async wrapper for FastAPI compatibility
+async def send_welcome_email(
+    email: str,
+    first_name: str,
+    include_guide: bool = False,
+    guide_path: Optional[str] = None
+) -> bool:
+    """Async wrapper for send_welcome_email_sync"""
+    return send_welcome_email_sync(email, first_name, include_guide, guide_path)
+
+def send_password_reset_email_sync(email: str, first_name: str, reset_token: str) -> bool:
+    """Send password reset email (synchronous)"""
+
+    reset_url = f"https://DCA.com/reset-password?token={reset_token}"
+
     context = {
         "first_name": first_name,
         "reset_url": reset_url,
-        "platform_name": "MagikPro LMS",
-        "support_email": "support@magikpro.com"
+        "platform_name": "DCA LMS",
+        "support_email": "support@DCA.com"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
-        subject="Reset Your Password - MagikPro LMS",
+        subject="Reset Your Password - DCA LMS",
         template_name="password_reset.html",
         context=context
     )
 
-async def send_email_verification(email: str, first_name: str, verification_token: str) -> bool:
-    """Send email verification"""
-    
-    verification_url = f"https://magikpro.com/verify-email?token={verification_token}"
-    
+async def send_password_reset_email(email: str, first_name: str, reset_token: str) -> bool:
+    """Async wrapper for send_password_reset_email_sync"""
+    return send_password_reset_email_sync(email, first_name, reset_token)
+
+def send_email_verification_sync(email: str, first_name: str, verification_token: str) -> bool:
+    """Send email verification (synchronous)"""
+
+    verification_url = f"https://DCA.com/verify-email?token={verification_token}"
+
     context = {
         "first_name": first_name,
         "verification_url": verification_url,
-        "platform_name": "MagikPro LMS"
+        "platform_name": "DCA LMS"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
-        subject="Verify Your Email - MagikPro LMS",
+        subject="Verify Your Email - DCA LMS",
         template_name="email_verification.html",
         context=context
     )
 
-async def send_course_enrollment_email(email: str, first_name: str, course_title: str, course_url: str) -> bool:
-    """Send course enrollment confirmation email"""
-    
+async def send_email_verification(email: str, first_name: str, verification_token: str) -> bool:
+    """Async wrapper for send_email_verification_sync"""
+    return send_email_verification_sync(email, first_name, verification_token)
+
+def send_course_enrollment_email_sync(email: str, first_name: str, course_title: str, course_url: str) -> bool:
+    """Send course enrollment confirmation email (synchronous)"""
+
     context = {
         "first_name": first_name,
         "course_title": course_title,
         "course_url": course_url,
-        "platform_name": "MagikPro LMS"
+        "platform_name": "DCA LMS"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
         subject=f"Enrollment Confirmed: {course_title}",
         template_name="course_enrollment.html",
         context=context
     )
 
-async def send_certificate_email(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
-    """Send certificate issued email"""
-    
+async def send_course_enrollment_email(email: str, first_name: str, course_title: str, course_url: str) -> bool:
+    """Async wrapper for send_course_enrollment_email_sync"""
+    return send_course_enrollment_email_sync(email, first_name, course_title, course_url)
+
+def send_certificate_email_sync(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
+    """Send certificate issued email (synchronous)"""
+
     context = {
         "first_name": first_name,
         "course_title": course_title,
         "certificate_url": certificate_url,
-        "platform_name": "MagikPro LMS"
+        "platform_name": "DCA LMS"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
         subject=f"Certificate Issued: {course_title} 🏆",
         template_name="certificate_issued.html",
         context=context
     )
 
-async def send_assignment_reminder_email(
-    email: str, 
-    first_name: str, 
-    assignment_title: str, 
+async def send_certificate_email(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
+    """Async wrapper for send_certificate_email_sync"""
+    return send_certificate_email_sync(email, first_name, course_title, certificate_url)
+
+def send_assignment_reminder_email_sync(
+    email: str,
+    first_name: str,
+    assignment_title: str,
     course_title: str,
     due_date: datetime,
     assignment_url: str
 ) -> bool:
-    """Send assignment reminder email"""
-    
+    """Send assignment reminder email (synchronous)"""
+
     context = {
         "first_name": first_name,
         "assignment_title": assignment_title,
         "course_title": course_title,
         "due_date": due_date.strftime("%B %d, %Y at %I:%M %p"),
         "assignment_url": assignment_url,
-        "platform_name": "MagikPro LMS"
+        "platform_name": "DCA LMS"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
         subject=f"Assignment Due Soon: {assignment_title}",
         template_name="assignment_reminder.html",
         context=context
     )
 
-async def send_instructor_application_email(email: str, first_name: str, status: str) -> bool:
-    """Send instructor application status email"""
-    
+async def send_assignment_reminder_email(
+    email: str,
+    first_name: str,
+    assignment_title: str,
+    course_title: str,
+    due_date: datetime,
+    assignment_url: str
+) -> bool:
+    """Async wrapper for send_assignment_reminder_email_sync"""
+    return send_assignment_reminder_email_sync(email, first_name, assignment_title, course_title, due_date, assignment_url)
+
+def send_instructor_application_email_sync(email: str, first_name: str, status: str) -> bool:
+    """Send instructor application status email (synchronous)"""
+
     context = {
         "first_name": first_name,
         "status": status,
-        "platform_name": "MagikPro LMS",
-        "dashboard_url": "https://magikpro.com/dashboard"
+        "platform_name": "DCA LMS",
+        "dashboard_url": "https://DCA.com/dashboard"
     }
-    
+
     template_name = f"instructor_application_{status}.html"
     subject_map = {
         "approved": "Instructor Application Approved! 🎉",
         "rejected": "Instructor Application Update",
         "pending": "Instructor Application Received"
     }
-    
-    return await email_service.send_email(
+
+    return email_service.send_email(
         to_email=email,
         subject=subject_map.get(status, "Instructor Application Update"),
         template_name=template_name,
         context=context
     )
+
+async def send_instructor_application_email(email: str, first_name: str, status: str) -> bool:
+    """Async wrapper for send_instructor_application_email_sync"""
+    return send_instructor_application_email_sync(email, first_name, status)
+
+def send_bulk_email_sync(
+    recipients: List[str],
+    subject: str,
+    template_name: str,
+    context: Dict[str, Any]
+) -> Dict[str, int]:
+    """Send bulk email to multiple recipients (synchronous)"""
+
+    results = {"sent": 0, "failed": 0}
+
+    for email in recipients:
+        success = email_service.send_email(
+            to_email=email,
+            subject=subject,
+            template_name=template_name,
+            context=context
+        )
+
+        if success:
+            results["sent"] += 1
+        else:
+            results["failed"] += 1
+
+    return results
 
 async def send_bulk_email(
     recipients: List[str],
@@ -328,21 +490,44 @@ async def send_bulk_email(
     template_name: str,
     context: Dict[str, Any]
 ) -> Dict[str, int]:
-    """Send bulk email to multiple recipients"""
-    
-    results = {"sent": 0, "failed": 0}
-    
-    for email in recipients:
-        success = await email_service.send_email(
-            to_email=email,
-            subject=subject,
-            template_name=template_name,
-            context=context
-        )
-        
-        if success:
-            results["sent"] += 1
-        else:
-            results["failed"] += 1
-    
-    return results
+    """Async wrapper for send_bulk_email_sync"""
+    return send_bulk_email_sync(recipients, subject, template_name, context)
+
+def send_custom_email_sync(
+    to_email: str,
+    subject: str,
+    template_name: str,
+    context: Dict[str, Any],
+    attachments: Optional[List[Dict[str, Any]]] = None
+) -> bool:
+    """
+    Send a custom email with any template, dynamic values, and optional attachments (synchronous)
+
+    Args:
+        to_email: Recipient's email address
+        subject: Email subject line
+        template_name: Name of the template file (e.g., 'welcome.html')
+        context: Dictionary of dynamic values to inject into the template
+        attachments: Optional list of attachments, each with 'path' and 'filename' keys
+                    Example: [{"path": "/path/to/file.pdf", "filename": "document.pdf"}]
+
+    Returns:
+        bool: True if email was sent successfully
+    """
+    return email_service.send_email(
+        to_email=to_email,
+        subject=subject,
+        template_name=template_name,
+        context=context,
+        attachments=attachments
+    )
+
+async def send_custom_email(
+    to_email: str,
+    subject: str,
+    template_name: str,
+    context: Dict[str, Any],
+    attachments: Optional[List[Dict[str, Any]]] = None
+) -> bool:
+    """Async wrapper for send_custom_email_sync"""
+    return send_custom_email_sync(to_email, subject, template_name, context, attachments)

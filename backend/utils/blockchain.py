@@ -90,7 +90,7 @@ class BlockchainService:
             # Fallback to local storage or alternative IPFS service
             print(f"IPFS upload failed: {e}")
             # Return a placeholder URI for development
-            return f"https://api.magikpro.com/certificates/{metadata.get('certificate_id')}/metadata"
+            return f"https://api.DCA.com/certificates/{metadata.get('certificate_id')}/metadata"
     
     async def mint_certificate_nft(
         self, 
@@ -104,7 +104,7 @@ class BlockchainService:
             
             # Create metadata
             metadata = {
-                "name": f"MagikPro Certificate - {certificate_data['course_title']}",
+                "name": f"DCA Certificate - {certificate_data['course_title']}",
                 "description": certificate_data.get('description', ''),
                 "image": certificate_data.get('image_url', ''),
                 "attributes": [
@@ -126,10 +126,10 @@ class BlockchainService:
                     },
                     {
                         "trait_type": "Platform",
-                        "value": "MagikPro LMS"
+                        "value": "DCA LMS"
                     }
                 ],
-                "external_url": f"https://magikpro.com/certificates/{certificate_data['certificate_id']}"
+                "external_url": f"https://DCA.com/certificates/{certificate_data['certificate_id']}"
             }
             
             # Upload metadata to IPFS
@@ -185,7 +185,7 @@ class BlockchainService:
                 "contract_address": "0x1234567890123456789012345678901234567890",
                 "transaction_hash": f"0x{''.join(['a' for _ in range(64)])}",
                 "network": "polygon-testnet",
-                "token_uri": f"https://api.magikpro.com/certificates/{certificate_data['certificate_id']}/metadata"
+                "token_uri": f"https://api.DCA.com/certificates/{certificate_data['certificate_id']}/metadata"
             }
     
     async def verify_certificate_on_chain(

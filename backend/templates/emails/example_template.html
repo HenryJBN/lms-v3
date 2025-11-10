@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ email_title }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      .content {
+        padding: 40px 30px;
+      }
+      .button {
+        display: inline-block;
+        background: #667eea;
+        color: white !important;
+        padding: 14px 35px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .info-box {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border-left: 4px solid #667eea;
+      }
+      .footer {
+        background: #f9f9f9;
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header Section -->
+      <div class="header">
+        <h1>{{ header_title }}</h1>
+        {% if header_subtitle %}
+        <p style="margin: 10px 0 0 0;">{{ header_subtitle }}</p>
+        {% endif %}
+      </div>
+      
+      <!-- Main Content -->
+      <div class="content">
+        <h2>Hi {{ first_name }},</h2>
+        
+        <p>{{ main_message }}</p>
+
+        <!-- Conditional Info Box -->
+        {% if show_info_box %}
+        <div class="info-box">
+          <strong>{{ info_box_title }}</strong>
+          <p style="margin: 10px 0 0 0;">{{ info_box_content }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Dynamic List -->
+        {% if items %}
+        <h3>{{ list_title }}</h3>
+        <ul>
+          {% for item in items %}
+          <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- Call to Action Button -->
+        {% if show_button %}
+        <p style="text-align: center;">
+          <a href="{{ button_url }}" class="button">{{ button_text }}</a>
+        </p>
+        {% endif %}
+
+        <!-- Additional Content -->
+        {% if additional_content %}
+        <p>{{ additional_content }}</p>
+        {% endif %}
+
+        <!-- Attachment Notice -->
+        {% if has_attachments %}
+        <div class="info-box" style="border-left-color: #2196f3; background: #e3f2fd;">
+          <strong>📎 Attachments Included</strong>
+          <p style="margin: 5px 0 0 0;">
+            Please find the attached documents for your reference.
+          </p>
+        </div>
+        {% endif %}
+
+        <p>
+          Best regards,<br />
+          <strong>{{ sender_name }}</strong>
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div class="footer">
+        <p>© 2025 {{ platform_name }}. All rights reserved.</p>
+        {% if support_email %}
+        <p>
+          Need help? Contact us at 
+          <a href="mailto:{{ support_email }}" style="color: #667eea;">{{ support_email }}</a>
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
+

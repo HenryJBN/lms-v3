@@ -13,7 +13,8 @@ from middleware.auth import (
     authenticate_user, create_access_token, get_password_hash,
     ACCESS_TOKEN_EXPIRE_MINUTES, get_user_by_email
 )
-from utils.email import send_password_reset_email
+from utils.email import send_password_reset_email, send_welcome_email
+from utils.email_async import send_welcome_email_async  # Celery background task
 from utils.validation import validate_email
 
 router = APIRouter()
@@ -76,10 +77,23 @@ async def register(user: UserCreate):
     # Create welcome token transaction
     transaction_query = """
         INSERT INTO token_transactions (user_id, type, amount, balance_after, description, reference_type)
-        VALUES (:user_id, 'bonus', 25.0, 25.0, 'Welcome bonus for joining MagikPro LMS', 'registration')
+        VALUES (:user_id, 'bonus', 25.0, 25.0, 'Welcome bonus for joining DCA LMS', 'registration')
     """
     await database.execute(transaction_query, values={"user_id": user_id})
-    
+
+    # Send welcome email asynchronously via Celery (non-blocking)
+    try:
+        task_id = send_welcome_email_async(user.email, user.first_name)
+        print(f"Welcome email queued for {user.email} (Task ID: {task_id})")
+    except Exception as e:
+        # Log the error but don't fail registration if email queueing fails
+        print(f"Failed to queue welcome email for {user.email}: {e}")
+        # Fallback to synchronous email if Celery is not available
+        try:
+            await send_welcome_email(user.email, user.first_name)
+        except Exception as e2:
+            print(f"Fallback email also failed: {e2}")
+
     return UserResponse(**new_user)
 
 @router.post("/login", response_model=Token)

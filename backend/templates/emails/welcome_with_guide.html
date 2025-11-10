@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to {{ platform_name }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 30px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      .content {
+        padding: 40px 30px;
+        background: #ffffff;
+      }
+      .content h2 {
+        color: #667eea;
+        margin-top: 0;
+      }
+      .button {
+        display: inline-block;
+        background: #667eea;
+        color: white !important;
+        padding: 14px 35px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+      .button:hover {
+        background: #5568d3;
+      }
+      .features {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .features ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      .features li {
+        margin: 10px 0;
+      }
+      .bonus-box {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .bonus-box h3 {
+        margin: 0 0 10px 0;
+        color: #2d3436;
+      }
+      .attachment-notice {
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .footer {
+        background: #f9f9f9;
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-size: 14px;
+        border-radius: 0 0 10px 10px;
+      }
+      .social-links {
+        margin: 15px 0;
+      }
+      .social-links a {
+        display: inline-block;
+        margin: 0 10px;
+        color: #667eea;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Welcome to {{ platform_name }}! 🎉</h1>
+      </div>
+      
+      <div class="content">
+        <h2>Hi {{ first_name }},</h2>
+        <p>
+          We're thrilled to have you join our learning community! Your journey to mastering new skills starts now.
+        </p>
+
+        <div class="bonus-box">
+          <h3>🎁 Welcome Bonus!</h3>
+          <p style="margin: 0; font-size: 18px;">
+            You've received <strong>{{ welcome_tokens }} L-Tokens</strong> to get started!
+          </p>
+        </div>
+
+        <div class="features">
+          <h3>What You Can Do:</h3>
+          <ul>
+            <li>📚 Access hundreds of courses across multiple categories</li>
+            <li>🏆 Earn blockchain-verified certificates</li>
+            <li>🪙 Collect L-Tokens for your achievements</li>
+            <li>🤝 Connect with instructors and fellow learners</li>
+            <li>📱 Learn on any device, anytime, anywhere</li>
+          </ul>
+        </div>
+
+        {% if has_attachment %}
+        <div class="attachment-notice">
+          <strong>📎 Getting Started Guide Attached</strong>
+          <p style="margin: 5px 0 0 0;">
+            We've attached a comprehensive guide to help you make the most of {{ platform_name }}.
+          </p>
+        </div>
+        {% endif %}
+
+        <p style="text-align: center;">
+          <a href="{{ login_url }}" class="button">Start Learning Now</a>
+        </p>
+
+        <h3>Quick Start Tips:</h3>
+        <ol>
+          <li>Complete your profile to personalize your experience</li>
+          <li>Browse our course catalog and find topics that interest you</li>
+          <li>Enroll in your first course and start earning L-Tokens</li>
+          <li>Join our community forums to connect with other learners</li>
+        </ol>
+
+        <p>
+          Need help? Our support team is here for you at 
+          <a href="mailto:{{ support_email }}" style="color: #667eea;">{{ support_email }}</a>
+        </p>
+
+        <p>
+          Happy learning!<br />
+          <strong>The {{ platform_name }} Team</strong>
+        </p>
+      </div>
+      
+      <div class="footer">
+        <div class="social-links">
+          <a href="{{ social_twitter }}">Twitter</a> |
+          <a href="{{ social_linkedin }}">LinkedIn</a> |
+          <a href="{{ social_facebook }}">Facebook</a>
+        </div>
+        <p>© 2025 {{ platform_name }}. All rights reserved.</p>
+        <p style="font-size: 12px; color: #999;">
+          You're receiving this email because you created an account on {{ platform_name }}.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
+
