@@ -51,6 +51,17 @@ export interface ResetPasswordRequest {
   new_password: string
 }
 
+export interface TwoFactorAuthResponse {
+  requires_2fa: boolean
+  session_id: string
+  message: string
+}
+
+export interface TwoFactorVerifyRequest {
+  session_id: string
+  code: string
+}
+
 //
 // --- Helper Functions ---
 //
@@ -79,8 +90,25 @@ class AuthService {
     }
   }
 
-  async login(data: LoginRequest): Promise<User> {
-    const auth = await this.post<AuthResponse>(API_ENDPOINTS.login, data)
+  async login(data: LoginRequest): Promise<User | TwoFactorAuthResponse> {
+    const response = await this.post<AuthResponse | TwoFactorAuthResponse>(
+      API_ENDPOINTS.login,
+      data
+    )
+
+    // Check if 2FA is required
+    if ("requires_2fa" in response && response.requires_2fa) {
+      return response as TwoFactorAuthResponse
+    }
+
+    // Normal login response
+    const auth = response as AuthResponse
+    storeTokens(auth)
+    return auth.user
+  }
+
+  async verify2FA(data: TwoFactorVerifyRequest): Promise<User> {
+    const auth = await this.post<AuthResponse>(API_ENDPOINTS.verify2FA, data)
     storeTokens(auth)
     return auth.user
   }

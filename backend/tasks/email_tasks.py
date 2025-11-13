@@ -16,7 +16,8 @@ from utils.email import (
     send_certificate_email_sync,
     send_bulk_email_sync,
     send_password_reset_email_sync,
-    send_email_verification_sync
+    send_email_verification_sync,
+    send_two_factor_auth_email_sync
 )
 
 
@@ -159,3 +160,29 @@ def send_email_verification_task(self, email: str, first_name: str, verification
         print(f"[Celery] Failed to send email verification: {e}")
         raise self.retry(exc=e)
 
+
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code: str, ip_address: str = "Unknown"):
+    """
+    Celery task to send two-factor authentication code email
+
+    This is a thin wrapper around send_two_factor_auth_email_sync from utils/email.py
+    """
+    try:
+        print(f"[Celery] Attempting to send 2FA email to {email}")
+        print(f"[Celery] Parameters: first_name={first_name}, auth_code={auth_code}, ip_address={ip_address}")
+
+        result = send_two_factor_auth_email_sync(email, first_name, auth_code, ip_address)
+
+        print(f"[Celery] send_two_factor_auth_email_sync returned: {result}")
+
+        if result:
+            return {"status": "success", "to_email": email, "subject": "Your Two-Factor Authentication Code - DCA LMS"}
+        else:
+            print(f"[Celery] 2FA email sending failed - result was False")
+            raise Exception("Email sending returned False - check email.py logs for details")
+    except Exception as e:
+        print(f"[Celery] Failed to send 2FA email: {e}")
+        import traceback
+        traceback.print_exc()
+        raise self.retry(exc=e)

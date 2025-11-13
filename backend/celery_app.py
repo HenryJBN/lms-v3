@@ -26,26 +26,29 @@ celery_app.conf.update(
     result_serializer='json',
     timezone='UTC',
     enable_utc=True,
-    
+
     # Task execution settings
     task_track_started=True,
     task_time_limit=300,  # 5 minutes max per task
     task_soft_time_limit=240,  # 4 minutes soft limit
-    
+
     # Result backend settings
     result_expires=3600,  # Results expire after 1 hour
     result_backend_transport_options={
         'master_name': 'mymaster'
     },
-    
+
     # Worker settings
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,
-    
+
     # Retry settings
     task_acks_late=True,
     task_reject_on_worker_lost=True,
-    
+
+    # Task autodiscovery
+    imports=['tasks.email_tasks'],  # Explicitly import task modules
+
     # Beat schedule (for periodic tasks)
     beat_schedule={
         # Example: Send weekly reports every Monday at 9 AM

@@ -49,9 +49,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const user = await authService.login({ email, password })
-      if (user) {
-        setUser(user)
+      const response = await authService.login({ email, password })
+
+      // Check if 2FA is required
+      if ("requires_2fa" in response && response.requires_2fa) {
+        // Return the 2FA response to the caller to handle
+        throw new Error("2FA_REQUIRED")
+      }
+
+      // Normal login - response is a User object
+      if (response) {
+        setUser(response)
         await refreshTokenBalance()
       }
     } catch (error) {

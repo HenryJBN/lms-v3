@@ -151,6 +151,15 @@ class PasswordReset(BaseSchema):
     token: str
     new_password: str
 
+class TwoFactorAuthResponse(BaseSchema):
+    requires_2fa: bool
+    session_id: str
+    message: str
+
+class TwoFactorVerifyRequest(BaseSchema):
+    session_id: str
+    code: str
+
 # Category schemas
 class CategoryBase(BaseSchema):
     name: str

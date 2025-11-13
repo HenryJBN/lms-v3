@@ -10,7 +10,8 @@ from tasks.email_tasks import (
     send_certificate_email_task,
     send_bulk_emails_task,
     send_password_reset_email_task,
-    send_email_verification_task
+    send_email_verification_task,
+    send_two_factor_auth_email_task
 )
 
 
@@ -135,6 +136,28 @@ def send_email_verification_async(
         str: Task ID for tracking
     """
     task = send_email_verification_task.delay(email, first_name, verification_token)
+    return task.id
+
+
+def send_two_factor_auth_email_async(
+    email: str,
+    first_name: str,
+    auth_code: str,
+    ip_address: str = "Unknown"
+) -> str:
+    """
+    Queue two-factor authentication email to be sent in background
+
+    Args:
+        email: User's email address
+        first_name: User's first name
+        auth_code: 6-digit authentication code
+        ip_address: IP address of the login attempt
+
+    Returns:
+        str: Task ID for tracking
+    """
+    task = send_two_factor_auth_email_task.delay(email, first_name, auth_code, ip_address)
     return task.id
 
 

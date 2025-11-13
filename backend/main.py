@@ -65,15 +65,41 @@ async def root():
 
 @app.get("/health")
 async def health_check():
+    from utils.redis_client import check_redis_connection
+
+    health_status = {
+        "status": "healthy",
+        "database": "unknown",
+        "redis": "unknown"
+    }
+
+    # Test database connection
     try:
-        # Test database connection
         await database.fetch_one("SELECT 1")
-        return {"status": "healthy", "database": "connected"}
+        health_status["database"] = "connected"
     except Exception as e:
+        health_status["database"] = "disconnected"
+        health_status["status"] = "unhealthy"
+
+    # Test Redis connection
+    try:
+        if check_redis_connection():
+            health_status["redis"] = "connected"
+        else:
+            health_status["redis"] = "disconnected"
+            health_status["status"] = "degraded"  # Redis is optional for some features
+    except Exception as e:
+        health_status["redis"] = "disconnected"
+        health_status["status"] = "degraded"
+
+    # Return appropriate status code
+    if health_status["status"] == "unhealthy":
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database connection failed"
+            detail=health_status
         )
+
+    return health_status
 
 if __name__ == "__main__":
     uvicorn.run(

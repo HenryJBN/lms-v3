@@ -4,6 +4,7 @@ export const REQUEST_TIMEOUT = 10000
 export const API_ENDPOINTS = {
   // Auth endpoints
   login: "/api/auth/login",
+  verify2FA: "/api/auth/verify-2fa",
   register: "/api/auth/register",
   logout: "/api/auth/logout",
   refreshToken: "/api/auth/refresh",

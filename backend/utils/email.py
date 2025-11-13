@@ -373,6 +373,30 @@ async def send_course_enrollment_email(email: str, first_name: str, course_title
     """Async wrapper for send_course_enrollment_email_sync"""
     return send_course_enrollment_email_sync(email, first_name, course_title, course_url)
 
+def send_two_factor_auth_email_sync(email: str, first_name: str, auth_code: str, ip_address: str = "Unknown") -> bool:
+    """Send two-factor authentication code email (synchronous)"""
+
+    context = {
+        "first_name": first_name,
+        "auth_code": auth_code,
+        "expiry_minutes": 10,
+        "login_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "ip_address": ip_address,
+        "platform_name": "DCA LMS",
+        "support_email": "support@dcalms.com"
+    }
+
+    return email_service.send_email(
+        to_email=email,
+        subject="Your Two-Factor Authentication Code - DCA LMS",
+        template_name="two_factor_auth.html",
+        context=context
+    )
+
+async def send_two_factor_auth_email(email: str, first_name: str, auth_code: str, ip_address: str = "Unknown") -> bool:
+    """Async wrapper for send_two_factor_auth_email_sync"""
+    return send_two_factor_auth_email_sync(email, first_name, auth_code, ip_address)
+
 def send_certificate_email_sync(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
     """Send certificate issued email (synchronous)"""
 

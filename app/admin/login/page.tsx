@@ -5,94 +5,117 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react"
+import Cookies from "js-cookie"
 import {
-  Shield,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  AlertCircle,
-  CheckCircle2,
-  ArrowLeft,
-  Smartphone,
-} from "lucide-react"
-import Cookies from "js-cookie" // Import js-cookie
+  LoginSchema,
+  TwoFactorSchema,
+  type LoginFormData,
+  type TwoFactorFormData,
+} from "@/lib/schemas/login"
+import { authService, type TwoFactorAuthResponse } from "@/lib/services/auth"
 
 export default function AdminLogin() {
   const router = useRouter()
   const [step, setStep] = useState<"login" | "2fa">("login")
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [sessionId, setSessionId] = useState("")
 
-  // Form data
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [otpCode, setOtpCode] = useState("")
+  // Login form
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // 2FA form
+  const twoFactorForm = useForm<TwoFactorFormData>({
+    resolver: zodResolver(TwoFactorSchema),
+    mode: "onChange", // Enable real-time validation
+    defaultValues: {
+      code: "",
+    },
+  })
+
+  const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true)
     setError("")
     setSuccess("")
 
-    // Simulate API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await authService.login(data)
 
-      // Mock validation
-      if (email === "admin@dcalms.com" && password === "admin123") {
-        setSuccess("Credentials verified. Please enter your 2FA code.")
+      // Check if 2FA is required
+      if ("requires_2fa" in response && response.requires_2fa) {
+        const twoFAResponse = response as TwoFactorAuthResponse
+        setSessionId(twoFAResponse.session_id)
+        setSuccess(twoFAResponse.message)
         setStep("2fa")
       } else {
-        setError("Invalid email or password. Please try again.")
-      }
-    } catch (err) {
-      setError("Login failed. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handle2FA = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock 2FA validation
-      if (otpCode === "123456") {
-        // Set the admin-token cookie upon successful 2FA
-        Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" }) // Expires in 7 days
-
+        // Direct login success (shouldn't happen for admin)
         setSuccess("Login successful! Redirecting to admin dashboard...")
         setTimeout(() => {
           router.push("/admin")
         }, 1500)
-      } else {
-        setError("Invalid 2FA code. Please try again.")
       }
-    } catch (err) {
-      setError("2FA verification failed. Please try again.")
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const resend2FA = () => {
-    setSuccess("New 2FA code sent to your authenticator app.")
-    setTimeout(() => setSuccess(""), 3000)
+  const handle2FA = async (data: TwoFactorFormData) => {
+    setIsLoading(true)
+    setError("")
+
+    try {
+      await authService.verify2FA({
+        session_id: sessionId,
+        code: data.code,
+      })
+
+      // Set the admin-token cookie upon successful 2FA
+      Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" })
+
+      setSuccess("Login successful! Redirecting to admin dashboard...")
+      setTimeout(() => {
+        router.push("/admin")
+      }, 1500)
+    } catch (err: any) {
+      setError(err.message || "2FA verification failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resend2FA = async () => {
+    try {
+      const loginData = loginForm.getValues()
+      const response = await authService.login(loginData)
+
+      if ("requires_2fa" in response && response.requires_2fa) {
+        const twoFAResponse = response as TwoFactorAuthResponse
+        setSessionId(twoFAResponse.session_id)
+        setSuccess("New 2FA code sent to your email.")
+        setTimeout(() => setSuccess(""), 3000)
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code.")
+    }
   }
 
   return (
@@ -130,7 +153,7 @@ export default function AdminLogin() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-white">
                     Email Address
@@ -141,12 +164,16 @@ export default function AdminLogin() {
                       id="email"
                       type="email"
                       placeholder="admin@dcalms.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      {...loginForm.register("email")}
                       className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                      required
+                      disabled={isLoading}
                     />
                   </div>
+                  {loginForm.formState.errors.email && (
+                    <p className="text-sm text-red-400">
+                      {loginForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -159,10 +186,9 @@ export default function AdminLogin() {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      {...loginForm.register("password")}
                       className="pl-10 pr-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                      required
+                      disabled={isLoading}
                     />
                     <Button
                       type="button"
@@ -170,23 +196,19 @@ export default function AdminLogin() {
                       size="sm"
                       className="absolute right-0 top-0 h-full px-3 text-slate-400 hover:text-white"
                       onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {loginForm.formState.errors.password && (
+                    <p className="text-sm text-red-400">
+                      {loginForm.formState.errors.password.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    />
-                    <Label htmlFor="remember" className="text-sm text-slate-300">
-                      Remember me
-                    </Label>
-                  </div>
                   <Link
                     href="/admin/forgot-password"
                     className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
@@ -227,15 +249,20 @@ export default function AdminLogin() {
             <CardHeader className="space-y-1">
               <CardTitle className="text-xl text-white">Two-Factor Authentication</CardTitle>
               <CardDescription className="text-slate-300">
-                Enter the 6-digit code from your authenticator app
+                Enter the 6-digit code sent to your email
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handle2FA} className="space-y-6">
+              <form onSubmit={twoFactorForm.handleSubmit(handle2FA)} className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-white">Authentication Code</Label>
                   <div className="flex justify-center">
-                    <InputOTP maxLength={6} value={otpCode} onChange={(value) => setOtpCode(value)}>
+                    <InputOTP
+                      maxLength={6}
+                      {...twoFactorForm.register("code")}
+                      value={twoFactorForm.watch("code")}
+                      onChange={(value) => twoFactorForm.setValue("code", value)}
+                    >
                       <InputOTPGroup>
                         <InputOTPSlot
                           index={0}
@@ -264,11 +291,16 @@ export default function AdminLogin() {
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
+                  {twoFactorForm.formState.errors.code && (
+                    <p className="text-sm text-red-400 text-center">
+                      {twoFactorForm.formState.errors.code.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-center space-x-2 text-sm text-slate-300">
-                  <Smartphone className="h-4 w-4" />
-                  <span>Check your authenticator app for the code</span>
+                  <Mail className="h-4 w-4" />
+                  <span>Check your email for the verification code</span>
                 </div>
 
                 {error && (
@@ -289,7 +321,7 @@ export default function AdminLogin() {
                   <Button
                     type="submit"
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                    disabled={isLoading || otpCode.length !== 6}
+                    disabled={isLoading || twoFactorForm.watch("code").length !== 6}
                   >
                     {isLoading ? "Verifying..." : "Verify & Sign In"}
                   </Button>
@@ -342,7 +374,7 @@ export default function AdminLogin() {
                   <strong>Password:</strong> admin123
                 </p>
                 <p>
-                  <strong>2FA Code:</strong> 123456
+                  <strong>2FA Code:</strong> Check your email
                 </p>
               </div>
             </div>
