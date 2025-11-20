@@ -37,9 +37,9 @@ export interface User {
 export interface AuthResponse {
   success: boolean
   access_token: string
-  refresh_token: string
   token_type: string
   user: User
+  // Note: refresh_token is now sent as HTTP-only cookie from backend
 }
 
 export interface ForgotPasswordRequest {
@@ -66,15 +66,16 @@ export interface TwoFactorVerifyRequest {
 // --- Helper Functions ---
 //
 const storeTokens = (auth: AuthResponse) => {
+  // Store access token in cookie (will be moved to memory in future iteration)
   setCookie(COOKIE_NAMES.accessToken, auth.access_token, COOKIE_OPTIONS)
-  setCookie(COOKIE_NAMES.refreshToken, auth.refresh_token, COOKIE_OPTIONS)
   setCookie(COOKIE_NAMES.userId, auth.user.id, COOKIE_OPTIONS)
+  // Note: refresh_token is now automatically stored as HTTP-only cookie by backend
 }
 
 const clearTokens = () => {
   deleteCookie(COOKIE_NAMES.accessToken)
-  deleteCookie(COOKIE_NAMES.refreshToken)
   deleteCookie(COOKIE_NAMES.userId)
+  // Note: refresh_token HTTP-only cookie is cleared by backend on logout
 }
 
 //

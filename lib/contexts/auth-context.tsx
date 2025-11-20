@@ -32,8 +32,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const token = getCookie(COOKIE_NAMES.accessToken)
         if (token) {
+          // Access token exists, fetch user data
           await refreshUser()
           await refreshTokenBalance()
+        } else {
+          // No access token, try to refresh using HTTP-only refresh token
+          // This handles page refresh scenarios where access token might be expired
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/refresh`,
+              {
+                method: "POST",
+                credentials: "include", // Send HTTP-only cookie
+              }
+            )
+
+            if (response.ok) {
+              const data = await response.json()
+              setCookie(COOKIE_NAMES.accessToken, data.access_token, COOKIE_OPTIONS)
+              await refreshUser()
+              await refreshTokenBalance()
+            }
+          } catch (refreshError) {
+            console.log("No valid refresh token available")
+          }
         }
       } catch (error) {
         console.error("Auth initialization failed:", error)
@@ -86,8 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.logout()
     } finally {
       deleteCookie(COOKIE_NAMES.accessToken)
-      deleteCookie(COOKIE_NAMES.refreshToken)
       deleteCookie(COOKIE_NAMES.userId)
+      // Note: refresh_token HTTP-only cookie is cleared by backend
       setUser(null)
       setTokenBalance(null)
       usersService.clearCache()

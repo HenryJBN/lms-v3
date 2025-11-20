@@ -30,22 +30,19 @@ class ApiClient {
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    const refreshToken = getCookie(COOKIE_NAMES.refreshToken)
-    if (!refreshToken) {
-      return false
-    }
-
     try {
+      // Refresh token is sent automatically as HTTP-only cookie
       const response = await fetch(`${this.baseURL}${API_ENDPOINTS.refreshToken}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        credentials: "include", // Important: send HTTP-only cookies
       })
 
       if (response.ok) {
         const data = await response.json()
+        // Store new access token
         setCookie(COOKIE_NAMES.accessToken, data.access_token, COOKIE_OPTIONS)
         return true
       }
