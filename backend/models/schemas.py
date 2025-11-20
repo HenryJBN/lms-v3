@@ -139,6 +139,12 @@ class Token(BaseSchema):
     token_type: str
     expires_in: int
     user: UserResponse
+    # Note: refresh_token will be sent as HTTP-only cookie, not in response body
+
+class RefreshTokenResponse(BaseSchema):
+    access_token: str
+    token_type: str
+    expires_in: int
 
 class LoginRequest(BaseSchema):
     email: EmailStr

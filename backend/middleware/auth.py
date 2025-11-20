@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 import bcrypt
 from datetime import datetime, timedelta, UTC
 from typing import Optional
@@ -149,14 +149,25 @@ async def require_instructor_or_admin(current_user = Depends(get_current_active_
     return current_user
 
 def verify_refresh_token(token: str) -> Optional[str]:
-    """Verify a refresh token and return the user ID"""
+    """
+    Verify a refresh token and return the user ID.
+    Returns None if token is invalid, expired, or not a refresh token.
+    """
     try:
+        # jwt.decode automatically validates expiration (exp claim)
+        # and raises ExpiredSignatureError if token is expired
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         token_type: str = payload.get("type")
-        
+
+        # Verify this is a refresh token (not an access token)
         if user_id is None or token_type != "refresh":
             return None
+
         return user_id
+    except ExpiredSignatureError:
+        # Token has expired
+        return None
     except JWTError:
+        # Token is invalid (malformed, wrong signature, etc.)
         return None

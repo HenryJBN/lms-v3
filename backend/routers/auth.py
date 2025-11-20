@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 import uuid
@@ -8,13 +8,14 @@ from typing import Optional, Dict
 
 from database.connection import database
 from models.schemas import (
-    Token, UserCreate, UserResponse, LoginRequest,
+    Token, RefreshTokenResponse, UserCreate, UserResponse, LoginRequest,
     PasswordResetRequest, PasswordReset, UserRole
 )
 from models.auth_schemas import TwoFactorAuthResponse, TwoFactorVerifyRequest
 from middleware.auth import (
-    authenticate_user, create_access_token, get_password_hash,
-    ACCESS_TOKEN_EXPIRE_MINUTES, get_user_by_email
+    authenticate_user, create_access_token, create_refresh_token,
+    verify_refresh_token, get_password_hash,
+    ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, get_user_by_email
 )
 from utils.email import send_password_reset_email, send_welcome_email
 from utils.email_async import send_welcome_email_async, send_two_factor_auth_email_async  # Celery background tasks
@@ -101,7 +102,7 @@ async def register(user: UserCreate):
     return UserResponse(**new_user)
 
 @router.post("/login")
-async def login(login_data: LoginRequest, request: Request):
+async def login(login_data: LoginRequest, request: Request, response: Response):
     # Mock credentials check
     is_mock_login = (
         login_data.email == "admin@dcalms.com" and
@@ -179,9 +180,24 @@ async def login(login_data: LoginRequest, request: Request):
         update_query = "UPDATE users SET last_login_at = NOW() WHERE id = :user_id"
         await database.execute(update_query, values={"user_id": user.id})
 
+    # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+
+    # Create refresh token
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    # Set refresh token as HTTP-only cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,  # Only send over HTTPS in production
+        samesite="lax",  # CSRF protection
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
+        path="/api/auth"  # Only send to auth endpoints
     )
 
     return {
@@ -200,7 +216,7 @@ async def login(login_data: LoginRequest, request: Request):
     }
 
 @router.post("/verify-2fa")
-async def verify_two_factor(verify_data: TwoFactorVerifyRequest):
+async def verify_two_factor(verify_data: TwoFactorVerifyRequest, response: Response):
     # Verify 2FA code using Redis
     session = two_fa_manager.verify_2fa_code(
         session_id=verify_data.session_id,
@@ -250,6 +266,20 @@ async def verify_two_factor(verify_data: TwoFactorVerifyRequest):
         data={"sub": user_id}, expires_delta=access_token_expires
     )
 
+    # Create refresh token
+    refresh_token = create_refresh_token(data={"sub": user_id})
+
+    # Set refresh token as HTTP-only cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,  # Only send over HTTPS in production
+        samesite="lax",  # CSRF protection
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
+        path="/api/auth"  # Only send to auth endpoints
+    )
+
     # Clean up session from Redis
     two_fa_manager.invalidate_2fa_session(verify_data.session_id)
 
@@ -259,6 +289,65 @@ async def verify_two_factor(verify_data: TwoFactorVerifyRequest):
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "user": user_data
     }
+
+@router.post("/refresh", response_model=RefreshTokenResponse)
+async def refresh_token(request: Request, response: Response):
+    """
+    Refresh access token using HTTP-only refresh token cookie
+    """
+    # Get refresh token from HTTP-only cookie
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found"
+        )
+
+    # Verify refresh token
+    user_id = verify_refresh_token(refresh_token)
+
+    if not user_id:
+        # Clear invalid refresh token cookie
+        response.delete_cookie(key="refresh_token", path="/api/auth")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Create new access token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user_id}, expires_delta=access_token_expires
+    )
+
+    # Optionally rotate refresh token (create new one)
+    new_refresh_token = create_refresh_token(data={"sub": user_id})
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path="/api/auth"
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    }
+
+@router.post("/logout")
+async def logout(response: Response):
+    """
+    Logout user by clearing the HTTP-only refresh token cookie
+    """
+    # Clear refresh token cookie
+    response.delete_cookie(key="refresh_token", path="/api/auth")
+
+    return {"message": "Logged out successfully"}
 
 @router.post("/forgot-password")
 async def forgot_password(request: PasswordResetRequest):

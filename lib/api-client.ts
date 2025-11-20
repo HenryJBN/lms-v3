@@ -1,4 +1,10 @@
-import { API_BASE_URL, COOKIE_NAMES, COOKIE_OPTIONS, REQUEST_TIMEOUT } from "./api-config"
+import {
+  API_BASE_URL,
+  API_ENDPOINTS,
+  COOKIE_NAMES,
+  COOKIE_OPTIONS,
+  REQUEST_TIMEOUT,
+} from "./api-config"
 import { getCookie, setCookie } from "cookies-next"
 
 export class ApiError extends Error {
@@ -30,7 +36,7 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+      const response = await fetch(`${this.baseURL}${API_ENDPOINTS.refreshToken}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
