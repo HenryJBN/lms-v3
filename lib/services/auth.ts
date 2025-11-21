@@ -65,17 +65,15 @@ export interface TwoFactorVerifyRequest {
 //
 // --- Helper Functions ---
 //
-const storeTokens = (auth: AuthResponse) => {
-  // Store access token in cookie (will be moved to memory in future iteration)
-  setCookie(COOKIE_NAMES.accessToken, auth.access_token, COOKIE_OPTIONS)
-  setCookie(COOKIE_NAMES.userId, auth.user.id, COOKIE_OPTIONS)
-  // Note: refresh_token is now automatically stored as HTTP-only cookie by backend
+// Note: Token storage is now handled by AuthContext
+// These helpers are kept for backwards compatibility but will be removed
+
+const storeUserId = (userId: string) => {
+  setCookie(COOKIE_NAMES.userId, userId, COOKIE_OPTIONS)
 }
 
-const clearTokens = () => {
-  deleteCookie(COOKIE_NAMES.accessToken)
+const clearUserId = () => {
   deleteCookie(COOKIE_NAMES.userId)
-  // Note: refresh_token HTTP-only cookie is cleared by backend on logout
 }
 
 //
@@ -91,7 +89,7 @@ class AuthService {
     }
   }
 
-  async login(data: LoginRequest): Promise<User | TwoFactorAuthResponse> {
+  async login(data: LoginRequest): Promise<AuthResponse | TwoFactorAuthResponse> {
     const response = await this.post<AuthResponse | TwoFactorAuthResponse>(
       API_ENDPOINTS.login,
       data
@@ -102,22 +100,22 @@ class AuthService {
       return response as TwoFactorAuthResponse
     }
 
-    // Normal login response
+    // Normal login response - store user_id cookie
     const auth = response as AuthResponse
-    storeTokens(auth)
-    return auth.user
+    storeUserId(auth.user.id)
+    return auth
   }
 
-  async verify2FA(data: TwoFactorVerifyRequest): Promise<User> {
+  async verify2FA(data: TwoFactorVerifyRequest): Promise<AuthResponse> {
     const auth = await this.post<AuthResponse>(API_ENDPOINTS.verify2FA, data)
-    storeTokens(auth)
-    return auth.user
+    storeUserId(auth.user.id)
+    return auth
   }
 
-  async register(data: RegisterRequest): Promise<User> {
+  async register(data: RegisterRequest): Promise<AuthResponse> {
     const auth = await this.post<AuthResponse>(API_ENDPOINTS.register, data)
-    // storeTokens(auth)
-    return auth.user
+    storeUserId(auth.user.id)
+    return auth
   }
 
   async logout(): Promise<void> {
@@ -126,7 +124,7 @@ class AuthService {
     } catch (error) {
       console.warn("Logout API failed, clearing cookies anyway:", error)
     } finally {
-      clearTokens()
+      clearUserId()
     }
   }
 
@@ -149,12 +147,18 @@ class AuthService {
   }
 
   getAccessToken(): string | null {
-    const token = getCookie(COOKIE_NAMES.accessToken)
-    return typeof token === "string" ? token : null
+    // Note: This method is deprecated. Use AuthContext.accessToken instead.
+    // Access token is stored in React state, not accessible from this service.
+    console.warn("authService.getAccessToken() is deprecated. Use AuthContext.accessToken instead.")
+    return null
   }
 
   isAuthenticated(): boolean {
-    return !!this.getAccessToken()
+    // Note: This method is deprecated. Use AuthContext.isAuthenticated instead.
+    console.warn(
+      "authService.isAuthenticated() is deprecated. Use AuthContext.isAuthenticated instead."
+    )
+    return false
   }
 
   getUserId(): string | null {

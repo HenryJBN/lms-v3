@@ -69,7 +69,7 @@ export default function AdminLogin() {
         setSuccess("Login successful! Redirecting to admin dashboard...")
         setTimeout(() => {
           router.push("/admin")
-        }, 1500)
+        }, 1000)
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.")

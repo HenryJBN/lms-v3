@@ -197,7 +197,7 @@ async def login(login_data: LoginRequest, request: Request, response: Response):
         secure=True,  # Only send over HTTPS in production
         samesite="lax",  # CSRF protection
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
-        path="/api/auth"  # Only send to auth endpoints
+        path="/api/auth"  # Available site-wide for refresh mechanism
     )
 
     return {
@@ -277,7 +277,7 @@ async def verify_two_factor(verify_data: TwoFactorVerifyRequest, response: Respo
         secure=True,  # Only send over HTTPS in production
         samesite="lax",  # CSRF protection
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
-        path="/api/auth"  # Only send to auth endpoints
+        path="/api/auth"  # Available site-wide for refresh mechanism
     )
 
     # Clean up session from Redis
@@ -309,7 +309,7 @@ async def refresh_token(request: Request, response: Response):
 
     if not user_id:
         # Clear invalid refresh token cookie
-        response.delete_cookie(key="refresh_token", path="/api/auth")
+        response.delete_cookie(key="refresh_token", path="/")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token"
@@ -345,7 +345,7 @@ async def logout(response: Response):
     Logout user by clearing the HTTP-only refresh token cookie
     """
     # Clear refresh token cookie
-    response.delete_cookie(key="refresh_token", path="/api/auth")
+    response.delete_cookie(key="refresh_token", path="/")
 
     return {"message": "Logged out successfully"}
 

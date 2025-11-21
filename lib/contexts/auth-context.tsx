@@ -1,16 +1,19 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { setCookie, getCookie, deleteCookie } from "cookies-next"
+import { deleteCookie } from "cookies-next"
 import { authService, type User } from "../services/auth"
 import { usersService, type TokenBalanceResponse } from "../services/users"
-import { COOKIE_NAMES, COOKIE_OPTIONS } from "../api-config"
+import { API_ENDPOINTS, COOKIE_NAMES } from "../api-config"
+import { apiClient } from "../api-client"
 
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
   tokenBalance: TokenBalanceResponse | null
+  accessToken: string | null
+  setAccessToken: (token: string | null) => void
   login: (email: string, password: string) => Promise<void>
   register: (userData: any) => Promise<void>
   logout: () => void
@@ -24,43 +27,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [tokenBalance, setTokenBalance] = useState<TokenBalanceResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
 
-  const isAuthenticated = !!user
+  const isAuthenticated = !!user && !!accessToken
+
+  // Set up token updater callback once on mount
+  useEffect(() => {
+    apiClient.setTokenUpdater(setAccessToken)
+  }, [])
+
+  // Sync access token with api-client whenever it changes
+  useEffect(() => {
+    apiClient.token = accessToken
+  }, [accessToken])
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const token = getCookie(COOKIE_NAMES.accessToken)
-        if (token) {
-          // Access token exists, fetch user data
-          await refreshUser()
-          await refreshTokenBalance()
-        } else {
-          // No access token, try to refresh using HTTP-only refresh token
-          // This handles page refresh scenarios where access token might be expired
-          try {
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/refresh`,
-              {
-                method: "POST",
-                credentials: "include", // Send HTTP-only cookie
-              }
-            )
-
-            if (response.ok) {
-              const data = await response.json()
-              setCookie(COOKIE_NAMES.accessToken, data.access_token, COOKIE_OPTIONS)
-              await refreshUser()
-              await refreshTokenBalance()
+        // Always try to refresh using HTTP-only refresh token on app load
+        // This handles page refresh scenarios where access token in memory is lost
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${API_ENDPOINTS.refreshToken}`,
+            {
+              method: "POST",
+              credentials: "include", // Send HTTP-only cookie
             }
-          } catch (refreshError) {
-            console.log("No valid refresh token available")
+          )
+
+          if (response.ok) {
+            const data = await response.json()
+            apiClient.token = data.access_token
+            console.log("Refresh response:", data)
+            // Store access token in memory (state)
+            setAccessToken(data.access_token)
+            // await refreshUser()
+            await refreshTokenBalance()
           }
+        } catch (refreshError) {
+          console.log("No valid refresh token available")
         }
       } catch (error) {
         console.error("Auth initialization failed:", error)
-        await authService.logout()
-        deleteCookie(COOKIE_NAMES.accessToken)
+        setAccessToken(null)
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
@@ -79,9 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("2FA_REQUIRED")
       }
 
-      // Normal login - response is a User object
-      if (response) {
-        setUser(response)
+      // Normal login - response is AuthResponse with user and access_token
+      if ("user" in response && "access_token" in response) {
+        setAccessToken(response.access_token)
+        setUser(response.user)
         await refreshTokenBalance()
       }
     } catch (error) {
@@ -92,9 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (userData: any) => {
     try {
-      const user = await authService.register(userData)
-      if (user) {
-        setUser(user)
+      const response = await authService.register(userData)
+      if (response) {
+        setAccessToken(response.access_token)
+        setUser(response.user)
         await refreshTokenBalance()
       }
     } catch (error) {
@@ -107,7 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authService.logout()
     } finally {
-      deleteCookie(COOKIE_NAMES.accessToken)
+      // Clear access token from memory
+      setAccessToken(null)
       deleteCookie(COOKIE_NAMES.userId)
       // Note: refresh_token HTTP-only cookie is cleared by backend
       setUser(null)
@@ -140,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated,
     isLoading,
     tokenBalance,
+    accessToken,
+    setAccessToken,
     login,
     register,
     logout,

@@ -1,11 +1,4 @@
-import {
-  API_BASE_URL,
-  API_ENDPOINTS,
-  COOKIE_NAMES,
-  COOKIE_OPTIONS,
-  REQUEST_TIMEOUT,
-} from "./api-config"
-import { getCookie, setCookie } from "cookies-next"
+import { API_BASE_URL, API_ENDPOINTS, REQUEST_TIMEOUT } from "./api-config"
 
 export class ApiError extends Error {
   constructor(
@@ -20,13 +13,25 @@ export class ApiError extends Error {
 
 class ApiClient {
   private baseURL: string
+  private _accessToken: string | null = null
+  private tokenUpdater: ((token: string | null) => void) | null = null
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL
   }
 
-  private getAuthToken(): string | null {
-    return getCookie(COOKIE_NAMES.accessToken) as string | null
+  // TypeScript getter/setter for access token
+  get token(): string | null {
+    return this._accessToken
+  }
+
+  set token(value: string | null) {
+    this._accessToken = value
+  }
+
+  // Set the callback to update AuthContext when token is refreshed
+  setTokenUpdater(updater: (token: string | null) => void) {
+    this.tokenUpdater = updater
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -42,8 +47,12 @@ class ApiClient {
 
       if (response.ok) {
         const data = await response.json()
-        // Store new access token
-        setCookie(COOKIE_NAMES.accessToken, data.access_token, COOKIE_OPTIONS)
+        // Update access token in memory
+        this.token = data.access_token
+        // Notify AuthContext of the new token
+        if (this.tokenUpdater) {
+          this.tokenUpdater(data.access_token)
+        }
         return true
       }
       return false
@@ -54,14 +63,13 @@ class ApiClient {
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = this.getAuthToken()
     const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
 
     const config: RequestInit = {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
         ...options.headers,
       },
       credentials: "include",
@@ -80,10 +88,9 @@ class ApiClient {
         const refreshed = await this.refreshAccessToken()
         if (refreshed) {
           // Retry the request with new token
-          const newToken = this.getAuthToken()
           config.headers = {
             ...config.headers,
-            Authorization: `Bearer ${newToken}`,
+            Authorization: `Bearer ${this.token}`,
           }
           const retryResponse = await fetch(url, config)
           if (retryResponse.ok) {
@@ -158,7 +165,6 @@ class ApiClient {
     file: File,
     additionalData?: Record<string, string>
   ): Promise<T> {
-    const token = this.getAuthToken()
     const formData = new FormData()
     formData.append("file", file)
 
@@ -172,7 +178,7 @@ class ApiClient {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
       },
       body: formData,
       credentials: "include",
