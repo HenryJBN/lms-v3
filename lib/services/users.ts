@@ -50,9 +50,11 @@ class UsersService {
       if (cachedUser && !forceRefresh) return cachedUser
 
       const user = await apiClient.get<User>(API_ENDPOINTS.currentUser)
+      console.log(user, "the user data is fetched: getCurrentUserProfile")
       cachedUser = user
       return user
     } catch (error) {
+      console.log(error, "the error is fetched: getCurrentUserProfile")
       this.handleError("Get current user profile", error)
     }
   }

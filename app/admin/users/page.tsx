@@ -53,6 +53,17 @@ import {
   UserX,
   Mail,
 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { UserFormData, UserSchema } from "@/lib/schemas/user"
+import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -145,6 +156,25 @@ export default function UsersManagement() {
     admins: users.filter((u) => u.role === "admin").length,
   }
 
+  const roles = [
+    { value: "student", label: "Student" },
+    { value: "instructor", label: "Instructor" },
+    { value: "admin", label: "Admin" },
+  ]
+
+  const form = useForm<UserFormData>({
+    resolver: zodResolver(UserSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      role: "",
+    },
+  })
+
+  const onSubmit = async (data: UserFormData) => {
+    console.log("Form data:", data)
+  }
+
   return (
     <div className="flex min-h-screen">
       {/* Main Content */}
@@ -171,49 +201,83 @@ export default function UsersManagement() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New User</DialogTitle>
-                  <DialogDescription>
-                    Create a new user account. Fill in the required information below.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <Input id="name" placeholder="John Doe" className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="john@example.com"
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">
-                      Role
-                    </Label>
-                    <Select>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="instructor">Instructor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Create User</Button>
-                </DialogFooter>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <DialogHeader>
+                      <DialogTitle>Add New User</DialogTitle>
+                      <DialogDescription>
+                        Create a new user account. Fill in the required information below.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel htmlFor="name" className="text-right">
+                              Name
+                            </FormLabel>
+                            <FormControl>
+                              <Input placeholder="John Doe" className="col-span-3" {...field} />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel htmlFor="name" className="text-right">
+                              Email
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="john@example.com"
+                                className="col-span-3"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel htmlFor="role" className="text-right">
+                              Role
+                            </FormLabel>
+                            <FormControl>
+                              <Select defaultValue={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger className="col-span-3">
+                                  <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {roles.map((role) => (
+                                    <SelectItem key={role.value} value={role.value}>
+                                      {role.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit">Create User</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
               </DialogContent>
             </Dialog>
           </div>

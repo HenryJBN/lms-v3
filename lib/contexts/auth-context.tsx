@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log("Refresh response:", data)
             // Store access token in memory (state)
             setAccessToken(data.access_token)
-            // await refreshUser()
+            await refreshUser()
             await refreshTokenBalance()
           }
         } catch (refreshError) {
@@ -132,10 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const user = await usersService.getCurrentUserProfile(true)
+      console.log(user, 'the user data is fetched')
       if (user) setUser(user)
     } catch (error) {
       console.error("Failed to refresh user:", error)
-      await logout()
+      // await logout()
     }
   }
 
