@@ -17,7 +17,8 @@ from utils.email import (
     send_bulk_email_sync,
     send_password_reset_email_sync,
     send_email_verification_sync,
-    send_two_factor_auth_email_sync
+    send_two_factor_auth_email_sync,
+    send_admin_created_user_email_sync
 )
 
 
@@ -185,4 +186,22 @@ def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code
         print(f"[Celery] Failed to send 2FA email: {e}")
         import traceback
         traceback.print_exc()
+        raise self.retry(exc=e)
+
+
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_admin_created_user_email_task(self, email: str, first_name: str, username: str, password: str):
+    """
+    Celery task to send email to admin-created user with login credentials
+
+    This is a thin wrapper around send_admin_created_user_email_sync from utils/email.py
+    """
+    try:
+        result = send_admin_created_user_email_sync(email, first_name, username, password)
+        if result:
+            return {"status": "success", "to_email": email, "subject": "Welcome to DCA LMS - Your Account Has Been Created! 🎉"}
+        else:
+            raise Exception("Email sending returned False")
+    except Exception as e:
+        print(f"[Celery] Failed to send admin created user email: {e}")
         raise self.retry(exc=e)

@@ -5,14 +5,17 @@ from datetime import datetime, timedelta
 
 from database.connection import database
 from models.schemas import (
-    AdminDashboardStats, AdminUserResponse, AdminCourseResponse,
-    PaginationParams, PaginatedResponse, AdminAuditLog
+    AdminDashboardStats, AdminUserResponse, AdminCourseResponse, BasicUser,
+    PaginationParams, PaginatedResponse, AdminAuditLog, UserResponse
 )
-from middleware.auth import require_admin, get_current_active_user
+from middleware.auth import get_password_hash, get_user_by_email, require_admin, get_current_active_user
 from utils.analytics import (
     AnalyticsCalculator, UserAnalytics, CourseAnalytics, 
     RevenueAnalytics, get_platform_kpis, get_top_performing_content
 )
+from tasks.email_tasks import send_admin_created_user_email_task
+import secrets
+import string
 
 router = APIRouter()
 
@@ -84,6 +87,85 @@ async def get_admin_dashboard(current_user = Depends(require_admin)):
         top_courses=[dict(course) for course in top_courses],
         recent_users=[dict(user) for user in recent_users]
     )
+
+@router.post("/users", response_model=UserResponse)
+async def create_user(
+    user_data: BasicUser,
+    current_user = Depends(require_admin)
+):
+    """Create a new user by admin.
+    - Use first_name (lowercased) as username
+    - Generate a secure random temporary password
+    - Store its hash
+    - Send email with the temporary password via Celery
+    """
+
+    # Check if user already exists
+    existing_user = await get_user_by_email(user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
+    # Derive username from first_name
+    username = user_data.first_name.strip().lower()
+
+    # Ensure username uniqueness; if taken, append random suffix until unique
+    base_username = username
+    attempt = 0
+    while True:
+        query = "SELECT id FROM users WHERE username = :username"
+        existing_username = await database.fetch_one(query, values={"username": username})
+        if not existing_username:
+            break
+        attempt += 1
+        suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(3))
+        username = f"{base_username}{suffix}"
+        if attempt > 5:
+            # fallback with uuid suffix to avoid infinite loop
+            username = f"{base_username}{uuid.uuid4().hex[:6]}"
+            break
+
+    # Generate a secure random temporary password
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    temp_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+
+    # Hash password and create user
+    hashed_password = get_password_hash(temp_password)
+    user_id = uuid.uuid4()
+
+    query = """
+        INSERT INTO users (id, email, username, password_hash, first_name, last_name, role)
+        VALUES (:id, :email, :username, :password_hash, :first_name, :last_name, :role)
+        RETURNING *
+    """
+
+    values = {
+        "id": user_id,
+        "email": user_data.email,
+        "username": username,
+        "password_hash": hashed_password,
+        "first_name": user_data.first_name,
+        "last_name": user_data.last_name,
+        "role": user_data.role,
+    }
+
+    new_user = await database.fetch_one(query, values=values)
+
+    # Send email asynchronously via Celery with the temporary password
+    try:
+        send_admin_created_user_email_task.delay(
+            email=user_data.email,
+            first_name=user_data.first_name,
+            username=username,
+            password=temp_password
+        )
+    except Exception:
+        # Do not fail user creation if email queueing fails
+        pass
+
+    return UserResponse(**new_user)
 
 @router.get("/users", response_model=PaginatedResponse)
 async def get_admin_users(

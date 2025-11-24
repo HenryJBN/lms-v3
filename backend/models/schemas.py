@@ -92,6 +92,12 @@ class UserBase(BaseSchema):
     timezone: str = "UTC"
     language: str = "en"
 
+class BasicUser(BaseSchema):
+    email: EmailStr
+    first_name: str
+    last_name: str
+    role: UserRole = UserRole.student
+
 class UserCreate(UserBase):
     password: str
 

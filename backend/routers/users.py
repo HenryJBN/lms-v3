@@ -5,9 +5,9 @@ import uuid
 from database.connection import database
 from models.schemas import (
     UserResponse, UserUpdate, UserProfile, TokenBalance, 
-    TokenTransaction, PaginationParams, PaginatedResponse
+    TokenTransaction, PaginationParams, PaginatedResponse, UserCreate
 )
-from middleware.auth import get_current_active_user, require_admin
+from middleware.auth import get_current_active_user, require_admin, get_password_hash, get_user_by_email
 
 router = APIRouter()
 

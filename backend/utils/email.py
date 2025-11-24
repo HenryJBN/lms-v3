@@ -455,6 +455,33 @@ async def send_assignment_reminder_email(
     """Async wrapper for send_assignment_reminder_email_sync"""
     return send_assignment_reminder_email_sync(email, first_name, assignment_title, course_title, due_date, assignment_url)
 
+def send_admin_created_user_email_sync(email: str, first_name: str, username: str, password: str) -> bool:
+    """Send email to admin-created user with login credentials (synchronous)"""
+
+    context = {
+        "first_name": first_name,
+        "username": username,
+        "password": password,
+        "platform_name": "DCA LMS",
+        "login_url": "https://DCA.com/login",
+        "support_email": "support@DCA.com",
+        "welcome_tokens": 10,
+        "social_twitter": "https://twitter.com/DCA",
+        "social_linkedin": "https://linkedin.com/company/DCA",
+        "social_facebook": "https://facebook.com/DCA"
+    }
+
+    return email_service.send_email(
+        to_email=email,
+        subject="Welcome to DCA LMS - Your Account Has Been Created! 🎉",
+        template_name="admin_created_user.html",
+        context=context
+    )
+
+async def send_admin_created_user_email(email: str, first_name: str, username: str, password: str) -> bool:
+    """Async wrapper for send_admin_created_user_email_sync"""
+    return send_admin_created_user_email_sync(email, first_name, username, password)
+
 def send_instructor_application_email_sync(email: str, first_name: str, status: str) -> bool:
     """Send instructor application status email (synchronous)"""
 

@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to DCA LMS</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .email-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header h1 {
+        color: #2563eb;
+        margin: 0;
+      }
+      .welcome-message {
+        font-size: 18px;
+        margin-bottom: 20px;
+      }
+      .credentials-box {
+        background-color: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        font-family: "Courier New", monospace;
+      }
+      .credential-item {
+        margin: 10px 0;
+        font-size: 16px;
+      }
+      .credential-label {
+        font-weight: bold;
+        color: #374151;
+      }
+      .credential-value {
+        color: #1f2937;
+        font-weight: bold;
+        background-color: #dbeafe;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .important-note {
+        background-color: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .important-note h3 {
+        margin-top: 0;
+        color: #92400e;
+      }
+      .login-button {
+        display: inline-block;
+        background-color: #2563eb;
+        color: white;
+        text-decoration: none;
+        padding: 12px 30px;
+        border-radius: 6px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .social-links {
+        margin: 15px 0;
+      }
+      .social-links a {
+        margin: 0 10px;
+        color: #2563eb;
+        text-decoration: none;
+      }
+      .password-warning {
+        color: #dc2626;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <h1>Welcome to DCA LMS! 🎉</h1>
+      </div>
+
+      <div class="welcome-message">
+        Hi {{ first_name }},<br /><br />
+        Your DCA LMS account has been successfully created by an administrator. You can now access
+        our learning platform and start your educational journey.
+      </div>
+
+      <div class="credentials-box">
+        <h2>Your Login Credentials</h2>
+        <div class="credential-item">
+          <span class="credential-label">Username:</span>
+          <span class="credential-value">{{ username }}</span>
+        </div>
+        <div class="credential-item">
+          <span class="credential-label">Password:</span>
+          <span class="credential-value">{{ password }}</span>
+        </div>
+      </div>
+
+      <div class="important-note">
+        <h3>🔐 Important Security Notice</h3>
+        <p>
+          <strong class="password-warning">This is your default password.</strong> We strongly
+          recommend changing your password immediately after your first login for security reasons.
+        </p>
+        <p>
+          You received a <strong>{{ welcome_tokens }} L-Tokens</strong> welcome bonus to get
+          started!
+        </p>
+      </div>
+
+      <div style="text-align: center">
+        <a href="{{ login_url }}" class="login-button">Login to Your Account</a>
+      </div>
+
+      <div style="margin: 20px 0">
+        <h3>Getting Started:</h3>
+        <ol>
+          <li>Click the "Login to Your Account" button above</li>
+          <li>Use your credentials shown above to log in</li>
+          <li>Change your password in your profile settings</li>
+          <li>Explore available courses and start learning!</li>
+        </ol>
+      </div>
+
+      <p>
+        If you have any questions or need assistance, please don't hesitate to contact our support
+        team at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+      </p>
+
+      <div class="footer">
+        <p>Best regards,<br />The DCA LMS Team</p>
+
+        <div class="social-links">
+          <a href="{{ social_twitter }}">Twitter</a> |
+          <a href="{{ social_linkedin }}">LinkedIn</a> |
+          <a href="{{ social_facebook }}">Facebook</a>
+        </div>
+
+        <p>
+          This email was sent to {{ email }} because an administrator created an account for you on
+          DCA LMS.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

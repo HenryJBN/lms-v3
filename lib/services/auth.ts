@@ -34,6 +34,8 @@ export interface User {
   created_at: string
 }
 
+export type BasicUser = Pick<User, "email" | "role"> & { first_name: string; last_name: string }
+
 export interface AuthResponse {
   success: boolean
   access_token: string

@@ -64,6 +64,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { usersService } from "@/lib/services/users"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -167,12 +168,25 @@ export default function UsersManagement() {
     defaultValues: {
       email: "",
       name: "",
-      role: "",
+      role: "admin",
     },
   })
 
   const onSubmit = async (data: UserFormData) => {
     console.log("Form data:", data)
+    const first_name = data.name.split(" ")[0]
+    const last_name = data.name.split(" ")[1]
+    const new_data = {
+      first_name,
+      last_name,
+      email: data.email,
+      role: data.role,
+    }
+    try {
+      await usersService.addUser(new_data)
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   return (

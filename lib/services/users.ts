@@ -1,7 +1,7 @@
 import { ApiResponse } from "@/types/api"
 import { apiClient } from "../api-client"
 import { API_ENDPOINTS } from "../api-config"
-import type { User } from "./auth"
+import type { BasicUser, RegisterRequest, User } from "./auth"
 
 export interface UpdateProfileRequest {
   first_name?: string
@@ -35,6 +35,14 @@ class UsersService {
   private handleError(context: string, error: unknown): never {
     console.error(`${context} failed:`, error)
     throw error instanceof Error ? error : new Error(`${context} failed due to an unexpected error`)
+  }
+
+  async addUser(data: BasicUser): Promise<ApiResponse<User>> {
+    try {
+      return await apiClient.post<ApiResponse<User>>(API_ENDPOINTS.adminUsers, data)
+    } catch (error) {
+      this.handleError("Add user", error)
+    }
   }
 
   async getProfile(userId: string): Promise<User> {
