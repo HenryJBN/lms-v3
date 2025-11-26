@@ -56,6 +56,7 @@ import {
 import { useForm } from "react-hook-form"
 import { UserFormData, UserSchema } from "@/lib/schemas/user"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { toast } from "sonner"
 import {
   Form,
   FormControl,
@@ -65,11 +66,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { usersService } from "@/lib/services/users"
+import { handleApiError } from "@/lib/utils/form-errors"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRole, setSelectedRole] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
+  const [isLoading, setIsLoading] = useState(false)
 
   // Mock user data
   const users = [
@@ -173,7 +176,6 @@ export default function UsersManagement() {
   })
 
   const onSubmit = async (data: UserFormData) => {
-    console.log("Form data:", data)
     const first_name = data.name.split(" ")[0]
     const last_name = data.name.split(" ")[1]
     const new_data = {
@@ -182,10 +184,16 @@ export default function UsersManagement() {
       email: data.email,
       role: data.role,
     }
+    setIsLoading(true)
     try {
       await usersService.addUser(new_data)
-    } catch (error) {
-      console.log(error)
+      toast.success("User created successfully!")
+    } catch (error: any) {
+      handleApiError(error, form.setError, {
+        defaultMessage: error.message || "Failed to create user",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -288,7 +296,7 @@ export default function UsersManagement() {
                       />
                     </div>
                     <DialogFooter>
-                      <Button type="submit">Create User</Button>
+                      <Button type="submit">{!isLoading ? "Create User" : "Creating..."}</Button>
                     </DialogFooter>
                   </form>
                 </Form>
