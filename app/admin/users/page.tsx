@@ -73,6 +73,7 @@ export default function UsersManagement() {
   const [selectedRole, setSelectedRole] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   // Mock user data
   const users = [
@@ -188,6 +189,8 @@ export default function UsersManagement() {
     try {
       await usersService.addUser(new_data)
       toast.success("User created successfully!")
+      form.reset()
+      setIsCreateDialogOpen(false)
     } catch (error: any) {
       handleApiError(error, form.setError, {
         defaultMessage: error.message || "Failed to create user",
@@ -215,7 +218,7 @@ export default function UsersManagement() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Dialog>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
