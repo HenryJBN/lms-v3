@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -69,6 +70,7 @@ import { usersService } from "@/lib/services/users"
 import { handleApiError } from "@/lib/utils/form-errors"
 import { User } from "@/lib/services/auth"
 import { formatDate } from "date-fns"
+import { useSearchParams } from "next/navigation"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -77,18 +79,48 @@ export default function UsersManagement() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [users, setUsers] = useState<User[]>([])
+  const [page, setPage] = useState(1)
+  const [size, setSize] = useState(20)
+  const [initialized, setInitialized] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
 
+  const searchParams = useSearchParams()
+
+  // Sync page/size from URL on mount and when URL changes
   useEffect(() => {
+    const p = parseInt(searchParams.get("page") || "1", 10)
+    const s = parseInt(searchParams.get("size") || "20", 10)
+    if (!Number.isNaN(p)) setPage(p)
+    if (!Number.isNaN(s)) setSize(s)
+    setInitialized(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Fetch after URL params are applied
+  useEffect(() => {
+    if (!initialized) return
     const fetchUsers = async () => {
       try {
-        const response = await usersService.getUsers()
-        setUsers(response.items)
+        const roleParam = selectedRole !== "all" ? selectedRole : undefined
+        const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
+        const searchParam = searchTerm || undefined
+        const response = await usersService.getUsers({
+          page,
+          size,
+          role: roleParam,
+          status: statusParam,
+          search: searchParam,
+        })
+        setUsers(response.items as any)
+        setTotalPages(response.pages)
+        setTotalItems(response.total)
       } catch (error) {
         console.error("Error fetching users:", error)
       }
     }
     fetchUsers()
-  }, [])
+  }, [initialized, page, size, selectedRole, selectedStatus, searchTerm])
 
   // Mock user data
   // const users = [
@@ -159,17 +191,10 @@ export default function UsersManagement() {
   //   },
   // ]
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === "all" || user.role === selectedRole
-    const matchesStatus = selectedStatus === "all" || user.status === selectedStatus
-    return matchesSearch && matchesRole && matchesStatus
-  })
+  const filteredUsers = users
 
   const stats = {
-    totalUsers: users.length,
+    totalUsers: totalItems,
     activeUsers: users.filter((u) => u.status === "active").length,
     students: users.filter((u) => u.role === "student").length,
     instructors: users.filter((u) => u.role === "instructor").length,
@@ -387,11 +412,20 @@ export default function UsersManagement() {
                   <Input
                     placeholder="Search users..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value)
+                      setPage(1)
+                    }}
                     className="pl-8"
                   />
                 </div>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <Select
+                  value={selectedRole}
+                  onValueChange={(v) => {
+                    setSelectedRole(v)
+                    setPage(1)
+                  }}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
@@ -402,7 +436,13 @@ export default function UsersManagement() {
                     <SelectItem value="admin">Admins</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <Select
+                  value={selectedStatus}
+                  onValueChange={(v) => {
+                    setSelectedStatus(v)
+                    setPage(1)
+                  }}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
@@ -430,7 +470,7 @@ export default function UsersManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers.map((user) => (
+                    {filteredUsers.map((user: any) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
@@ -524,6 +564,13 @@ export default function UsersManagement() {
                   </TableBody>
                 </Table>
               </div>
+
+              <Pagination
+                page={page}
+                size={size}
+                total={totalItems}
+                onChange={({ page: nextPage }) => setPage(nextPage)}
+              />
             </CardContent>
           </Card>
         </main>

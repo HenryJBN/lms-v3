@@ -45,9 +45,17 @@ class UsersService {
     }
   }
 
-  async getUsers(): Promise<PaginatedApiResponse<User>> {
+  async getUsers(params?: { page?: number; size?: number; role?: string; status?: string; search?: string }): Promise<PaginatedApiResponse<User>> {
     try {
-      return await apiClient.get<PaginatedApiResponse<User>>(API_ENDPOINTS.users)
+      const queryParams = new URLSearchParams()
+      if (params?.page) queryParams.set("page", String(params.page))
+      if (params?.size) queryParams.set("size", String(params.size))
+      if (params?.role && params.role !== "all") queryParams.set("role", params.role)
+      if (params?.status && params.status !== "all") queryParams.set("status", params.status)
+      if (params?.search) queryParams.set("search", params.search)
+
+      const url = queryParams.toString() ? `${API_ENDPOINTS.users}?${queryParams.toString()}` : API_ENDPOINTS.users
+      return await apiClient.get<PaginatedApiResponse<User>>(url)
     } catch (error) {
       this.handleError("Get users", error)
     }
