@@ -4,3 +4,11 @@ export interface ApiResponse<T> {
   data?: T
   error?: string
 }
+
+export interface PaginatedApiResponse<T = unknown> {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}

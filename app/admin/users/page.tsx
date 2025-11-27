@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/form"
 import { usersService } from "@/lib/services/users"
 import { handleApiError } from "@/lib/utils/form-errors"
+import { User } from "@/lib/services/auth"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -74,75 +75,88 @@ export default function UsersManagement() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [users, setUsers] = useState<User[]>([])
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await usersService.getUsers()
+        setUsers(response.items)
+      } catch (error) {
+        console.error("Error fetching users:", error)
+      }
+    }
+    fetchUsers()
+  }, [])
 
   // Mock user data
-  const users = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john.doe@example.com",
-      role: "student",
-      status: "active",
-      joinDate: "2024-01-15",
-      lastLogin: "2024-01-20",
-      coursesEnrolled: 3,
-      coursesCompleted: 1,
-      tokensEarned: 150,
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane.smith@example.com",
-      role: "instructor",
-      status: "active",
-      joinDate: "2023-11-20",
-      lastLogin: "2024-01-19",
-      coursesEnrolled: 0,
-      coursesCompleted: 0,
-      tokensEarned: 0,
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      email: "mike.johnson@example.com",
-      role: "student",
-      status: "inactive",
-      joinDate: "2023-12-05",
-      lastLogin: "2024-01-10",
-      coursesEnrolled: 2,
-      coursesCompleted: 0,
-      tokensEarned: 75,
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      email: "sarah.wilson@example.com",
-      role: "admin",
-      status: "active",
-      joinDate: "2023-10-01",
-      lastLogin: "2024-01-20",
-      coursesEnrolled: 0,
-      coursesCompleted: 0,
-      tokensEarned: 0,
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-    {
-      id: 5,
-      name: "Alex Rodriguez",
-      email: "alex.rodriguez@example.com",
-      role: "student",
-      status: "active",
-      joinDate: "2024-01-08",
-      lastLogin: "2024-01-18",
-      coursesEnrolled: 5,
-      coursesCompleted: 3,
-      tokensEarned: 320,
-      avatar: "/placeholder.svg?height=32&width=32",
-    },
-  ]
+  // const users = [
+  //   {
+  //     id: 1,
+  //     name: "John Doe",
+  //     email: "john.doe@example.com",
+  //     role: "student",
+  //     status: "active",
+  //     joinDate: "2024-01-15",
+  //     lastLogin: "2024-01-20",
+  //     coursesEnrolled: 3,
+  //     coursesCompleted: 1,
+  //     tokensEarned: 150,
+  //     avatar: "/placeholder.svg?height=32&width=32",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Jane Smith",
+  //     email: "jane.smith@example.com",
+  //     role: "instructor",
+  //     status: "active",
+  //     joinDate: "2023-11-20",
+  //     lastLogin: "2024-01-19",
+  //     coursesEnrolled: 0,
+  //     coursesCompleted: 0,
+  //     tokensEarned: 0,
+  //     avatar: "/placeholder.svg?height=32&width=32",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Mike Johnson",
+  //     email: "mike.johnson@example.com",
+  //     role: "student",
+  //     status: "inactive",
+  //     joinDate: "2023-12-05",
+  //     lastLogin: "2024-01-10",
+  //     coursesEnrolled: 2,
+  //     coursesCompleted: 0,
+  //     tokensEarned: 75,
+  //     avatar: "/placeholder.svg?height=32&width=32",
+  //   },
+  //   {
+  //     id: 4,
+  //     name: "Sarah Wilson",
+  //     email: "sarah.wilson@example.com",
+  //     role: "admin",
+  //     status: "active",
+  //     joinDate: "2023-10-01",
+  //     lastLogin: "2024-01-20",
+  //     coursesEnrolled: 0,
+  //     coursesCompleted: 0,
+  //     tokensEarned: 0,
+  //     avatar: "/placeholder.svg?height=32&width=32",
+  //   },
+  //   {
+  //     id: 5,
+  //     name: "Alex Rodriguez",
+  //     email: "alex.rodriguez@example.com",
+  //     role: "student",
+  //     status: "active",
+  //     joinDate: "2024-01-08",
+  //     lastLogin: "2024-01-18",
+  //     coursesEnrolled: 5,
+  //     coursesCompleted: 3,
+  //     tokensEarned: 320,
+  //     avatar: "/placeholder.svg?height=32&width=32",
+  //   },
+  // ]
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =

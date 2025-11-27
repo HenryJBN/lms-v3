@@ -208,8 +208,9 @@ async def get_users(
     where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
     
     # Get total count
+    count_values = {k: v for k, v in values.items() if k not in ("size", "offset")}
     count_query = f"SELECT COUNT(*) as total FROM users {where_clause}"
-    total_result = await database.fetch_one(count_query, values=values)
+    total_result = await database.fetch_one(count_query, values=count_values)
     total = total_result.total
     
     # Get users

@@ -1,4 +1,4 @@
-import { ApiResponse } from "@/types/api"
+import { ApiResponse, PaginatedApiResponse } from "@/types/api"
 import { apiClient } from "../api-client"
 import { API_ENDPOINTS } from "../api-config"
 import type { BasicUser, RegisterRequest, User } from "./auth"
@@ -42,6 +42,14 @@ class UsersService {
       return await apiClient.post<ApiResponse<User>>(API_ENDPOINTS.adminUsers, data)
     } catch (error) {
       this.handleError("Add user", error)
+    }
+  }
+
+  async getUsers(): Promise<PaginatedApiResponse<User>> {
+    try {
+      return await apiClient.get<PaginatedApiResponse<User>>(API_ENDPOINTS.users)
+    } catch (error) {
+      this.handleError("Get users", error)
     }
   }
 

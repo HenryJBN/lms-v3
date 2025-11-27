@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, computed_field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from enum import Enum
@@ -91,6 +91,12 @@ class UserBase(BaseSchema):
     phone: Optional[str] = None
     timezone: str = "UTC"
     language: str = "en"
+
+    @computed_field
+    def name(self) -> str:
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.first_name or self.last_name or " "
 
 class BasicUser(BaseSchema):
     email: EmailStr
