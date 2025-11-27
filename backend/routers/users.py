@@ -5,7 +5,7 @@ import uuid
 from database.connection import database
 from models.schemas import (
     UserResponse, UserUpdate, UserProfile, TokenBalance, 
-    TokenTransaction, PaginationParams, PaginatedResponse, UserCreate
+    TokenTransaction, PaginationParams, PaginatedResponse, UserCreate, AdminUserResponse
 )
 from middleware.auth import get_current_active_user, require_admin, get_password_hash, get_user_by_email
 
@@ -189,41 +189,56 @@ async def get_users(
     # Build query with filters
     where_conditions = []
     values = {"size": pagination.size, "offset": (pagination.page - 1) * pagination.size}
-    
+
     if role:
-        where_conditions.append("role = :role")
+        where_conditions.append("u.role = :role")
         values["role"] = role
-    
+
     if status:
-        where_conditions.append("status = :status")
+        where_conditions.append("u.status = :status")
         values["status"] = status
-    
+
     if search:
-        where_conditions.append("""
-            (first_name ILIKE :search OR last_name ILIKE :search OR 
-             email ILIKE :search OR username ILIKE :search)
-        """)
+        where_conditions.append(
+            """
+            (u.first_name ILIKE :search OR u.last_name ILIKE :search OR 
+             u.email ILIKE :search OR u.username ILIKE :search)
+            """
+        )
         values["search"] = f"%{search}%"
-    
+
     where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-    
+
     # Get total count
     count_values = {k: v for k, v in values.items() if k not in ("size", "offset")}
-    count_query = f"SELECT COUNT(*) as total FROM users {where_clause}"
+    count_query = f"SELECT COUNT(*) as total FROM users u {where_clause}"
     total_result = await database.fetch_one(count_query, values=count_values)
-    total = total_result.total
-    
-    # Get users
+    total = total_result.total if total_result else 0
+
+    # Get users with aggregates
+    # Notes:
+    # - LEFT JOIN enrollments to count total_enrollments and completed_courses
+    # - LEFT JOIN l_tokens to get token_balance (balance column)
+    # - Use GROUP BY u.* to aggregate per user
     query = f"""
-        SELECT * FROM users {where_clause}
-        ORDER BY created_at DESC
+        SELECT 
+            u.*, 
+            COALESCE(COUNT(e.id), 0) AS total_enrollments,
+            COALESCE(SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_courses,
+            COALESCE(t.balance, 0) AS token_balance
+        FROM users u
+        LEFT JOIN course_enrollments e ON e.user_id = u.id
+        LEFT JOIN l_tokens t ON t.user_id = u.id
+        {where_clause}
+        GROUP BY u.id, t.balance
+        ORDER BY u.created_at DESC
         LIMIT :size OFFSET :offset
     """
-    
+
     users = await database.fetch_all(query, values=values)
-    
+
     return PaginatedResponse(
-        items=[UserResponse(**user) for user in users],
+        items=[AdminUserResponse(**dict(user)) for user in users],
         total=total,
         page=pagination.page,
         size=pagination.size,

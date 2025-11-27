@@ -68,6 +68,7 @@ import {
 import { usersService } from "@/lib/services/users"
 import { handleApiError } from "@/lib/utils/form-errors"
 import { User } from "@/lib/services/auth"
+import { formatDate } from "date-fns"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -160,7 +161,7 @@ export default function UsersManagement() {
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = selectedRole === "all" || user.role === selectedRole
     const matchesStatus = selectedStatus === "all" || user.status === selectedStatus
@@ -434,7 +435,7 @@ export default function UsersManagement() {
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <img
-                              src={user.avatar || "/placeholder.svg"}
+                              src={user.avatar_url || "/placeholder.svg"}
                               alt={user.name}
                               className="h-8 w-8 rounded-full"
                             />
@@ -462,17 +463,23 @@ export default function UsersManagement() {
                             {user.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.joinDate}</TableCell>
-                        <TableCell>{user.lastLogin}</TableCell>
+                        <TableCell>
+                          {user.created_at ? formatDate(new Date(user.created_at), "PP") : " "}
+                        </TableCell>
+                        <TableCell>
+                          {user.last_login_at
+                            ? formatDate(new Date(user.last_login_at), "PP")
+                            : " "}
+                        </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{user.coursesEnrolled} enrolled</div>
+                            <div>{user.total_enrollments} enrolled</div>
                             <div className="text-muted-foreground">
-                              {user.coursesCompleted} completed
+                              {user.completed_courses} completed
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{user.tokensEarned}</TableCell>
+                        <TableCell>{user.token_balance}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

@@ -22,16 +22,27 @@ export interface User {
   email: string
   first_name: string
   last_name: string
+  name?: string
+  avatar_url?: string
   phone: string
   role: string
   is_active: boolean
   is_verified: boolean
+  email_verified: boolean
   profile_image_url?: string
   bio?: string
+  timezone: string
+  language: string
   location?: string
   occupation?: string
-  token_balance: number
+  token_balance?: number
   created_at: string
+  updated_at: string
+  last_login_at: string
+  status: string
+  total_enrollments?: number
+  completed_courses?: number
+  total_certificates?: number
 }
 
 export type BasicUser = Pick<User, "email" | "role"> & { first_name: string; last_name: string }

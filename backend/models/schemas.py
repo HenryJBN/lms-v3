@@ -595,6 +595,7 @@ class AdminDashboardStats(BaseSchema):
 
 class AdminUserResponse(UserResponse):
     total_enrollments: Optional[int] = None
+    completed_courses: Optional[int] = None
     total_certificates: Optional[int] = None
     token_balance: Optional[float] = None
 
