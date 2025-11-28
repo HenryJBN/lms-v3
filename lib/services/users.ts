@@ -45,6 +45,15 @@ class UsersService {
     }
   }
 
+  async updateUser(userId: string, data: Partial<BasicUser>): Promise<ApiResponse<User>> {
+    try {
+      const url = `${API_ENDPOINTS.adminUsers}/${userId}`
+      return await apiClient.put<ApiResponse<User>>(url, data)
+    } catch (error) {
+      this.handleError("Update user", error)
+    }
+  }
+
   async getUsers(params?: { page?: number; size?: number; role?: string; status?: string; search?: string }): Promise<PaginatedApiResponse<User>> {
     try {
       const queryParams = new URLSearchParams()

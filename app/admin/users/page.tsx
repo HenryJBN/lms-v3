@@ -72,6 +72,7 @@ import { User } from "@/lib/services/auth"
 import { formatDate } from "date-fns"
 import { useSearchParams } from "next/navigation"
 import { analyticsService, type UserAnalyticsSummary } from "@/lib/services/analytics"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -79,6 +80,8 @@ export default function UsersManagement() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(20)
@@ -112,6 +115,8 @@ export default function UsersManagement() {
     run()
   }, [])
 
+  const debouncedSearch = useDebounce(searchTerm, 400)
+
   // Fetch after URL params are applied
   useEffect(() => {
     if (!initialized) return
@@ -119,7 +124,7 @@ export default function UsersManagement() {
       try {
         const roleParam = selectedRole !== "all" ? selectedRole : undefined
         const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
-        const searchParam = searchTerm || undefined
+        const searchParam = debouncedSearch || undefined
         const response = await usersService.getUsers({
           page,
           size,
@@ -135,7 +140,7 @@ export default function UsersManagement() {
       }
     }
     fetchUsers()
-  }, [initialized, page, size, selectedRole, selectedStatus, searchTerm])
+  }, [initialized, page, size, selectedRole, selectedStatus, debouncedSearch])
 
   // Mock user data
   // const users = [
@@ -232,9 +237,8 @@ export default function UsersManagement() {
   })
 
   const onSubmit = async (data: UserFormData) => {
-    const first_name = data.name.split(" ")[0]
-    const last_name = data.name.split(" ")[1]
-    const new_data = {
+    const [first_name, last_name = ""] = data.name.split(" ")
+    const payload = {
       first_name,
       last_name,
       email: data.email,
@@ -242,13 +246,26 @@ export default function UsersManagement() {
     }
     setIsLoading(true)
     try {
-      await usersService.addUser(new_data)
-      toast.success("User created successfully!")
+      if (isEditMode && editingUserId) {
+        await usersService.updateUser(editingUserId, payload as any)
+        toast.success("User updated successfully!")
+      } else {
+        await usersService.addUser(payload as any)
+        toast.success("User created successfully!")
+      }
       form.reset()
       setIsCreateDialogOpen(false)
+      setIsEditMode(false)
+      setEditingUserId(null)
+      // refresh list
+      const response = await usersService.getUsers({ page, size })
+      setUsers(response.items as any)
+      setTotalPages(response.pages)
+      setTotalItems(response.total)
     } catch (error: any) {
       handleApiError(error, form.setError, {
-        defaultMessage: error.message || "Failed to create user",
+        defaultMessage:
+          error.message || (isEditMode ? "Failed to update user" : "Failed to create user"),
       })
     } finally {
       setIsLoading(false)
@@ -273,9 +290,26 @@ export default function UsersManagement() {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={(open) => {
+                setIsCreateDialogOpen(open)
+                if (!open) {
+                  setIsEditMode(false)
+                  setEditingUserId(null)
+                  form.reset({ name: "", email: "", role: "admin" })
+                }
+              }}
+            >
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setIsEditMode(false)
+                    setEditingUserId(null)
+                    form.reset({ name: "", email: "", role: "admin" })
+                  }}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add User
                 </Button>
@@ -284,9 +318,11 @@ export default function UsersManagement() {
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)}>
                     <DialogHeader>
-                      <DialogTitle>Add New User</DialogTitle>
+                      <DialogTitle>{isEditMode ? "Edit User" : "Add New User"}</DialogTitle>
                       <DialogDescription>
-                        Create a new user account. Fill in the required information below.
+                        {isEditMode
+                          ? "Update the user information below."
+                          : "Create a new user account. Fill in the required information below."}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -354,7 +390,15 @@ export default function UsersManagement() {
                       />
                     </div>
                     <DialogFooter>
-                      <Button type="submit">{!isLoading ? "Create User" : "Creating..."}</Button>
+                      <Button type="submit">
+                        {!isLoading
+                          ? isEditMode
+                            ? "Save Changes"
+                            : "Create User"
+                          : isEditMode
+                            ? "Saving..."
+                            : "Creating..."}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </Form>
@@ -545,7 +589,21 @@ export default function UsersManagement() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setIsEditMode(true)
+                                  setEditingUserId(String(user.id))
+                                  const fullName =
+                                    user.name ||
+                                    `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
+                                  form.reset({
+                                    name: fullName,
+                                    email: user.email,
+                                    role: user.role,
+                                  })
+                                  setIsCreateDialogOpen(true)
+                                }}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit user
                               </DropdownMenuItem>

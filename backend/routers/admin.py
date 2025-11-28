@@ -16,8 +16,67 @@ from utils.analytics import (
 from tasks.email_tasks import send_admin_created_user_email_task
 import secrets
 import string
+import json
 
 router = APIRouter()
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user_by_admin(
+    user_id: uuid.UUID,
+    payload: Dict[str, Any],
+    current_user = Depends(require_admin)
+):
+    """Update user fields by admin. Allows updating first_name, last_name, email, and role."""
+    # Fetch existing user
+    existing = await database.fetch_one("SELECT * FROM users WHERE id = :id", values={"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    allowed_fields = {"first_name", "last_name", "email", "role"}
+    update_fields = []
+    values: Dict[str, Any] = {"id": user_id}
+
+    for key, value in payload.items():
+        if key in allowed_fields and value is not None:
+            if key == "email":
+                # Ensure email uniqueness
+                dup = await database.fetch_one(
+                    "SELECT id FROM users WHERE email = :email AND id != :id",
+                    values={"email": value, "id": user_id}
+                )
+                if dup:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
+            update_fields.append(f"{key} = :{key}")
+            values[key] = value
+
+    if not update_fields:
+        # nothing to update, return existing
+        return UserResponse(**existing)
+
+    query = f"""
+        UPDATE users
+        SET {', '.join(update_fields)}, updated_at = NOW()
+        WHERE id = :id
+        RETURNING *
+    """
+
+    updated = await database.fetch_one(query, values=values)
+
+    # Audit log (parameterized and cast metadata to JSONB)
+    log_query = """
+        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
+        VALUES (:admin_id, :action, :target_type, :target_id, :description, CAST(:metadata AS JSONB))
+    """
+    await database.execute(log_query, values={
+        "admin_id": current_user.id,
+        "action": "user_updated",
+        "target_type": "user",
+        "target_id": user_id,
+        "description": "Admin updated user profile",
+        "metadata": json.dumps({k: payload[k] for k in payload if k in allowed_fields})
+    })
+
+    return UserResponse(**updated)
 
 @router.get("/dashboard", response_model=AdminDashboardStats)
 async def get_admin_dashboard(current_user = Depends(require_admin)):
