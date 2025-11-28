@@ -38,3 +38,5 @@
 2025-11-27 13:43:50,624 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
 2025-11-27 13:54:24,443 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
 2025-11-27 13:54:30,289 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2025-11-28 09:02:26,500 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2025-11-28 09:02:33,194 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database

@@ -12,6 +12,30 @@ from middleware.auth import get_current_active_user, require_instructor_or_admin
 
 router = APIRouter()
 
+@router.get("/users")
+async def get_user_analytics(
+    current_user = Depends(require_admin)
+):
+    """Return aggregated user analytics for admin dashboards"""
+    query = """
+        SELECT 
+            COUNT(*) AS total_users,
+            COUNT(CASE WHEN status = 'active' THEN 1 END) AS active_users,
+            COUNT(CASE WHEN role = 'student' THEN 1 END) AS total_students,
+            COUNT(CASE WHEN role = 'instructor' THEN 1 END) AS total_instructors,
+            COUNT(CASE WHEN role = 'admin' THEN 1 END) AS total_admins
+        FROM users
+    """
+    stats = await database.fetch_one(query)
+    # Convert to plain dict to ensure JSON serializable
+    return {
+        "total_users": int(stats.total_users) if stats and stats.total_users is not None else 0,
+        "active_users": int(stats.active_users) if stats and stats.active_users is not None else 0,
+        "students": int(stats.total_students) if stats and stats.total_students is not None else 0,
+        "instructors": int(stats.total_instructors) if stats and stats.total_instructors is not None else 0,
+        "admins": int(stats.total_admins) if stats and stats.total_admins is not None else 0,
+    }
+
 @router.get("/overview")
 async def get_analytics_overview(
     start_date: Optional[datetime] = Query(None),

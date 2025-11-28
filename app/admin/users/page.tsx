@@ -71,6 +71,7 @@ import { handleApiError } from "@/lib/utils/form-errors"
 import { User } from "@/lib/services/auth"
 import { formatDate } from "date-fns"
 import { useSearchParams } from "next/navigation"
+import { analyticsService, type UserAnalyticsSummary } from "@/lib/services/analytics"
 
 export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -84,6 +85,7 @@ export default function UsersManagement() {
   const [initialized, setInitialized] = useState(false)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  const [analytics, setAnalytics] = useState<UserAnalyticsSummary | null>(null)
 
   const searchParams = useSearchParams()
 
@@ -96,6 +98,19 @@ export default function UsersManagement() {
     setInitialized(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  // Fetch user analytics once (admin-only)
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await analyticsService.getUserAnalytics()
+        setAnalytics(res)
+      } catch (err) {
+        console.error("Failed to load user analytics:", err)
+      }
+    }
+    run()
+  }, [])
 
   // Fetch after URL params are applied
   useEffect(() => {
@@ -194,11 +209,11 @@ export default function UsersManagement() {
   const filteredUsers = users
 
   const stats = {
-    totalUsers: totalItems,
-    activeUsers: users.filter((u) => u.status === "active").length,
-    students: users.filter((u) => u.role === "student").length,
-    instructors: users.filter((u) => u.role === "instructor").length,
-    admins: users.filter((u) => u.role === "admin").length,
+    totalUsers: analytics?.total_users ?? totalItems,
+    activeUsers: analytics?.active_users ?? users.filter((u) => u.status === "active").length,
+    students: analytics?.students ?? users.filter((u) => u.role === "student").length,
+    instructors: analytics?.instructors ?? users.filter((u) => u.role === "instructor").length,
+    admins: analytics?.admins ?? users.filter((u) => u.role === "admin").length,
   }
 
   const roles = [
