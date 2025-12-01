@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create enum types
 CREATE TYPE user_role AS ENUM ('student', 'instructor', 'admin');
-CREATE TYPE user_status AS ENUM ('active', 'inactive', 'suspended', 'pending');
+CREATE TYPE user_status AS ENUM ('active', 'inactive', 'suspended', 'pending', 'deleted');
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
