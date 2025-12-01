@@ -24,6 +24,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -89,6 +100,10 @@ export default function UsersManagement() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [analytics, setAnalytics] = useState<UserAnalyticsSummary | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [targetUser, setTargetUser] = useState<User | null>(null)
+  const [actionType, setActionType] = useState<"deactivate" | "reactivate">("deactivate")
+  const [actionReason, setActionReason] = useState("")
 
   const searchParams = useSearchParams()
 
@@ -267,6 +282,43 @@ export default function UsersManagement() {
         defaultMessage:
           error.message || (isEditMode ? "Failed to update user" : "Failed to create user"),
       })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const reload = async () => {
+    const roleParam = selectedRole !== "all" ? selectedRole : undefined
+    const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
+    const searchParam = debouncedSearch || undefined
+    const response = await usersService.getUsers({
+      page,
+      size,
+      role: roleParam,
+      status: statusParam,
+      search: searchParam,
+    })
+    setUsers(response.items as any)
+    setTotalPages(response.pages)
+    setTotalItems(response.total)
+  }
+
+  const handleConfirm = async () => {
+    if (!targetUser) return
+    setIsLoading(true)
+    try {
+      if (actionType === "deactivate") {
+        await usersService.deactivateUser(String(targetUser.id), actionReason)
+        toast.success("User deactivated")
+      } else {
+        await usersService.reactivateUser(String(targetUser.id), actionReason)
+        toast.success("User reactivated")
+      }
+      setConfirmOpen(false)
+      setActionReason("")
+      await reload()
+    } catch (err: any) {
+      toast.error(err?.message || `Failed to ${actionType} user`)
     } finally {
       setIsLoading(false)
     }
@@ -611,7 +663,15 @@ export default function UsersManagement() {
                                 <Mail className="mr-2 h-4 w-4" />
                                 Send email
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setTargetUser(user)
+                                  const nextAction =
+                                    user.status === "active" ? "deactivate" : "reactivate"
+                                  setActionType(nextAction)
+                                  setConfirmOpen(true)
+                                }}
+                              >
                                 {user.status === "active" ? (
                                   <>
                                     <UserX className="mr-2 h-4 w-4" />
@@ -648,6 +708,42 @@ export default function UsersManagement() {
           </Card>
         </main>
       </div>
+      {/* Confirm modal */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "deactivate" ? "Deactivate user?" : "Reactivate user?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "deactivate"
+                ? "This will immediately prevent the user from logging in or accessing any content. You can reactivate later."
+                : "This will restore the user's access to the platform."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="grid gap-2">
+            <Label htmlFor="reason">Reason (optional)</Label>
+            <Input
+              id="reason"
+              placeholder="Add a short reason for audit"
+              value={actionReason}
+              onChange={(e) => setActionReason(e.target.value)}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} disabled={isLoading}>
+              {isLoading
+                ? "Processing..."
+                : actionType === "deactivate"
+                  ? "Deactivate"
+                  : "Reactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

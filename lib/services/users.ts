@@ -54,6 +54,24 @@ class UsersService {
     }
   }
 
+  async deactivateUser(userId: string, reason?: string): Promise<{ message: string }> {
+    try {
+      const url = `${API_ENDPOINTS.adminUsers}/${userId}/deactivate`
+      return await apiClient.patch<{ message: string }>(url, { reason })
+    } catch (error) {
+      this.handleError("Deactivate user", error)
+    }
+  }
+
+  async reactivateUser(userId: string, reason?: string): Promise<{ message: string }> {
+    try {
+      const url = `${API_ENDPOINTS.adminUsers}/${userId}/reactivate`
+      return await apiClient.patch<{ message: string }>(url, { reason })
+    } catch (error) {
+      this.handleError("Reactivate user", error)
+    }
+  }
+
   async getUsers(params?: { page?: number; size?: number; role?: string; status?: string; search?: string }): Promise<PaginatedApiResponse<User>> {
     try {
       const queryParams = new URLSearchParams()

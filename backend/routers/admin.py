@@ -342,6 +342,92 @@ async def get_admin_courses(
         pages=(total + pagination.size - 1) // pagination.size
     )
 
+@router.patch("/users/{user_id}/deactivate")
+async def deactivate_user(
+    user_id: uuid.UUID,
+    payload: Optional[Dict[str, Any]] = None,
+    current_user = Depends(require_admin)
+):
+    """Deactivate a user account (sets status to 'inactive').
+    - Prevent self-deactivation
+    - Record audit log
+    """
+    # Fetch target user
+    user_query = "SELECT * FROM users WHERE id = :user_id"
+    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Prevent self-deactivation
+    if str(current_user.id) == str(user_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot deactivate your own account")
+
+    if user.status == "inactive":
+        # Idempotent response
+        return {"message": "User is already inactive"}
+
+    update_query = """
+        UPDATE users SET status = 'inactive', updated_at = NOW()
+        WHERE id = :user_id
+        RETURNING *
+    """
+    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+
+    # Audit log
+    log_query = """
+        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
+        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
+    """
+    reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
+    await database.execute(log_query, values={
+        "admin_id": current_user.id,
+        "action": "user_suspended",
+        "target_id": user_id,
+        "description": "Deactivated user account",
+        "metadata": json.dumps({"old_status": user.status, "new_status": "inactive", "reason": reason})
+    })
+
+    return {"message": "User deactivated"}
+
+
+@router.patch("/users/{user_id}/reactivate")
+async def reactivate_user(
+    user_id: uuid.UUID,
+    payload: Optional[Dict[str, Any]] = None,
+    current_user = Depends(require_admin)
+):
+    """Reactivate a user account (sets status to 'active')."""
+    user_query = "SELECT * FROM users WHERE id = :user_id"
+    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if user.status == "active":
+        return {"message": "User is already active"}
+
+    update_query = """
+        UPDATE users SET status = 'active', updated_at = NOW()
+        WHERE id = :user_id
+        RETURNING *
+    """
+    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+
+    log_query = """
+        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
+        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
+    """
+    reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
+    await database.execute(log_query, values={
+        "admin_id": current_user.id,
+        "action": "user_activated",
+        "target_id": user_id,
+        "description": "Reactivated user account",
+        "metadata": json.dumps({"old_status": user.status, "new_status": "active", "reason": reason})
+    })
+
+    return {"message": "User reactivated"}
+
+
 @router.put("/users/{user_id}/status")
 async def update_user_status(
     user_id: uuid.UUID,
