@@ -389,6 +389,53 @@ async def deactivate_user(
 
     return {"message": "User deactivated"}
 
+@router.patch("/users/{user_id}/soft-delete")
+async def soft_delete_user(
+    user_id: uuid.UUID,
+    payload: Optional[Dict[str, Any]] = None,
+    current_user = Depends(require_admin)
+):
+    """Soft delete a user account (sets status to 'deleted').
+    - Prevent self-deletion
+    - Record audit log
+    """
+    # Fetch target user
+    user_query = "SELECT * FROM users WHERE id = :user_id"
+    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Prevent self-deletion
+    if str(current_user.id) == str(user_id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot delete your own account")
+
+    if user.status == "deleted":
+        # Idempotent response
+        return {"message": "User is already deleted"}
+
+    update_query = """
+        UPDATE users SET status = 'deleted', updated_at = NOW()
+        WHERE id = :user_id
+        RETURNING *
+    """
+    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+
+    # Audit log
+    log_query = """
+        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
+        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
+    """
+    reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
+    await database.execute(log_query, values={
+        "admin_id": current_user.id,
+        "action": "user_deleted",
+        "target_id": user_id,
+        "description": "Soft deleted user account",
+        "metadata": json.dumps({"old_status": user.status, "new_status": "deleted", "reason": reason})
+    })
+
+    return {"message": "User soft deleted"}
+
 
 @router.patch("/users/{user_id}/reactivate")
 async def reactivate_user(

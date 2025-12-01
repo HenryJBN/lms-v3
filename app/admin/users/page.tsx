@@ -102,7 +102,9 @@ export default function UsersManagement() {
   const [analytics, setAnalytics] = useState<UserAnalyticsSummary | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [targetUser, setTargetUser] = useState<User | null>(null)
-  const [actionType, setActionType] = useState<"deactivate" | "reactivate">("deactivate")
+  const [actionType, setActionType] = useState<"deactivate" | "reactivate" | "soft-delete">(
+    "deactivate"
+  )
   const [actionReason, setActionReason] = useState("")
 
   const searchParams = useSearchParams()
@@ -310,9 +312,12 @@ export default function UsersManagement() {
       if (actionType === "deactivate") {
         await usersService.deactivateUser(String(targetUser.id), actionReason)
         toast.success("User deactivated")
-      } else {
+      } else if (actionType === "reactivate") {
         await usersService.reactivateUser(String(targetUser.id), actionReason)
         toast.success("User reactivated")
+      } else if (actionType === "soft-delete") {
+        await usersService.softDeleteUser(String(targetUser.id), actionReason)
+        toast.success("User soft deleted")
       }
       setConfirmOpen(false)
       setActionReason("")
@@ -561,6 +566,7 @@ export default function UsersManagement() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="deleted">Deleted</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -610,7 +616,15 @@ export default function UsersManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                          <Badge
+                            variant={
+                              user.status === "active"
+                                ? "default"
+                                : user.status === "deleted"
+                                  ? "destructive"
+                                  : "secondary"
+                            }
+                          >
                             {user.status}
                           </Badge>
                         </TableCell>
@@ -685,7 +699,14 @@ export default function UsersManagement() {
                                 )}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => {
+                                  setTargetUser(user)
+                                  setActionType("soft-delete")
+                                  setConfirmOpen(true)
+                                }}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete user
                               </DropdownMenuItem>
@@ -713,12 +734,18 @@ export default function UsersManagement() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {actionType === "deactivate" ? "Deactivate user?" : "Reactivate user?"}
+              {actionType === "deactivate"
+                ? "Deactivate user?"
+                : actionType === "reactivate"
+                  ? "Reactivate user?"
+                  : "Soft delete user?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {actionType === "deactivate"
                 ? "This will immediately prevent the user from logging in or accessing any content. You can reactivate later."
-                : "This will restore the user's access to the platform."}
+                : actionType === "reactivate"
+                  ? "This will restore the user's access to the platform."
+                  : "This will mark the user as deleted. The user data will be preserved but the account will be permanently inaccessible. This action cannot be undone."}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -739,7 +766,9 @@ export default function UsersManagement() {
                 ? "Processing..."
                 : actionType === "deactivate"
                   ? "Deactivate"
-                  : "Reactivate"}
+                  : actionType === "reactivate"
+                    ? "Reactivate"
+                    : "Soft Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -72,7 +72,22 @@ class UsersService {
     }
   }
 
-  async getUsers(params?: { page?: number; size?: number; role?: string; status?: string; search?: string }): Promise<PaginatedApiResponse<User>> {
+  async softDeleteUser(userId: string, reason?: string): Promise<{ message: string }> {
+    try {
+      const url = `${API_ENDPOINTS.adminUsers}/${userId}/soft-delete`
+      return await apiClient.patch<{ message: string }>(url, { reason })
+    } catch (error) {
+      this.handleError("Soft delete user", error)
+    }
+  }
+
+  async getUsers(params?: {
+    page?: number
+    size?: number
+    role?: string
+    status?: string
+    search?: string
+  }): Promise<PaginatedApiResponse<User>> {
     try {
       const queryParams = new URLSearchParams()
       if (params?.page) queryParams.set("page", String(params.page))
@@ -81,7 +96,9 @@ class UsersService {
       if (params?.status && params.status !== "all") queryParams.set("status", params.status)
       if (params?.search) queryParams.set("search", params.search)
 
-      const url = queryParams.toString() ? `${API_ENDPOINTS.users}?${queryParams.toString()}` : API_ENDPOINTS.users
+      const url = queryParams.toString()
+        ? `${API_ENDPOINTS.users}?${queryParams.toString()}`
+        : API_ENDPOINTS.users
       return await apiClient.get<PaginatedApiResponse<User>>(url)
     } catch (error) {
       this.handleError("Get users", error)

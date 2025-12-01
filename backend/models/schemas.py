@@ -15,6 +15,7 @@ class UserStatus(str, Enum):
     inactive = "inactive"
     suspended = "suspended"
     pending = "pending"
+    deleted = "deleted"
 
 class CourseStatus(str, Enum):
     draft = "draft"
