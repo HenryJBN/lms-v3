@@ -673,10 +673,10 @@ export default function UsersManagement() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit user
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              {/* <DropdownMenuItem>
                                 <Mail className="mr-2 h-4 w-4" />
                                 Send email
-                              </DropdownMenuItem>
+                              </DropdownMenuItem> */}
                               <DropdownMenuItem
                                 onClick={() => {
                                   setTargetUser(user)
