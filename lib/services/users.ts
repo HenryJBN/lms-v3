@@ -165,6 +165,27 @@ class UsersService {
     }
   }
 
+  async exportUsers(params?: { role?: string; status?: string; search?: string }): Promise<Blob> {
+    try {
+      const payload = {
+        export_type: "users",
+        format: "csv",
+        filters: {
+          ...(params?.role && params.role !== "all" && { role: params.role }),
+          ...(params?.status && params.status !== "all" && { status: params.status }),
+          ...(params?.search && { search: params.search }),
+        },
+      }
+
+      return await apiClient.downloadFile(`${API_ENDPOINTS.admin}/export`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      })
+    } catch (error) {
+      this.handleError("Export users", error)
+    }
+  }
+
   clearCache(): void {
     cachedUser = null
   }

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
+import io
 
 from database.connection import database
 from models.schemas import (
@@ -728,17 +729,21 @@ async def generate_admin_report(
 
 @router.post("/export")
 async def export_admin_data(
-    export_type: str,
-    format: str = "csv",
-    filters: Optional[Dict[str, Any]] = None,
+    export_type: str = Body(...),
+    format: str = Body("json"),
+    filters: Optional[Dict[str, Any]] = Body(None),
     current_user = Depends(require_admin)
 ):
     """Export admin data"""
+
+    # Debug logging
+    print(f"Export request by user: {current_user.id} ({current_user.email}) with role: {current_user.role}")
+    print(f"Export params: type={export_type}, format={format}, filters={filters}")
     
-    if format not in ["csv", "xlsx", "json"]:
+    if format not in ["json", "csv"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid export format"
+            detail="Invalid export format. Supported: json, csv"
         )
     
     try:
@@ -748,25 +753,91 @@ async def export_admin_data(
             # Export user data
             where_conditions = []
             values = {}
-            
+
             if filters:
                 if filters.get("role"):
-                    where_conditions.append("role = :role")
+                    where_conditions.append("u.role = :role")
                     values["role"] = filters["role"]
                 if filters.get("status"):
-                    where_conditions.append("status = :status")
+                    where_conditions.append("u.status = :status")
                     values["status"] = filters["status"]
-            
+                if filters.get("search"):
+                    where_conditions.append("""
+                        (u.first_name ILIKE :search OR u.last_name ILIKE :search OR
+                         u.email ILIKE :search OR u.username ILIKE :search)
+                    """)
+                    values["search"] = f"%{filters['search']}%"
+
             where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-            
+
             query = f"""
-                SELECT id, first_name, last_name, email, role, status, created_at, last_login_at
-                FROM users {where_clause}
-                ORDER BY created_at DESC
+                SELECT u.id, u.first_name, u.last_name, u.email, u.username, u.role, u.status,
+                       u.created_at, u.last_login_at, u.phone, u.bio,
+                       (SELECT COUNT(*) FROM course_enrollments WHERE user_id = u.id) as total_enrollments,
+                       (SELECT COUNT(*) FROM certificates WHERE user_id = u.id) as total_certificates,
+                       (SELECT COUNT(*) FROM course_enrollments WHERE user_id = u.id AND status = 'completed') as completed_courses,
+                       (SELECT balance FROM l_tokens WHERE user_id = u.id) as token_balance
+                FROM users u {where_clause}
+                ORDER BY u.created_at DESC
             """
-            
+
             users = await database.fetch_all(query, values=values)
-            export_data = {"users": [dict(user) for user in users]}
+
+            if format == "csv":
+                # Return CSV file
+                import csv
+                from fastapi.responses import StreamingResponse
+
+                users_data = [dict(user) for user in users]
+                
+                # Create CSV content
+                output = io.StringIO()
+                writer = csv.writer(output)
+                
+                # Write headers
+                headers = ["ID", "First Name", "Last Name", "Email", "Username", "Role", "Status", 
+                          "Join Date", "Last Login", "Phone", "Bio", "Total Enrollments", 
+                          "Completed Courses", "Total Certificates", "Token Balance"]
+                writer.writerow(headers)
+                
+                # Write data rows
+                for user in users_data:
+                    row = [
+                        user.get("id", ""),
+                        user.get("first_name", ""),
+                        user.get("last_name", ""),
+                        user.get("email", ""),
+                        user.get("username", ""),
+                        user.get("role", ""),
+                        user.get("status", ""),
+                        user.get("created_at", "").isoformat() if user.get("created_at") else "",
+                        user.get("last_login_at", "").isoformat() if user.get("last_login_at") else "",
+                        user.get("phone", ""),
+                        user.get("bio", ""),
+                        user.get("total_enrollments", 0),
+                        user.get("completed_courses", 0),
+                        user.get("total_certificates", 0),
+                        user.get("token_balance", 0)
+                    ]
+                    writer.writerow(row)
+                
+                # Create buffer
+                buffer = io.BytesIO(output.getvalue().encode('utf-8'))
+                filename = f"users_export_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
+                return StreamingResponse(
+                    buffer,
+                    media_type="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"}
+                )
+            else:
+                # Return JSON
+                return {
+                    "export_type": export_type,
+                    "format": format,
+                    "exported_at": datetime.utcnow(),
+                    "record_count": len(users),
+                    "data": {"users": [dict(user) for user in users]}
+                }
         
         elif export_type == "courses":
             # Export course data

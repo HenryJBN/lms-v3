@@ -343,7 +343,30 @@ export default function UsersManagement() {
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const blob = await usersService.exportUsers({
+                    role: selectedRole,
+                    status: selectedStatus,
+                    search: searchTerm,
+                  })
+                  const url = window.URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `users_export_${new Date().toISOString().split("T")[0]}.csv`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  window.URL.revokeObjectURL(url)
+                  toast.success("Users exported successfully!")
+                } catch (error: any) {
+                  toast.error(error?.message || "Failed to export users")
+                }
+              }}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

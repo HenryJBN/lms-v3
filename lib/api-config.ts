@@ -15,8 +15,10 @@ export const API_ENDPOINTS = {
   // User endpoints
   users: "/api/users",
   currentUser: "/api/users/me",
-  userProfile: "/api/users/profile",
+  userProfile: (userId: string) => `/api/users/profile/${userId}`,
   updateProfile: "/api/users/profile",
+  uploadAvatar: "/api/users/avatar",
+  tokenBalance: "/api/users/token-balance",
 
   // Course endpoints
   courses: "/api/courses",

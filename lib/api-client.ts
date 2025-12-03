@@ -191,6 +191,45 @@ class ApiClient {
 
     return await response.json()
   }
+
+  async downloadFile(endpoint: string, options?: RequestInit): Promise<Blob> {
+    const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
+
+    const config: RequestInit = {
+      method: "POST", // Default to POST for file downloads, can be overridden
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options?.headers,
+      },
+      credentials: "include",
+      ...options,
+    }
+
+    try {
+      const response = await fetch(url, config)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log("Error response:", errorText)
+        let error
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { detail: errorText }
+        }
+        throw new ApiError(
+          response.status,
+          error.detail || error.message || "Download failed",
+          error
+        )
+      }
+
+      return await response.blob()
+    } catch (error) {
+      console.error("Download error:", error)
+      throw error
+    }
+  }
 }
 
 export const apiClient = new ApiClient()

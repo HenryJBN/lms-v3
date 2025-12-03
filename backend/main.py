@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from database.connection import database, engine, metadata
 from routers import (
-    auth, users, courses, lessons, categories, enrollments, 
+    auth, users, courses, lessons, categories, enrollments,
     progress, certificates, notifications, admin, analytics
 )
 from middleware.auth import get_current_user
