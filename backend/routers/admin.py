@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, UploadFile, File, Form
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timedelta, UTC
@@ -15,6 +15,7 @@ from utils.analytics import (
     RevenueAnalytics, get_platform_kpis, get_top_performing_content
 )
 from tasks.email_tasks import send_admin_created_user_email_task
+from routers.admin_import import import_admin_data
 import secrets
 import string
 import json
@@ -917,6 +918,15 @@ async def export_admin_data(
             detail=f"Failed to export data: {str(e)}"
         )
 
+@router.post("/import")
+async def import_admin_data_endpoint(
+    file: UploadFile = File(...),
+    import_type: str = Form(...),
+    current_user = Depends(require_admin)
+):
+    """Import admin data from CSV file"""
+    return await import_admin_data(file, import_type, current_user)
+
 @router.get("/system-health")
 async def get_system_health(current_user = Depends(require_admin)):
     """Get system health status"""
@@ -962,3 +972,4 @@ async def get_system_health(current_user = Depends(require_admin)):
             "error": str(e),
             "timestamp": datetime.utcnow()
         }
+

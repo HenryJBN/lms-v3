@@ -186,6 +186,24 @@ class UsersService {
     }
   }
 
+  async importUsers(file: File): Promise<{
+    import_type: string
+    imported_count: number
+    errors_count: number
+    errors: string[]
+    message: string
+  }> {
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("import_type", "users")
+
+      return await apiClient.postFormData(`${API_ENDPOINTS.admin}/import`, formData)
+    } catch (error) {
+      this.handleError("Import users", error)
+    }
+  }
+
   clearCache(): void {
     cachedUser = null
   }

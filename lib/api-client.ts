@@ -192,6 +192,73 @@ class ApiClient {
     return await response.json()
   }
 
+  async postFormData<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<T> {
+    const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
+
+    const config: RequestInit = {
+      ...options,
+      method: "POST",
+      headers: {
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        ...options?.headers,
+      },
+      body: formData,
+      credentials: "include",
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+    config.signal = controller.signal
+
+    try {
+      const response = await fetch(url, config)
+      clearTimeout(timeoutId)
+
+      // Handle 401 - Try to refresh token
+      if (response.status === 401) {
+        const refreshed = await this.refreshAccessToken()
+        if (refreshed) {
+          // Retry the request with new token
+          config.headers = {
+            ...config.headers,
+            Authorization: `Bearer ${this.token}`,
+          }
+          const retryResponse = await fetch(url, config)
+          if (retryResponse.ok) {
+            return await retryResponse.json()
+          }
+        }
+        // If refresh failed, throw error
+        throw new ApiError(401, "Authentication failed")
+      }
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new ApiError(
+          response.status,
+          error.detail || error.message || "An error occurred",
+          error
+        )
+      }
+
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json()
+      }
+
+      return {} as T
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof ApiError) {
+        throw error
+      }
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new ApiError(408, "Request timeout")
+      }
+      throw new ApiError(500, "Network error occurred")
+    }
+  }
+
   async downloadFile(endpoint: string, options?: RequestInit): Promise<Blob> {
     const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
 

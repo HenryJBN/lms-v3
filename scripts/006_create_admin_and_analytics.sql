@@ -3,7 +3,7 @@
 
 -- Create enum types for admin functionality
 CREATE TYPE admin_action_type AS ENUM (
-    'user_created', 'user_updated', 'user_deleted', 'user_suspended', 'user_activated',
+    'user_created', 'user_updated', 'user_deleted', 'user_suspended', 'user_activated' 'users_imported', 'users_exported',
     'course_created', 'course_updated', 'course_deleted', 'course_published', 'course_unpublished',
     'lesson_created', 'lesson_updated', 'lesson_deleted',
     'notification_sent', 'bulk_notification_sent',

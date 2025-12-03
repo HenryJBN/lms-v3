@@ -339,10 +339,40 @@ export default function UsersManagement() {
             <h1 className="text-lg font-semibold">User Management</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
-            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+
+                  try {
+                    const result = await usersService.importUsers(file)
+                    toast.success(result.message)
+                    // Refresh the users list
+                    const response = await usersService.getUsers({ page, size })
+                    setUsers(response.items as any)
+                    setTotalPages(response.pages)
+                    setTotalItems(response.total)
+                    // Reset file input
+                    e.target.value = ""
+                  } catch (error: any) {
+                    toast.error(error?.message || "Failed to import users")
+                    // Reset file input
+                    e.target.value = ""
+                  }
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="import-users"
+              />
+              <Button variant="outline" size="sm" asChild>
+                <label htmlFor="import-users" className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </label>
+              </Button>
+            </div>
             <Button
               variant="outline"
               size="sm"
