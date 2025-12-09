@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from typing import List, Optional
 import uuid
 
 from database.connection import database
 from models.schemas import (
     CourseResponse, CourseCreate, CourseUpdate, CategoryResponse,
-    PaginationParams, PaginatedResponse, CourseLevel, CourseStatus
+    PaginationParams, PaginatedResponse, CourseLevel, CourseStatus, FileUploadResponse
 )
 from middleware.auth import get_current_active_user, require_instructor_or_admin, require_admin
+from utils.file_upload import upload_image, upload_video
 
 router = APIRouter()
 
@@ -326,14 +327,38 @@ async def publish_course(
     
     return CourseResponse(**updated_course)
 
+@router.post("/upload-thumbnail", response_model=FileUploadResponse)
+async def upload_course_thumbnail(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload course thumbnail image"""
+    try:
+        result = await upload_image(file, "courses/thumbnails")
+        return FileUploadResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/upload-trailer", response_model=FileUploadResponse)
+async def upload_course_trailer(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload course trailer video"""
+    try:
+        result = await upload_video(file, "courses/trailers")
+        return FileUploadResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/categories/", response_model=List[CategoryResponse])
 async def get_categories():
     query = """
-        SELECT * FROM categories 
-        WHERE is_active = true 
+        SELECT * FROM categories
+        WHERE is_active = true
         ORDER BY sort_order, name
     """
-    
+
     categories = await database.fetch_all(query)
     return [CategoryResponse(**category) for category in categories]
 
