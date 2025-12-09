@@ -35,6 +35,7 @@ interface Action {
   icon: React.ComponentType<{ className?: string }>
   onClick: (row: any) => void
   variant?: "default" | "destructive"
+  render?: (row: any) => React.ReactNode
 }
 
 interface DataTableProps {
@@ -162,13 +163,17 @@ export function DataTable({
                     <DropdownMenuContent align="end">
                       {actions.map((action, index) => (
                         <div key={index}>
-                          <DropdownMenuItem
-                            onClick={() => action.onClick(row)}
-                            className={action.variant === "destructive" ? "text-destructive" : ""}
-                          >
-                            <action.icon className="mr-2 h-4 w-4" />
-                            {action.label}
-                          </DropdownMenuItem>
+                          {action.render ? (
+                            action.render(row)
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => action.onClick(row)}
+                              className={action.variant === "destructive" ? "text-destructive" : ""}
+                            >
+                              <action.icon className="mr-2 h-4 w-4" />
+                              {action.label}
+                            </DropdownMenuItem>
+                          )}
                           {index < actions.length - 1 && action.variant === "destructive" && (
                             <DropdownMenuSeparator />
                           )}

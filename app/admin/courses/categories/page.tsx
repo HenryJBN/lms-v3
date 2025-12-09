@@ -275,7 +275,7 @@ export default function CategoriesPage() {
           <AlertDialogTrigger asChild>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
               <Trash2 className="mr-2 h-4 w-4" />
-              Delete category
+              Delete Category
             </DropdownMenuItem>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -288,8 +288,11 @@ export default function CategoriesPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => handleDeleteCategory(row)}>
-                Continue
+              <AlertDialogAction
+                onClick={() => handleDeleteCategory(row)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete Category
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -357,15 +360,15 @@ export default function CategoriesPage() {
             icon: Plus,
             onClick: () => setIsCreateDialogOpen(true),
           }}
-          exportActions={[
-            { label: "Export as CSV", onClick: () => console.log("Export CSV") },
-            { label: "Export as Excel", onClick: () => console.log("Export Excel") },
-            { label: "Export as PDF", onClick: () => console.log("Export PDF") },
-          ]}
-          importActions={[
-            { label: "Import CSV", onClick: () => console.log("Import CSV") },
-            { label: "Import Excel", onClick: () => console.log("Import Excel") },
-          ]}
+          // exportActions={[
+          //   { label: "Export as CSV", onClick: () => console.log("Export CSV") },
+          //   { label: "Export as Excel", onClick: () => console.log("Export Excel") },
+          //   { label: "Export as PDF", onClick: () => console.log("Export PDF") },
+          // ]}
+          // importActions={[
+          //   { label: "Import CSV", onClick: () => console.log("Import CSV") },
+          //   { label: "Import Excel", onClick: () => console.log("Import Excel") },
+          // ]}
         />
       </div>
 
