@@ -1,7 +1,7 @@
 import os
 import uuid
 import aiofiles
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Protocol
 from fastapi import UploadFile, HTTPException
 import boto3
 from botocore.exceptions import ClientError
@@ -9,6 +9,7 @@ import magic
 from PIL import Image
 import subprocess
 from datetime import datetime
+from abc import ABC, abstractmethod
 
 # Configuration
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -17,7 +18,37 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 CLOUDFRONT_DOMAIN = os.getenv("CLOUDFRONT_DOMAIN")
 LOCAL_UPLOAD_PATH = os.getenv("LOCAL_UPLOAD_PATH", "./uploads")
+
+# Provider configuration - supports 'aws_s3', 'digitalocean', 'local'
+# Set FILE_UPLOAD_PROVIDER environment variable to switch providers:
+# - 'local': Local file system storage
+# - 'aws_s3': Amazon S3 bucket storage
+# - 'digitalocean': DigitalOcean Spaces storage
+FILE_UPLOAD_PROVIDER = os.getenv("FILE_UPLOAD_PROVIDER", "local")
+
+# Backward compatibility - if USE_S3 is set, use aws_s3
 USE_S3 = os.getenv("USE_S3", "false").lower() == "true"
+if USE_S3 and FILE_UPLOAD_PROVIDER == "local":
+    FILE_UPLOAD_PROVIDER = "aws_s3"
+
+# Required environment variables for each provider:
+#
+# For AWS S3:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+# - AWS_REGION (optional, defaults to us-east-1)
+# - S3_BUCKET_NAME
+# - CLOUDFRONT_DOMAIN (optional, for CDN)
+#
+# For DigitalOcean Spaces:
+# - DO_ACCESS_KEY_ID
+# - DO_SECRET_ACCESS_KEY
+# - DO_SPACE_NAME
+# - DO_REGION (optional, defaults to nyc3)
+# - DO_CDN_DOMAIN (optional, for CDN)
+#
+# For Local storage:
+# - LOCAL_UPLOAD_PATH (optional, defaults to ./uploads)
 
 # File type configurations
 ALLOWED_IMAGE_TYPES = {
@@ -45,20 +76,222 @@ MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 MAX_IMAGE_SIZE = 10 * 1024 * 1024   # 10MB
 MAX_VIDEO_SIZE = 500 * 1024 * 1024  # 500MB
 
+class FileUploadProvider(ABC):
+    """Abstract base class for file upload providers"""
+
+    @abstractmethod
+    async def upload_file(self, file: UploadFile, filename: str) -> str:
+        """Upload a file and return the URL"""
+        pass
+
+    @abstractmethod
+    async def delete_file(self, file_path: str) -> bool:
+        """Delete a file by its path/URL"""
+        pass
+
+class AWSS3Provider(FileUploadProvider):
+    """AWS S3 file upload provider"""
+
+    def __init__(self, bucket_name: str, region: str = "us-east-1", cloudfront_domain: Optional[str] = None):
+        self.bucket_name = bucket_name
+        self.region = region
+        self.cloudfront_domain = cloudfront_domain
+        self.s3_client = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=region
+        )
+
+    async def upload_file(self, file: UploadFile, filename: str) -> str:
+        """Upload file to AWS S3"""
+        try:
+            file_content = await file.read()
+
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=filename,
+                Body=file_content,
+                ContentType=file.content_type,
+                ACL='public-read'
+            )
+
+            if self.cloudfront_domain:
+                return f"https://{self.cloudfront_domain}/{filename}"
+            else:
+                return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{filename}"
+
+        except ClientError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload to AWS S3: {str(e)}"
+            )
+
+    async def delete_file(self, file_path: str) -> bool:
+        """Delete file from AWS S3"""
+        try:
+            # Extract key from URL
+            if self.cloudfront_domain and self.cloudfront_domain in file_path:
+                key = file_path.replace(f"https://{self.cloudfront_domain}/", "")
+            else:
+                key = file_path.split(f"{self.bucket_name}.s3.{self.region}.amazonaws.com/")[1]
+
+            self.s3_client.delete_object(Bucket=self.bucket_name, Key=key)
+            return True
+
+        except Exception as e:
+            print(f"AWS S3 file deletion failed: {e}")
+            return False
+
+class DigitalOceanProvider(FileUploadProvider):
+    """DigitalOcean Spaces file upload provider"""
+
+    def __init__(self, space_name: str, region: str = "nyc3", cdn_domain: Optional[str] = None):
+        self.space_name = space_name
+        self.region = region
+        self.cdn_domain = cdn_domain
+        self.endpoint_url = f"https://{region}.digitaloceanspaces.com"
+
+        # Use environment variables for DigitalOcean credentials
+        access_key = os.getenv("DO_ACCESS_KEY_ID")
+        secret_key = os.getenv("DO_SECRET_ACCESS_KEY")
+
+        if not access_key or not secret_key:
+            raise ValueError("DigitalOcean Spaces credentials not configured. Set DO_ACCESS_KEY_ID and DO_SECRET_ACCESS_KEY.")
+
+        self.s3_client = boto3.client(
+            's3',
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name=region,
+            endpoint_url=self.endpoint_url
+        )
+
+    async def upload_file(self, file: UploadFile, filename: str) -> str:
+        """Upload file to DigitalOcean Spaces"""
+        try:
+            file_content = await file.read()
+
+            self.s3_client.put_object(
+                Bucket=self.space_name,
+                Key=filename,
+                Body=file_content,
+                ContentType=file.content_type,
+                ACL='public-read'
+            )
+
+            if self.cdn_domain:
+                return f"https://{self.cdn_domain}/{filename}"
+            else:
+                return f"https://{self.space_name}.{self.region}.digitaloceanspaces.com/{filename}"
+
+        except ClientError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload to DigitalOcean Spaces: {str(e)}"
+            )
+
+    async def delete_file(self, file_path: str) -> bool:
+        """Delete file from DigitalOcean Spaces"""
+        try:
+            # Extract key from URL
+            if self.cdn_domain and self.cdn_domain in file_path:
+                key = file_path.replace(f"https://{self.cdn_domain}/", "")
+            else:
+                key = file_path.split(f"{self.space_name}.{self.region}.digitaloceanspaces.com/")[1]
+
+            self.s3_client.delete_object(Bucket=self.space_name, Key=key)
+            return True
+
+        except Exception as e:
+            print(f"DigitalOcean Spaces file deletion failed: {e}")
+            return False
+
+class LocalFileProvider(FileUploadProvider):
+    """Local file system upload provider"""
+
+    def __init__(self, upload_path: str = "./uploads"):
+        self.upload_path = upload_path
+        os.makedirs(upload_path, exist_ok=True)
+
+    async def upload_file(self, file: UploadFile, filename: str) -> str:
+        """Upload file to local storage"""
+        try:
+            file_path = os.path.join(self.upload_path, filename)
+            directory = os.path.dirname(file_path)
+            os.makedirs(directory, exist_ok=True)
+
+            async with aiofiles.open(file_path, 'wb') as f:
+                content = await file.read()
+                await f.write(content)
+
+            # Return URL path
+            return f"/uploads/{filename}"
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save file locally: {str(e)}"
+            )
+
+    async def delete_file(self, file_path: str) -> bool:
+        """Delete file from local storage"""
+        try:
+            # Extract local path from URL
+            local_path = file_path.replace("/uploads/", "")
+            full_path = os.path.join(self.upload_path, local_path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+            return True
+
+        except Exception as e:
+            print(f"Local file deletion failed: {e}")
+            return False
+
+def create_file_upload_provider(provider_type: str) -> FileUploadProvider:
+    """Factory function to create file upload provider based on type"""
+
+    if provider_type == "aws_s3":
+        if not S3_BUCKET_NAME:
+            raise ValueError("S3_BUCKET_NAME environment variable not set")
+        return AWSS3Provider(
+            bucket_name=S3_BUCKET_NAME,
+            region=AWS_REGION,
+            cloudfront_domain=CLOUDFRONT_DOMAIN
+        )
+
+    elif provider_type == "digitalocean":
+        space_name = os.getenv("DO_SPACE_NAME")
+        if not space_name:
+            raise ValueError("DO_SPACE_NAME environment variable not set")
+        return DigitalOceanProvider(
+            space_name=space_name,
+            region=os.getenv("DO_REGION", "nyc3"),
+            cdn_domain=os.getenv("DO_CDN_DOMAIN")
+        )
+
+    elif provider_type == "local":
+        return LocalFileProvider(upload_path=LOCAL_UPLOAD_PATH)
+
+    else:
+        raise ValueError(f"Unknown provider type: {provider_type}")
+
 class FileUploadService:
-    def __init__(self):
+    def __init__(self, provider: Optional[FileUploadProvider] = None):
+        if provider is None:
+            self.provider = create_file_upload_provider(FILE_UPLOAD_PROVIDER)
+        else:
+            self.provider = provider
+
+        # Backward compatibility: keep old methods for legacy support
         self.s3_client = None
-        if USE_S3 and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        if USE_S3 and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and FILE_UPLOAD_PROVIDER == "aws_s3":
             self.s3_client = boto3.client(
                 's3',
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
                 region_name=AWS_REGION
             )
-        
-        # Ensure local upload directory exists
-        if not USE_S3:
-            os.makedirs(LOCAL_UPLOAD_PATH, exist_ok=True)
     
     def validate_file(self, file: UploadFile, allowed_types: Dict[str, str], max_size: int) -> None:
         """Validate file type and size"""
@@ -136,8 +369,8 @@ class FileUploadService:
             )
     
     async def upload_file(
-        self, 
-        file: UploadFile, 
+        self,
+        file: UploadFile,
         prefix: str = "",
         allowed_types: Optional[Dict[str, str]] = None,
         max_size: Optional[int] = None
@@ -145,25 +378,22 @@ class FileUploadService:
         """Generic file upload"""
         if allowed_types is None:
             allowed_types = {**ALLOWED_IMAGE_TYPES, **ALLOWED_DOCUMENT_TYPES}
-        
+
         if max_size is None:
             max_size = MAX_FILE_SIZE
-        
+
         # Validate file
         self.validate_file(file, allowed_types, max_size)
-        
+
         # Generate filename
         filename = self.generate_filename(file.filename, prefix)
-        
-        # Upload file
-        if USE_S3 and self.s3_client:
-            url = await self.upload_to_s3(file, filename)
-        else:
-            url = await self.upload_to_local(file, filename)
-        
+
+        # Upload file using provider
+        url = await self.provider.upload_file(file, filename)
+
         # Reset file position for potential reuse
         await file.seek(0)
-        
+
         return {
             "filename": filename,
             "original_filename": file.filename,
@@ -215,47 +445,45 @@ class FileUploadService:
             async with aiofiles.open(temp_path, 'wb') as f:
                 content = await file.read()
                 await f.write(content)
-            
+
             # Generate thumbnail
             with Image.open(temp_path) as img:
                 img.thumbnail((300, 300), Image.Resampling.LANCZOS)
                 thumbnail_path = f"/tmp/{uuid.uuid4()}_thumb.jpg"
                 img.save(thumbnail_path, "JPEG", quality=85)
-            
-            # Upload thumbnail
+
+            # Upload thumbnail using provider
             with open(thumbnail_path, 'rb') as thumb_file:
                 thumbnail_filename = self.generate_filename("thumbnail.jpg", f"{prefix}/thumbnails")
-                
-                if USE_S3 and self.s3_client:
-                    self.s3_client.put_object(
-                        Bucket=S3_BUCKET_NAME,
-                        Key=thumbnail_filename,
-                        Body=thumb_file.read(),
-                        ContentType="image/jpeg",
-                        ACL='public-read'
-                    )
-                    
-                    if CLOUDFRONT_DOMAIN:
-                        thumbnail_url = f"https://{CLOUDFRONT_DOMAIN}/{thumbnail_filename}"
-                    else:
-                        thumbnail_url = f"https://{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{thumbnail_filename}"
-                else:
-                    # Copy to local uploads
-                    local_thumb_path = os.path.join(LOCAL_UPLOAD_PATH, thumbnail_filename)
-                    os.makedirs(os.path.dirname(local_thumb_path), exist_ok=True)
-                    
-                    with open(local_thumb_path, 'wb') as local_file:
-                        thumb_file.seek(0)
-                        local_file.write(thumb_file.read())
-                    
-                    thumbnail_url = f"/uploads/{thumbnail_filename}"
-            
+
+                # Create a mock UploadFile for the thumbnail
+                from io import BytesIO
+                thumb_content = thumb_file.read()
+                thumb_bytes = BytesIO(thumb_content)
+                thumb_bytes.seek(0)
+
+                # Create a simple file-like object that mimics UploadFile
+                class MockUploadFile:
+                    def __init__(self, content: bytes, content_type: str = "image/jpeg"):
+                        self.content = content
+                        self.content_type = content_type
+                        self.filename = "thumbnail.jpg"
+
+                    async def read(self):
+                        return self.content
+
+                    async def seek(self, position):
+                        pass
+
+                mock_file = MockUploadFile(thumb_content, "image/jpeg")
+                thumbnail_url = await self.provider.upload_file(mock_file, thumbnail_filename)
+
             # Clean up temp files
             os.remove(temp_path)
             os.remove(thumbnail_path)
-            
+
             return thumbnail_url
-            
+
         except Exception as e:
             print(f"Thumbnail generation failed: {e}")
             return ""
@@ -318,28 +546,8 @@ class FileUploadService:
             return {"duration": 0}
     
     async def delete_file(self, file_path: str) -> bool:
-        """Delete file from storage"""
-        try:
-            if USE_S3 and self.s3_client:
-                # Extract key from URL
-                if CLOUDFRONT_DOMAIN in file_path:
-                    key = file_path.replace(f"https://{CLOUDFRONT_DOMAIN}/", "")
-                else:
-                    key = file_path.split(f"{S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/")[1]
-                
-                self.s3_client.delete_object(Bucket=S3_BUCKET_NAME, Key=key)
-            else:
-                # Delete from local storage
-                local_path = file_path.replace("/uploads/", "")
-                full_path = os.path.join(LOCAL_UPLOAD_PATH, local_path)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
-            
-            return True
-            
-        except Exception as e:
-            print(f"File deletion failed: {e}")
-            return False
+        """Delete file from storage using provider"""
+        return await self.provider.delete_file(file_path)
 
 # Initialize file upload service
 file_upload_service = FileUploadService()
