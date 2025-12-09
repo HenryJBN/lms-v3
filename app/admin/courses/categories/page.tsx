@@ -1,119 +1,112 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Folder, BookOpen, Users, Tag, Star, Edit, Trash2, Eye, Copy } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Folder, BookOpen, Users, Tag, Edit, Trash2, Eye, Copy } from "lucide-react"
 
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { StatsGrid } from "@/components/admin/stats-grid"
 import { SearchFilters } from "@/components/admin/search-filters"
 import { ActionButtons } from "@/components/admin/action-buttons"
 import { DataTable } from "@/components/admin/data-table"
-import { FormDialog } from "@/components/admin/form-dialog"
+import { CategoryForm } from "@/components/admin/category-form"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { BulkActions } from "@/components/admin/bulk-actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-
-// Mock data
-const mockCategories = [
-  {
-    id: "1",
-    name: "Technology",
-    slug: "technology",
-    description: "Courses related to technology and programming",
-    parentId: null,
-    courseCount: 45,
-    enrollmentCount: 1250,
-    status: "active",
-    featured: true,
-    icon: "💻",
-    color: "#3B82F6",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "Blockchain",
-    slug: "blockchain",
-    description: "Blockchain and cryptocurrency courses",
-    parentId: "1",
-    courseCount: 15,
-    enrollmentCount: 450,
-    status: "active",
-    featured: true,
-    icon: "⛓️",
-    color: "#F59E0B",
-    createdAt: "2024-01-16",
-  },
-  {
-    id: "3",
-    name: "Creative Arts",
-    slug: "creative-arts",
-    description: "Design, filmmaking, and creative courses",
-    parentId: null,
-    courseCount: 28,
-    enrollmentCount: 680,
-    status: "active",
-    featured: false,
-    icon: "🎨",
-    color: "#8B5CF6",
-    createdAt: "2024-01-18",
-  },
-]
+import { useToast } from "@/hooks/use-toast"
+import { categoryService, type Category } from "@/lib/services/categories"
+import { type CategoryCreateForm, type CategoryUpdateForm } from "@/lib/schemas/category"
 
 export default function CategoriesPage() {
-  const [categories] = useState(mockCategories)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<any>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  const loadCategories = async () => {
+    try {
+      setLoading(true)
+      const data = await categoryService.getAllCategories()
+      setCategories(data || [])
+    } catch (error) {
+      console.error("Failed to load categories:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load categories",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Calculate statistics
   const stats = [
     {
       title: "Total Categories",
       value: categories.length,
-      description: `${categories.filter((c) => c.status === "active").length} active`,
+      description: `${categories.filter((c) => c.is_active !== false).length} active`,
       icon: Folder,
     },
     {
       title: "Total Courses",
-      value: categories.reduce((sum, c) => sum + c.courseCount, 0),
+      value: categories.reduce((sum: number, c: Category) => sum + (c.course_count || 0), 0),
       description: "Across all categories",
       icon: BookOpen,
     },
     {
-      title: "Total Enrollments",
-      value: categories.reduce((sum, c) => sum + c.enrollmentCount, 0).toLocaleString(),
-      description: "Student enrollments",
-      icon: Users,
-    },
-    {
       title: "Avg Courses/Category",
-      value: Math.round(categories.reduce((sum, c) => sum + c.courseCount, 0) / categories.length),
+      value:
+        categories.length > 0
+          ? Math.round(
+              categories.reduce((sum: number, c: Category) => sum + (c.course_count || 0), 0) /
+                categories.length
+            )
+          : 0,
       description: "Distribution rate",
       icon: Tag,
     },
   ]
 
   // Filter data
-  const filteredCategories = categories.filter((category) => {
+  const filteredCategories = categories.filter((category: Category) => {
     const matchesSearch =
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || category.status === statusFilter
+      (category.description &&
+        category.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" ? category.is_active !== false : category.is_active === false)
     return matchesSearch && matchesStatus
   })
 
@@ -123,16 +116,15 @@ export default function CategoriesPage() {
       key: "name",
       label: "Category",
       sortable: true,
-      render: (value: string, row: any) => (
+      render: (value: string, row: Category) => (
         <div className="flex items-center gap-2">
-          <span className="text-lg">{row.icon}</span>
+          <span className="text-lg">{row.icon || "📁"}</span>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-medium">{value}</span>
-              {row.featured && (
-                <Badge variant="outline" className="text-yellow-600">
-                  <Star className="h-3 w-3 mr-1" />
-                  Featured
+              {row.parent_id && (
+                <Badge variant="outline" className="text-blue-600">
+                  Subcategory
                 </Badge>
               )}
             </div>
@@ -142,35 +134,124 @@ export default function CategoriesPage() {
       ),
     },
     {
-      key: "status",
+      key: "is_active",
       label: "Status",
-      render: (value: string) => (
-        <Badge variant={value === "active" ? "default" : "secondary"}>{value}</Badge>
+      render: (value: boolean) => (
+        <Badge variant={value ? "default" : "secondary"}>{value ? "Active" : "Inactive"}</Badge>
       ),
     },
     {
-      key: "courseCount",
+      key: "course_count",
       label: "Courses",
       sortable: true,
+      render: (value: number) => value || 0,
     },
     {
-      key: "enrollmentCount",
-      label: "Enrollments",
-      sortable: true,
-    },
-    {
-      key: "createdAt",
+      key: "created_at",
       label: "Created",
       sortable: true,
+      render: (value: string) => (value ? new Date(value).toLocaleDateString() : "N/A"),
     },
   ]
+
+  // Handle create category
+  const handleCreateCategory = async (data: CategoryCreateForm) => {
+    setIsSubmitting(true)
+    try {
+      await categoryService.createCategory({
+        name: data.name,
+        slug: data.slug,
+        description: data.description || undefined,
+        icon: data.icon || undefined,
+        color: data.color || undefined,
+        parent_id: data.parent_id || undefined,
+        sort_order: data.sort_order,
+        is_active: data.is_active,
+      })
+
+      toast({
+        title: "Success",
+        description: `Category "${data.name}" created successfully`,
+      })
+
+      loadCategories()
+      setIsCreateDialogOpen(false)
+    } catch (error: any) {
+      console.error("Failed to create category:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create category",
+        variant: "destructive",
+      })
+      throw error
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handle update category
+  const handleUpdateCategory = async (data: CategoryUpdateForm) => {
+    if (!editingCategory) return
+
+    setIsSubmitting(true)
+    try {
+      await categoryService.updateCategory(editingCategory.id, {
+        name: data.name,
+        slug: data.slug,
+        description: data.description || undefined,
+        icon: data.icon || undefined,
+        color: data.color || undefined,
+        parent_id: data.parent_id || undefined,
+        sort_order: data.sort_order,
+        is_active: data.is_active,
+      })
+
+      toast({
+        title: "Success",
+        description: `Category "${data.name}" updated successfully`,
+      })
+
+      loadCategories()
+      setIsEditDialogOpen(false)
+      setEditingCategory(null)
+    } catch (error: any) {
+      console.error("Failed to update category:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update category",
+        variant: "destructive",
+      })
+      throw error
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handle delete category
+  const handleDeleteCategory = async (category: Category) => {
+    try {
+      await categoryService.deleteCategory(category.id)
+      toast({
+        title: "Success",
+        description: `Category "${category.name}" deleted successfully`,
+      })
+      loadCategories()
+    } catch (error: any) {
+      console.error("Failed to delete category:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete category",
+        variant: "destructive",
+      })
+    }
+  }
 
   // Table actions
   const actions = [
     {
       label: "Edit",
       icon: Edit,
-      onClick: (row: any) => {
+      onClick: (row: Category) => {
         setEditingCategory(row)
         setIsEditDialogOpen(true)
       },
@@ -178,18 +259,42 @@ export default function CategoriesPage() {
     {
       label: "View Courses",
       icon: Eye,
-      onClick: (row: any) => console.log("View courses for", row.id),
+      onClick: (row: Category) => console.log("View courses for", row.id),
     },
     {
       label: "Duplicate",
       icon: Copy,
-      onClick: (row: any) => console.log("Duplicate", row.id),
+      onClick: (row: Category) => console.log("Duplicate", row.id),
     },
     {
       label: "Delete",
       icon: Trash2,
-      onClick: (row: any) => console.log("Delete", row.id),
-      variant: "destructive" as const,
+      onClick: (row: Category) => {},
+      render: (row: Category) => (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete category
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the category "{row.name}"
+                and remove all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleDeleteCategory(row)}>
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ),
     },
   ]
 
@@ -198,95 +303,27 @@ export default function CategoriesPage() {
     {
       label: "Delete Selected",
       icon: Trash2,
-      onClick: () => console.log("Bulk delete", selectedCategories),
+      onClick: async () => {
+        try {
+          for (const categoryId of selectedCategories) {
+            await categoryService.deleteCategory(categoryId)
+          }
+          toast({
+            title: "Success",
+            description: `${selectedCategories.length} categories deleted successfully`,
+          })
+          loadCategories()
+          setSelectedCategories([])
+        } catch (error: any) {
+          console.error("Failed to delete categories:", error)
+          toast({
+            title: "Error",
+            description: error.message || "Failed to delete categories",
+            variant: "destructive",
+          })
+        }
+      },
       variant: "destructive" as const,
-    },
-  ]
-
-  // Form tabs
-  const formTabs = [
-    {
-      value: "basic",
-      label: "Basic",
-      content: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Category Name</Label>
-              <Input
-                id="name"
-                placeholder="Enter category name"
-                defaultValue={editingCategory?.name}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" placeholder="category-slug" defaultValue={editingCategory?.slug} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Category description"
-              defaultValue={editingCategory?.description}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="parent">Parent Category</Label>
-            <Select defaultValue={editingCategory?.parentId || "none"}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select parent category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Parent (Top Level)</SelectItem>
-                {categories
-                  .filter((c) => c.id !== editingCategory?.id)
-                  .map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      ),
-    },
-    {
-      value: "display",
-      label: "Display",
-      content: (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon</Label>
-              <Input id="icon" placeholder="🎯" defaultValue={editingCategory?.icon} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="color">Color</Label>
-              <Input id="color" type="color" defaultValue={editingCategory?.color || "#3B82F6"} />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select defaultValue={editingCategory?.status || "active"}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="hidden">Hidden</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch id="featured" defaultChecked={editingCategory?.featured} />
-            <Label htmlFor="featured">Featured Category</Label>
-          </div>
-        </div>
-      ),
     },
   ]
 
@@ -352,32 +389,43 @@ export default function CategoriesPage() {
         </CardContent>
       </Card>
 
-      <FormDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        title="Create New Category"
-        description="Add a new course category"
-        tabs={formTabs}
-        onSave={() => setIsCreateDialogOpen(false)}
-        onCancel={() => setIsCreateDialogOpen(false)}
-      />
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Category</DialogTitle>
+            <DialogDescription>
+              Add a new course category to organize your courses
+            </DialogDescription>
+          </DialogHeader>
+          <CategoryForm
+            categories={categories}
+            onSubmit={handleCreateCategory}
+            onCancel={() => setIsCreateDialogOpen(false)}
+            isLoading={isSubmitting}
+            mode="create"
+          />
+        </DialogContent>
+      </Dialog>
 
-      <FormDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        title="Edit Category"
-        description="Update category information"
-        tabs={formTabs}
-        onSave={() => {
-          setIsEditDialogOpen(false)
-          setEditingCategory(null)
-        }}
-        onCancel={() => {
-          setIsEditDialogOpen(false)
-          setEditingCategory(null)
-        }}
-        saveLabel="Update Category"
-      />
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>Update category information and settings</DialogDescription>
+          </DialogHeader>
+          <CategoryForm
+            category={editingCategory}
+            categories={categories}
+            onSubmit={handleUpdateCategory}
+            onCancel={() => {
+              setIsEditDialogOpen(false)
+              setEditingCategory(null)
+            }}
+            isLoading={isSubmitting}
+            mode="edit"
+          />
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   )
 }

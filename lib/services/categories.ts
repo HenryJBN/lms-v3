@@ -7,6 +7,10 @@ export interface Category {
   slug: string
   description?: string
   icon?: string
+  color?: string
+  parent_id?: string
+  sort_order?: number
+  is_active?: boolean
   course_count?: number
   created_at?: string
   updated_at?: string
@@ -80,13 +84,13 @@ class CategoryService {
     }
 
     try {
-      const response = await apiClient.get<CategoriesResponse>("/categories", {
-        params: {
-          page: params?.page || 1,
-          page_size: params?.page_size || 50,
-          search: params?.search,
-        },
-      })
+      const queryParams = new URLSearchParams()
+      if (params?.page) queryParams.append("page", params.page.toString())
+      if (params?.page_size) queryParams.append("page_size", params.page_size.toString())
+      if (params?.search) queryParams.append("search", params.search)
+
+      const url = `${API_ENDPOINTS.categories}${queryParams.toString() ? "?" + queryParams.toString() : ""}`
+      const response = await apiClient.get<CategoriesResponse>(url)
 
       return response.items || []
     } catch (error) {
@@ -103,7 +107,7 @@ class CategoryService {
     }
 
     try {
-      const response = await apiClient.get<Category>(`/categories/${id}`)
+      const response = await apiClient.get<Category>(`${API_ENDPOINTS.categories}/${id}`)
       return response
     } catch (error) {
       console.warn(`Failed to fetch category ${id} from API, using mock data:`, error)
@@ -119,7 +123,7 @@ class CategoryService {
     }
 
     try {
-      const response = await apiClient.get<Category>(`/categories/slug/${slug}`)
+      const response = await apiClient.get<Category>(`${API_ENDPOINTS.categories}/slug/${slug}`)
       return response
     } catch (error) {
       console.warn(`Failed to fetch category by slug ${slug} from API, using mock data:`, error)
@@ -133,6 +137,10 @@ class CategoryService {
     slug: string
     description?: string
     icon?: string
+    color?: string
+    parent_id?: string
+    sort_order?: number
+    is_active?: boolean
   }): Promise<Category> {
     if (this.useMockData) {
       const newCategory: Category = {
@@ -146,7 +154,7 @@ class CategoryService {
     }
 
     try {
-      const response = await apiClient.post<Category>("/categories", data)
+      const response = await apiClient.post<Category>(API_ENDPOINTS.categories, data)
       return response
     } catch (error) {
       console.error("Failed to create category:", error)
@@ -168,7 +176,7 @@ class CategoryService {
     }
 
     try {
-      const response = await apiClient.put<Category>(`/categories/${id}`, data)
+      const response = await apiClient.put<Category>(`${API_ENDPOINTS.categories}/${id}`, data)
       return response
     } catch (error) {
       console.error(`Failed to update category ${id}:`, error)
@@ -182,7 +190,7 @@ class CategoryService {
     }
 
     try {
-      await apiClient.delete(`/categories/${id}`)
+      await apiClient.delete(`${API_ENDPOINTS.categories}/${id}`)
     } catch (error) {
       console.error(`Failed to delete category ${id}:`, error)
       throw error
