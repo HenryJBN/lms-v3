@@ -172,27 +172,65 @@ class CourseService {
   }
 
   /**
-   * ✅ Create new course (supports file upload)
+   * ✅ Upload course thumbnail
    */
-  async createCourse(course: CourseReponse): Promise<Course> {
+  async uploadThumbnail(file: File): Promise<{ url: string }> {
     const formData = new FormData()
+    formData.append("file", file)
 
-    Object.entries(course).forEach(([key, value]) => {
-      if (value === undefined || value === null) return
-
-      if (key === "thumbnail" && value instanceof File) {
-        formData.append("thumbnail", value)
-      } else if (Array.isArray(value)) {
-        value.forEach((item) => formData.append(`${key}[]`, item))
-      } else {
-        formData.append(key, String(value))
+    const response = await apiClient.post<{ url: string }>(
+      `${API_ENDPOINTS.courses}/upload-thumbnail`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
       }
-    })
+    )
 
-    const response = await apiClient.post<Course>(API_ENDPOINTS.courses, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
+    return response
+  }
 
+  /**
+   * ✅ Upload course trailer video
+   */
+  async uploadTrailer(file: File): Promise<{ url: string }> {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const response = await apiClient.post<{ url: string }>(
+      `${API_ENDPOINTS.courses}/upload-trailer`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    )
+
+    return response
+  }
+
+  /**
+   * ✅ Create new course
+   */
+  async createCourse(courseData: {
+    title: string
+    slug: string
+    description?: string
+    short_description?: string
+    category_id?: string
+    level: string
+    price: number
+    duration_hours?: number
+    language?: string
+    requirements?: string[]
+    learning_outcomes?: string[]
+    target_audience?: string
+    thumbnail_url?: string
+    trailer_video_url?: string
+    is_free?: boolean
+    is_featured?: boolean
+    enrollment_limit?: number
+    tags?: string[]
+  }): Promise<CourseReponse> {
+    const response = await apiClient.post<CourseReponse>(API_ENDPOINTS.courses, courseData)
     return response
   }
 

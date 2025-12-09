@@ -165,20 +165,42 @@ export default function CoursesManagement() {
       let thumbnailUrl = ""
       let trailerUrl = ""
 
+      // Upload thumbnail if provided
       if (thumbnailFile) {
-        thumbnailUrl = thumbnailPreview
-        toast({
-          title: "File Upload",
-          description: "Thumbnail uploaded successfully",
-        })
+        try {
+          const uploadResult = await courseService.uploadThumbnail(thumbnailFile)
+          thumbnailUrl = uploadResult.url
+          toast({
+            title: "File Upload",
+            description: "Thumbnail uploaded successfully",
+          })
+        } catch (uploadError) {
+          console.error("Thumbnail upload failed:", uploadError)
+          toast({
+            title: "Upload Warning",
+            description: "Thumbnail upload failed, continuing without it",
+            variant: "destructive",
+          })
+        }
       }
 
+      // Upload trailer if provided
       if (trailerFile) {
-        trailerUrl = URL.createObjectURL(trailerFile)
-        toast({
-          title: "File Upload",
-          description: "Trailer video uploaded successfully",
-        })
+        try {
+          const uploadResult = await courseService.uploadTrailer(trailerFile)
+          trailerUrl = uploadResult.url
+          toast({
+            title: "File Upload",
+            description: "Trailer video uploaded successfully",
+          })
+        } catch (uploadError) {
+          console.error("Trailer upload failed:", uploadError)
+          toast({
+            title: "Upload Warning",
+            description: "Trailer upload failed, continuing without it",
+            variant: "destructive",
+          })
+        }
       }
 
       const courseData = {
@@ -200,30 +222,16 @@ export default function CoursesManagement() {
         trailer_video_url: trailerUrl,
       }
 
-      const newCourse = {
-        id: String(Date.now()),
-        title: courseData.title,
-        description: courseData.description,
-        short_description: courseData.short_description,
-        category: courseData.category_id,
-        status: "draft",
-        instructor: "Current User",
-        students: 0,
-        lessons: 0,
-        duration: `${courseData.duration_hours} hours`,
-        price: courseData.price === 0 ? "Free" : `$${courseData.price}`,
-        rating: 0,
-        createdDate: new Date().toISOString().split("T")[0],
-        lastUpdated: new Date().toISOString().split("T")[0],
-        thumbnail: thumbnailUrl || "/placeholder.svg?height=100&width=160",
-      }
+      // Create course via API
+      const newCourse = await courseService.createCourse(courseData)
 
       toast({
         title: "Success",
         description: `Course "${courseData.title}" created successfully!`,
       })
 
-      setCourses((prev) => [...prev, newCourse])
+      // Refresh courses list
+      loadInitialData()
 
       setIsAddCourseDialogOpen(false)
       setThumbnailFile(null)
@@ -513,14 +521,13 @@ export default function CoursesManagement() {
         </CardHeader>
         <CardContent>
           <SearchFilters
-            searchTerm={searchTerm}
+            searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={[
               {
-                type: "select",
-                label: "Category",
                 value: selectedCategory,
-                onValueChange: setSelectedCategory,
+                onChange: setSelectedCategory,
+                placeholder: "Select category",
                 options: [
                   { label: "All Categories", value: "all" },
                   ...categories.map((cat) => ({
@@ -530,10 +537,9 @@ export default function CoursesManagement() {
                 ],
               },
               {
-                type: "select",
-                label: "Status",
                 value: selectedStatus,
-                onValueChange: setSelectedStatus,
+                onChange: setSelectedStatus,
+                placeholder: "Select status",
                 options: [
                   { label: "All Status", value: "all" },
                   { label: "Published", value: "published" },
