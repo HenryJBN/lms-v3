@@ -79,7 +79,7 @@ export function CategoryForm({
 
   // Auto-generate slug from name
   useEffect(() => {
-    if (nameValue && mode === "create") {
+    if (nameValue) {
       const slug = nameValue
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "")
@@ -88,7 +88,7 @@ export function CategoryForm({
         .trim()
       setValue("slug", slug)
     }
-  }, [nameValue, setValue, mode])
+  }, [nameValue, setValue])
 
   const onFormSubmit = async (data: CategoryCreateForm | CategoryUpdateForm) => {
     await onSubmit(data as CategoryCreateForm)
