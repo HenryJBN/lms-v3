@@ -1,6 +1,15 @@
 import { apiClient } from "../api-client"
 import { API_ENDPOINTS } from "../api-config"
-import type { CourseCreate } from "@/lib/schemas/course"
+import {
+  CourseCreateSchema,
+  CourseUpdateSchema,
+  FileUploadResponseSchema,
+  type CourseCreate,
+  type CourseUpdate,
+  type FileUploadResponse,
+  type CourseCreateForm,
+  type CourseUpdateForm,
+} from "@/lib/schemas/course"
 
 export interface Course {
   title: string
@@ -38,25 +47,7 @@ export interface CourseReponse extends Course {
   thumbnail_url: string
 }
 
-export interface CourseUpdate {
-  title?: string
-  description?: string
-  short_description?: string
-  thumbnail?: File
-  category_id?: string
-  level?: "beginner" | "intermediate" | "advanced" | string
-  price?: number
-  original_price?: number
-  duration_hours?: number
-  language?: string
-  requirements?: string[]
-  learning_outcomes?: string[]
-  target_audience?: string
-  tags?: string[]
-  is_featured?: boolean
-  is_free?: boolean
-  enrollment_limit?: number
-}
+// CourseUpdate interface is now imported from schemas
 
 export interface GetCoursesResponse {
   items: CourseReponse[]
@@ -175,36 +166,20 @@ class CourseService {
    * ✅ Upload course thumbnail
    */
   async uploadThumbnail(file: File): Promise<{ url: string }> {
-    const formData = new FormData()
-    formData.append("file", file)
-
-    const response = await apiClient.post<{ url: string }>(
+    return await apiClient.uploadFile<{ url: string }>(
       `${API_ENDPOINTS.courses}/upload-thumbnail`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      file
     )
-
-    return response
   }
 
   /**
    * ✅ Upload course trailer video
    */
   async uploadTrailer(file: File): Promise<{ url: string }> {
-    const formData = new FormData()
-    formData.append("file", file)
-
-    const response = await apiClient.post<{ url: string }>(
+    return await apiClient.uploadFile<{ url: string }>(
       `${API_ENDPOINTS.courses}/upload-trailer`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      file
     )
-
-    return response
   }
 
   /**

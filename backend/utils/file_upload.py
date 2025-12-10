@@ -85,6 +85,11 @@ class FileUploadProvider(ABC):
         pass
 
     @abstractmethod
+    async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
+        """Upload file content directly and return the URL"""
+        pass
+
+    @abstractmethod
     async def delete_file(self, file_path: str) -> bool:
         """Delete a file by its path/URL"""
         pass
@@ -113,6 +118,28 @@ class AWSS3Provider(FileUploadProvider):
                 Key=filename,
                 Body=file_content,
                 ContentType=file.content_type,
+                ACL='public-read'
+            )
+
+            if self.cloudfront_domain:
+                return f"https://{self.cloudfront_domain}/{filename}"
+            else:
+                return f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{filename}"
+
+        except ClientError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload to AWS S3: {str(e)}"
+            )
+
+    async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
+        """Upload file content to AWS S3"""
+        try:
+            self.s3_client.put_object(
+                Bucket=self.bucket_name,
+                Key=filename,
+                Body=content,
+                ContentType=content_type,
                 ACL='public-read'
             )
 
@@ -191,6 +218,28 @@ class DigitalOceanProvider(FileUploadProvider):
                 detail=f"Failed to upload to DigitalOcean Spaces: {str(e)}"
             )
 
+    async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
+        """Upload file content to DigitalOcean Spaces"""
+        try:
+            self.s3_client.put_object(
+                Bucket=self.space_name,
+                Key=filename,
+                Body=content,
+                ContentType=content_type,
+                ACL='public-read'
+            )
+
+            if self.cdn_domain:
+                return f"https://{self.cdn_domain}/{filename}"
+            else:
+                return f"https://{self.space_name}.{self.region}.digitaloceanspaces.com/{filename}"
+
+        except ClientError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to upload to DigitalOcean Spaces: {str(e)}"
+            )
+
     async def delete_file(self, file_path: str) -> bool:
         """Delete file from DigitalOcean Spaces"""
         try:
@@ -224,6 +273,25 @@ class LocalFileProvider(FileUploadProvider):
             async with aiofiles.open(file_path, 'wb') as f:
                 content = await file.read()
                 await f.write(content)
+
+            # Return URL path
+            return f"/uploads/{filename}"
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save file locally: {str(e)}"
+            )
+
+    async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
+        """Upload file content to local storage"""
+        try:
+            file_path = os.path.join(self.upload_path, filename)
+            directory = os.path.dirname(file_path)
+            os.makedirs(directory, exist_ok=True)
+
+            with open(file_path, 'wb') as f:
+                f.write(content)
 
             # Return URL path
             return f"/uploads/{filename}"
@@ -388,8 +456,12 @@ class FileUploadService:
         # Generate filename
         filename = self.generate_filename(file.filename, prefix)
 
-        # Upload file using provider
-        url = await self.provider.upload_file(file, filename)
+        # Read file content once
+        file_content = await file.read()
+        file_size = len(file_content)
+
+        # Upload file using provider (pass content instead of file object)
+        url = await self.provider.upload_file_content(file_content, filename, file.content_type)
 
         # Reset file position for potential reuse
         await file.seek(0)
@@ -399,7 +471,7 @@ class FileUploadService:
             "original_filename": file.filename,
             "url": url,
             "content_type": file.content_type,
-            "size": len(await file.read()),
+            "size": file_size,
             "uploaded_at": datetime.utcnow()
         }
     
@@ -452,31 +524,50 @@ class FileUploadService:
                 thumbnail_path = f"/tmp/{uuid.uuid4()}_thumb.jpg"
                 img.save(thumbnail_path, "JPEG", quality=85)
 
-            # Upload thumbnail using provider
+            # Upload thumbnail using provider directly
             with open(thumbnail_path, 'rb') as thumb_file:
                 thumbnail_filename = self.generate_filename("thumbnail.jpg", f"{prefix}/thumbnails")
-
-                # Create a mock UploadFile for the thumbnail
-                from io import BytesIO
                 thumb_content = thumb_file.read()
-                thumb_bytes = BytesIO(thumb_content)
-                thumb_bytes.seek(0)
 
-                # Create a simple file-like object that mimics UploadFile
-                class MockUploadFile:
-                    def __init__(self, content: bytes, content_type: str = "image/jpeg"):
-                        self.content = content
-                        self.content_type = content_type
-                        self.filename = "thumbnail.jpg"
+                # For cloud providers, upload directly
+                if hasattr(self.provider, 's3_client'):
+                    # AWS S3 or DigitalOcean Spaces
+                    self.provider.s3_client.put_object(
+                        Bucket=self.provider.bucket_name if hasattr(self.provider, 'bucket_name') else self.provider.space_name,
+                        Key=thumbnail_filename,
+                        Body=thumb_content,
+                        ContentType="image/jpeg",
+                        ACL='public-read'
+                    )
 
-                    async def read(self):
-                        return self.content
+                    if hasattr(self.provider, 'cloudfront_domain') and self.provider.cloudfront_domain:
+                        thumbnail_url = f"https://{self.provider.cloudfront_domain}/{thumbnail_filename}"
+                    elif hasattr(self.provider, 'cdn_domain') and self.provider.cdn_domain:
+                        thumbnail_url = f"https://{self.provider.cdn_domain}/{thumbnail_filename}"
+                    else:
+                        base_domain = (
+                            self.provider.bucket_name if hasattr(self.provider, 'bucket_name')
+                            else self.provider.space_name
+                        )
+                        region = (
+                            self.provider.region if hasattr(self.provider, 'region')
+                            else 'nyc3'
+                        )
+                        domain_suffix = (
+                            f".s3.{self.provider.region}.amazonaws.com" if hasattr(self.provider, 'bucket_name')
+                            else f".{region}.digitaloceanspaces.com"
+                        )
+                        thumbnail_url = f"https://{base_domain}{domain_suffix}/{thumbnail_filename}"
+                else:
+                    # Local provider
+                    file_path = os.path.join(self.provider.upload_path, thumbnail_filename)
+                    directory = os.path.dirname(file_path)
+                    os.makedirs(directory, exist_ok=True)
 
-                    async def seek(self, position):
-                        pass
+                    with open(file_path, 'wb') as local_file:
+                        local_file.write(thumb_content)
 
-                mock_file = MockUploadFile(thumb_content, "image/jpeg")
-                thumbnail_url = await self.provider.upload_file(mock_file, thumbnail_filename)
+                    thumbnail_url = f"/uploads/{thumbnail_filename}"
 
             # Clean up temp files
             os.remove(temp_path)

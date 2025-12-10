@@ -90,9 +90,9 @@ class CategoryService {
       if (params?.search) queryParams.append("search", params.search)
 
       const url = `${API_ENDPOINTS.categories}${queryParams.toString() ? "?" + queryParams.toString() : ""}`
-      const response = await apiClient.get<CategoriesResponse>(url)
+      const response = await apiClient.get<Category[]>(url)
 
-      return response.items || []
+      return response || []
     } catch (error) {
       console.warn("Failed to fetch categories from API, using mock data:", error)
       // Fallback to mock data on error
