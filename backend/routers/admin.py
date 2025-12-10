@@ -297,7 +297,10 @@ async def get_admin_courses(
     
     # Build query with filters
     where_conditions = []
-    values = {"size": pagination.size, "offset": (pagination.page - 1) * pagination.size}
+    values = {
+        "size": pagination.size,
+        "offset": (pagination.page - 1) * pagination.size
+    }
     
     if status:
         where_conditions.append("c.status = :status")
@@ -315,9 +318,14 @@ async def get_admin_courses(
     
     where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
     
-    # Get total count
+    # ---- Only pass the parameters used in the count query ----
+    count_values = {
+        k: v for k, v in values.items()
+        if k in ["status", "instructor_id", "search"]
+    }
+    
     count_query = f"SELECT COUNT(*) as total FROM courses c {where_clause}"
-    total_result = await database.fetch_one(count_query, values=values)
+    total_result = await database.fetch_one(count_query, values=count_values)
     total = total_result.total
     
     # Get courses with additional admin info

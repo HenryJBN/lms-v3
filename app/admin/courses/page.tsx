@@ -6,7 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-import { BookOpen, Plus, Edit, Trash2, Eye, Users, Star, Play, FileText } from "lucide-react"
+import {
+  BookOpen,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Users,
+  Star,
+  Play,
+  FileText,
+  Upload,
+  Download,
+} from "lucide-react"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { StatsGrid } from "@/components/admin/stats-grid"
 import { SearchFilters } from "@/components/admin/search-filters"
@@ -62,7 +74,7 @@ export default function CoursesManagement() {
     try {
       setLoading(true)
       const [courseData, categoryData] = await Promise.all([
-        courseService.getCourses(),
+        courseService.getAdminCourses(),
         courseService.getCategories(),
       ])
       setCourses(courseData.items)
@@ -103,8 +115,8 @@ export default function CoursesManagement() {
   const filteredCourses = courses.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || course.category === selectedCategory
+      course.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || course.category_id === selectedCategory
     const matchesStatus = selectedStatus === "all" || course.status === selectedStatus
     return matchesSearch && matchesCategory && matchesStatus
   })
@@ -127,7 +139,7 @@ export default function CoursesManagement() {
     },
     {
       title: "Total Students",
-      value: courses.reduce((sum, course) => sum + course.students, 0).toLocaleString(),
+      value: courses.reduce((sum, course) => sum + course.total_students, 0).toLocaleString(),
       icon: Users,
     },
     {
@@ -143,8 +155,45 @@ export default function CoursesManagement() {
     },
   ]
 
+  const handlePublishCourse = async (courseToPublish: any) => {
+    try {
+      await courseService.publishCourse(courseToPublish.id)
+      toast({
+        title: "Success",
+        description: `Course "${courseToPublish.title}" published successfully!`,
+      })
+      loadInitialData() // Refresh the list
+    } catch (error: any) {
+      console.error("Failed to publish course:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish course",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUnpublishCourse = async (courseToUnpublish: any) => {
+    try {
+      await courseService.unpublishCourse(courseToUnpublish.id)
+      toast({
+        title: "Success",
+        description: `Course "${courseToUnpublish.title}" moved back to draft!`,
+      })
+      loadInitialData() // Refresh the list
+    } catch (error: any) {
+      console.error("Failed to unpublish course:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unpublish course",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleDeleteCourse = async (courseToDelete: any) => {
     try {
+      await courseService.deleteCourse(courseToDelete.id)
       setCourses((prev) => prev.filter((course) => course.id !== courseToDelete.id))
       toast({
         title: "Success",
@@ -198,7 +247,7 @@ export default function CoursesManagement() {
 
   const courseColumns = [
     {
-      key: "thumbnail",
+      key: "thumbnail_url",
       label: "Course",
       render: (value: string, row: any) => (
         <div className="flex items-center gap-3">
@@ -210,21 +259,21 @@ export default function CoursesManagement() {
           <div>
             <div className="font-medium">{row.title}</div>
             <div className="text-sm text-muted-foreground">
-              {row.lessons} lessons • {row.duration}
+              {row.lessons} lessons • {row.duration_hours}h
             </div>
           </div>
         </div>
       ),
     },
     {
-      key: "category",
+      key: "category_id",
       label: "Category",
       render: (value: string) => {
         const category = categories.find((c) => c.id === value)
         return <Badge variant="outline">{category?.name || value}</Badge>
       },
     },
-    { key: "instructor", label: "Instructor" },
+    { key: "instructor_name", label: "Instructor" },
     {
       key: "status",
       label: "Status",
@@ -232,7 +281,7 @@ export default function CoursesManagement() {
         <Badge variant={value === "published" ? "default" : "secondary"}>{value}</Badge>
       ),
     },
-    { key: "students", label: "Students" },
+    { key: "total_students", label: "Students" },
     {
       key: "rating",
       label: "Rating",
@@ -264,6 +313,12 @@ export default function CoursesManagement() {
       },
     },
     {
+      label: (course: any) => (course.status === "draft" ? "Publish course" : "Unpublish course"),
+      icon: (course: any) => (course.status === "draft" ? Upload : Download),
+      onClick: (course: any) =>
+        course.status === "draft" ? handlePublishCourse(course) : handleUnpublishCourse(course),
+    },
+    {
       label: "Manage lessons",
       icon: Play,
       onClick: handleManageLessons,
@@ -290,8 +345,8 @@ export default function CoursesManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the course &quot;
-                {row.title}&quot; and remove its data from our servers.
+                This action cannot be undone. This will permanently delete the course "{row.title}"
+                and remove its data from our servers.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

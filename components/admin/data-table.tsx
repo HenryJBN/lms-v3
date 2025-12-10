@@ -31,11 +31,14 @@ interface Column {
 }
 
 interface Action {
-  label: string
-  icon: React.ComponentType<{ className?: string }>
+  label: string | ((row: any) => string)
+  icon:
+    | React.ComponentType<{ className?: string }>
+    | ((row: any) => React.ComponentType<{ className?: string }>)
   onClick: (row: any) => void
   variant?: "default" | "destructive"
   render?: (row: any) => React.ReactNode
+  condition?: (row: any) => boolean
 }
 
 interface DataTableProps {
@@ -161,24 +164,43 @@ export function DataTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {actions.map((action, index) => (
-                        <div key={index}>
-                          {action.render ? (
-                            action.render(row)
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => action.onClick(row)}
-                              className={action.variant === "destructive" ? "text-destructive" : ""}
-                            >
-                              <action.icon className="mr-2 h-4 w-4" />
-                              {action.label}
-                            </DropdownMenuItem>
-                          )}
-                          {index < actions.length - 1 && action.variant === "destructive" && (
-                            <DropdownMenuSeparator />
-                          )}
-                        </div>
-                      ))}
+                      {actions
+                        .filter((action) => !action.condition || action.condition(row))
+                        .map((action, index) => (
+                          <div key={index}>
+                            {action.render ? (
+                              action.render(row)
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => action.onClick(row)}
+                                className={
+                                  action.variant === "destructive" ? "text-destructive" : ""
+                                }
+                              >
+                                {(() => {
+                                  const IconComponent =
+                                    typeof action.icon === "function"
+                                      ? action.icon(row)
+                                      : action.icon
+                                  const IconElement = <IconComponent className="mr-2 h-4 w-4" />
+                                  const label =
+                                    typeof action.label === "function"
+                                      ? action.label(row)
+                                      : action.label
+                                  return (
+                                    <>
+                                      {IconElement}
+                                      {label}
+                                    </>
+                                  )
+                                })()}
+                              </DropdownMenuItem>
+                            )}
+                            {index < actions.length - 1 && action.variant === "destructive" && (
+                              <DropdownMenuSeparator />
+                            )}
+                          </div>
+                        ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

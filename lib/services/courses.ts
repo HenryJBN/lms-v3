@@ -113,6 +113,43 @@ class CourseService {
   }
 
   /**
+   * ✅ Fetch paginated admin courses (all statuses)
+   */
+  async getAdminCourses(filters?: CourseFilters): Promise<GetCoursesResponse> {
+    try {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            params.append(key, String(value))
+          }
+        })
+      }
+
+      const endpoint = `${API_ENDPOINTS.adminCourses}${params.toString() ? `?${params.toString()}` : ""}`
+
+      const response = await apiClient.get<GetCoursesResponse>(endpoint)
+
+      // Ensure consistent structure if API returns array instead of paginated object
+      if (!("items" in response)) {
+        return {
+          items: Array.isArray(response) ? response : [],
+          total: 0,
+          page: 1,
+          size: 0,
+          pages: 1,
+        }
+      }
+
+      return response
+    } catch (error) {
+      console.error("❌ Failed to get admin courses:", error)
+      throw error
+    }
+  }
+
+  /**
    * ✅ Fetch paginated  featured courses
    */
   async getFeaturedCourses(): Promise<GetCoursesResponse> {
@@ -253,6 +290,40 @@ class CourseService {
       return await apiClient.post<Course>(`${API_ENDPOINTS.courses}/${courseId}/publish`, {})
     } catch (error) {
       console.error("❌ Failed to publish course:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Unpublish course
+   */
+  async unpublishCourse(courseId: string): Promise<Course> {
+    try {
+      return await apiClient.post<Course>(`${API_ENDPOINTS.courses}/${courseId}/unpublish`, {})
+    } catch (error) {
+      console.error("❌ Failed to unpublish course:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Update course status (admin only)
+   */
+  async updateCourseStatus(
+    courseId: string,
+    status: string,
+    reason?: string
+  ): Promise<{ message: string }> {
+    try {
+      return await apiClient.put<{ message: string }>(
+        `${API_ENDPOINTS.adminCourses}/${courseId}/status`,
+        {
+          status,
+          reason,
+        }
+      )
+    } catch (error) {
+      console.error("❌ Failed to update course status:", error)
       throw error
     }
   }

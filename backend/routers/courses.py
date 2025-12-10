@@ -327,6 +327,53 @@ async def publish_course(
     
     return CourseResponse(**updated_course)
 
+@router.post("/{course_id}/unpublish")
+async def unpublish_course(
+    course_id: uuid.UUID,
+    current_user = Depends(require_instructor_or_admin)
+):
+    # Check if course exists and user has permission
+    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
+
+    if not existing_course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Check if user is the instructor or admin
+    if current_user.role != "admin" and str(existing_course.instructor_id) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to unpublish this course"
+        )
+
+    # Update course status to draft
+    query = """
+        UPDATE courses
+        SET status = 'draft', updated_at = NOW()
+        WHERE id = :course_id
+        RETURNING *
+    """
+
+    updated_course = await database.fetch_one(query, values={"course_id": course_id})
+
+    # Log admin action
+    if current_user.role == "admin":
+        log_query = """
+            INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description)
+            VALUES (:admin_id, 'course_unpublished', 'course', :target_id, :description)
+        """
+
+        await database.execute(log_query, values={
+            "admin_id": current_user.id,
+            "target_id": course_id,
+            "description": f"Unpublished course: {existing_course.title}"
+        })
+
+    return CourseResponse(**updated_course)
+
 @router.post("/upload-thumbnail", response_model=FileUploadResponse)
 async def upload_course_thumbnail(
     file: UploadFile = File(...),
