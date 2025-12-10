@@ -18,6 +18,7 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
 CLOUDFRONT_DOMAIN = os.getenv("CLOUDFRONT_DOMAIN")
 LOCAL_UPLOAD_PATH = os.getenv("LOCAL_UPLOAD_PATH", "./uploads")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # Provider configuration - supports 'aws_s3', 'digitalocean', 'local'
 # Set FILE_UPLOAD_PROVIDER environment variable to switch providers:
@@ -274,8 +275,8 @@ class LocalFileProvider(FileUploadProvider):
                 content = await file.read()
                 await f.write(content)
 
-            # Return URL path
-            return f"/uploads/{filename}"
+            # Return full URL
+            return f"{BACKEND_URL}/uploads/{filename}"
 
         except Exception as e:
             raise HTTPException(
@@ -293,8 +294,8 @@ class LocalFileProvider(FileUploadProvider):
             with open(file_path, 'wb') as f:
                 f.write(content)
 
-            # Return URL path
-            return f"/uploads/{filename}"
+            # Return full URL
+            return f"{BACKEND_URL}/uploads/{filename}"
 
         except Exception as e:
             raise HTTPException(
@@ -567,7 +568,7 @@ class FileUploadService:
                     with open(file_path, 'wb') as local_file:
                         local_file.write(thumb_content)
 
-                    thumbnail_url = f"/uploads/{thumbnail_filename}"
+                    thumbnail_url = f"{BACKEND_URL}/uploads/{thumbnail_filename}"
 
             # Clean up temp files
             os.remove(temp_path)

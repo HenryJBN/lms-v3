@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from contextlib import asynccontextmanager
 import uvicorn
@@ -57,6 +58,11 @@ app.include_router(certificates.router, prefix="/api/certificates", tags=["Certi
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+
+# Mount static files directory for uploaded files
+from utils.file_upload import LOCAL_UPLOAD_PATH
+os.makedirs(LOCAL_UPLOAD_PATH, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=LOCAL_UPLOAD_PATH), name="uploads")
 
 
 @app.get("/")
