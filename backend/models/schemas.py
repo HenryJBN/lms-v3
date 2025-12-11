@@ -279,7 +279,7 @@ class CourseResponse(BaseModel):
     instructor_last_name: Optional[str] = None
     category_name: Optional[str] = None
 
-    @property
+    @computed_field
     def instructor_name(self) -> str:
         """Combine instructor first and last name for UI display"""
         if self.instructor_first_name or self.instructor_last_name:

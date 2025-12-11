@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { courseService } from "@/lib/services/courses"
+import { Course, courseService } from "@/lib/services/courses"
 import { useCourseCreateForm, useCourseUpdateForm } from "@/lib/hooks/use-course-form"
 import { CourseCreateForm as CourseFormComponent } from "@/components/course-form"
 
@@ -112,7 +112,7 @@ export default function CoursesManagement() {
     setEditingCourse(null)
   }
 
-  const filteredCourses = courses.filter((course) => {
+  const filteredCourses = courses.filter((course: Course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.instructor_name.toLowerCase().includes(searchTerm.toLowerCase())
