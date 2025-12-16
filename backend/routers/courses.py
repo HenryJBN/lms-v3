@@ -104,15 +104,15 @@ async def get_featured_courses():
 
 
 
-@router.get("/{slug}", response_model=CourseResponse)
+@router.get("/slug/{slug}", response_model=CourseResponse)
 async def get_course(slug: str):
     """
     Fetch a course by its slug with instructor and category info.
     """
     query = """
-        SELECT 
-            c.*, 
-            u.first_name AS instructor_first_name, 
+        SELECT
+            c.*,
+            u.first_name AS instructor_first_name,
             u.last_name AS instructor_last_name,
             cat.name AS category_name
         FROM courses c
@@ -122,6 +122,30 @@ async def get_course(slug: str):
     """
 
     course = await database.fetch_one(query, values={"slug": slug})
+
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    return CourseResponse(**dict(course))
+
+@router.get("/{course_id}", response_model=CourseResponse)
+async def get_course_by_id(course_id: uuid.UUID):
+    """
+    Fetch a course by its UUID with instructor and category info.
+    """
+    query = """
+        SELECT
+            c.*,
+            u.first_name AS instructor_first_name,
+            u.last_name AS instructor_last_name,
+            cat.name AS category_name
+        FROM courses c
+        LEFT JOIN users u ON c.instructor_id = u.id
+        LEFT JOIN categories cat ON c.category_id = cat.id
+        WHERE c.id = :course_id
+    """
+
+    course = await database.fetch_one(query, values={"course_id": course_id})
 
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")

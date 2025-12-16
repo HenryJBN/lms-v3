@@ -41,7 +41,7 @@ type Module = {
 
 export default function CoursePage() {
   const params = useParams()
-  const slug = params?.courseId as string
+  const courseId = params?.courseId as string
 
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,7 +52,7 @@ export default function CoursePage() {
     const fetchCourse = async () => {
       try {
         setLoading(true)
-        const response = await courseService.getCourse(slug)
+        const response = await courseService.getCourse(courseId)
         console.log(`One course Data ${response}`)
 
         setCourse(response)
@@ -66,8 +66,8 @@ export default function CoursePage() {
         setLoading(false)
       }
     }
-    if (slug) fetchCourse()
-  }, [slug])
+    if (courseId) fetchCourse()
+  }, [courseId])
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => ({
