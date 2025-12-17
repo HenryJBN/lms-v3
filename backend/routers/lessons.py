@@ -85,8 +85,11 @@ async def get_all_lessons(
             l.resources,
             l.created_at,
             l.updated_at,
+            l.section_id,
             c.title as course_title,
             c.id as course_id,
+            s.title as section_title,
+            s.id as section_id_ref,
             u.first_name as author_first_name,
             u.last_name as author_last_name,
             u.id as author_id,
@@ -95,6 +98,7 @@ async def get_all_lessons(
         FROM lessons l
         JOIN courses c ON l.course_id = c.id
         JOIN users u ON c.instructor_id = u.id
+        LEFT JOIN course_sections s ON l.section_id = s.id
         LEFT JOIN (
             SELECT
                 lesson_id,
@@ -140,6 +144,8 @@ async def get_all_lessons(
             "description": lesson.description,
             "course": lesson.course_title,
             "course_id": str(lesson.course_id),
+            "section_id": str(lesson.section_id) if lesson.section_id else None,
+            "section_title": lesson.section_title,
             "type": lesson.type,
             "status": "published" if lesson.is_published else "draft",
             "duration": duration_str,
