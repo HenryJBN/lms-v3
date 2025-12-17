@@ -150,30 +150,45 @@ async def create_lesson(
     
     query = """
         INSERT INTO lessons (
-            id, course_id, title, slug, description, content, type,
-            video_url, video_duration, attachments, sort_order,
-            is_preview, is_published, estimated_duration
+            id, course_id, section_id, title, slug, description, content, type,
+            video_url, video_duration, sort_order,
+            is_preview, is_published, prerequisites, resources
         )
         VALUES (
-            :id, :course_id, :title, :slug, :description, :content, :type,
-            :video_url, :video_duration, :attachments, :sort_order,
-            :is_preview, :is_published, :estimated_duration
+            :id, :course_id, :section_id, :title, :slug, :description, :content, :type,
+            :video_url, :video_duration, :sort_order,
+            :is_preview, :is_published, :prerequisites, :resources
         )
         RETURNING *
     """
     
+    # Get lesson data and exclude fields that don't exist in database
+    lesson_data = lesson.dict()
+    lesson_data.pop('estimated_duration', None)  # Remove fields not in database
+    lesson_data.pop('attachments', None)
+
     values = {
         "id": lesson_id,
         "sort_order": sort_result.next_order,
-        **lesson.dict()
+        **lesson_data
     }
     
-    new_lesson = await database.fetch_one(query, values=values)
-    
-    # Update course duration
-    await update_course_duration(lesson.course_id)
-    
-    return LessonResponse(**new_lesson)
+    try:
+        new_lesson = await database.fetch_one(query, values=values)
+
+        # Update course duration
+        await update_course_duration(lesson.course_id)
+
+        return LessonResponse(**new_lesson)
+    except Exception as e:
+        # Handle unique constraint violation for slug
+        if "unique constraint" in str(e).lower() and "slug" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A lesson with a similar title already exists in this course. Please use a different title."
+            )
+        # Re-raise other exceptions
+        raise
 
 @router.put("/{lesson_id}", response_model=LessonResponse)
 async def update_lesson(
@@ -263,6 +278,24 @@ async def delete_lesson(
     await update_course_duration(existing_lesson.course_id)
     
     return {"message": "Lesson deleted successfully"}
+
+@router.post("/upload-video-temp")
+async def upload_video_temp(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload video file temporarily for lesson creation"""
+    try:
+        # Upload video file
+        video_result = await upload_video(file, "temp")
+
+        return {"video_url": video_result["url"], "message": "Video uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload video: {str(e)}"
+        )
 
 @router.post("/{lesson_id}/upload-video")
 async def upload_lesson_video(
@@ -716,22 +749,22 @@ async def submit_quiz_attempt(
 
 async def update_course_duration(course_id: uuid.UUID):
     """Update course total duration based on lesson durations"""
-    
+
     duration_query = """
-        SELECT COALESCE(SUM(estimated_duration), 0) as total_duration
-        FROM lessons 
+        SELECT COALESCE(SUM(video_duration), 0) as total_duration
+        FROM lessons
         WHERE course_id = :course_id AND is_published = true
     """
-    
+
     result = await database.fetch_one(duration_query, values={"course_id": course_id})
-    
+
     update_query = """
-        UPDATE courses 
+        UPDATE courses
         SET duration_hours = :duration_hours, updated_at = NOW()
         WHERE id = :course_id
     """
-    
+
     await database.execute(update_query, values={
-        "duration_hours": result.total_duration / 60.0,  # Convert minutes to hours
+        "duration_hours": result.total_duration / 3600.0,  # Convert seconds to hours
         "course_id": course_id
     })

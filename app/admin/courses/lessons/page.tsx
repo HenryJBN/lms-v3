@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,6 +24,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -42,6 +52,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { toast } from "@/hooks/use-toast"
 import {
   Search,
   Plus,
@@ -62,7 +73,10 @@ import {
   File,
   Copy,
   Move,
+  Loader2,
 } from "lucide-react"
+import { apiClient } from "@/lib/api-client"
+import { LessonCreateFormSchema, type LessonCreateForm } from "@/lib/schemas/lesson"
 
 export default function LessonsManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -73,127 +87,169 @@ export default function LessonsManagement() {
   const [sortDirection, setSortDirection] = useState("asc")
   const [selectedLessons, setSelectedLessons] = useState<number[]>([])
 
-  // Mock lesson data
-  const lessons = [
-    {
-      id: 1,
-      title: "Introduction to Blockchain",
-      description: "Learn the fundamental concepts of blockchain technology",
-      course: "Blockchain Fundamentals",
-      courseId: 1,
-      type: "video",
-      status: "published",
-      order: 1,
-      duration: "15:30",
-      views: 1250,
-      completions: 980,
-      completionRate: 78.4,
-      createdDate: "2023-10-15",
-      lastUpdated: "2024-01-10",
-      author: "Dr. Sarah Johnson",
-      isPreview: true,
-      hasQuiz: true,
-      hasAssignment: false,
-      videoUrl: "/videos/blockchain-intro.mp4",
-      thumbnail: "/images/lessons/blockchain-intro.jpg",
-    },
-    {
-      id: 2,
-      title: "What is a Hash Function?",
-      description: "Understanding cryptographic hash functions in blockchain",
-      course: "Blockchain Fundamentals",
-      courseId: 1,
-      type: "video",
-      status: "published",
-      order: 2,
-      duration: "12:45",
-      views: 1100,
-      completions: 850,
-      completionRate: 77.3,
-      createdDate: "2023-10-16",
-      lastUpdated: "2024-01-10",
-      author: "Dr. Sarah Johnson",
-      isPreview: false,
-      hasQuiz: true,
-      hasAssignment: true,
-      videoUrl: "/videos/hash-functions.mp4",
-      thumbnail: "/images/lessons/hash-functions.jpg",
-    },
-    {
-      id: 3,
-      title: "Smart Contract Basics",
-      description: "Introduction to smart contracts and their applications",
-      course: "Smart Contract Development",
-      courseId: 2,
-      type: "video",
-      status: "published",
-      order: 1,
-      duration: "18:20",
-      views: 890,
-      completions: 720,
-      completionRate: 80.9,
-      createdDate: "2023-11-20",
-      lastUpdated: "2024-01-15",
-      author: "Alex Rodriguez",
-      isPreview: true,
-      hasQuiz: true,
-      hasAssignment: false,
-      videoUrl: "/videos/smart-contracts.mp4",
-      thumbnail: "/images/lessons/smart-contracts.jpg",
-    },
-    {
-      id: 4,
-      title: "Setting Up Development Environment",
-      description: "Configure your development environment for smart contracts",
-      course: "Smart Contract Development",
-      courseId: 2,
-      type: "text",
-      status: "published",
-      order: 2,
-      duration: "10:00",
-      views: 750,
-      completions: 600,
-      completionRate: 80.0,
-      createdDate: "2023-11-21",
-      lastUpdated: "2024-01-15",
-      author: "Alex Rodriguez",
-      isPreview: false,
-      hasQuiz: false,
-      hasAssignment: true,
-      videoUrl: null,
-      thumbnail: "/images/lessons/dev-setup.jpg",
-    },
-    {
-      id: 5,
-      title: "Neural Networks Introduction",
-      description: "Understanding the basics of neural networks",
-      course: "AI Fundamentals",
-      courseId: 3,
-      type: "video",
-      status: "draft",
-      order: 1,
-      duration: "22:15",
-      views: 0,
-      completions: 0,
-      completionRate: 0,
-      createdDate: "2024-01-12",
-      lastUpdated: "2024-01-18",
-      author: "Dr. Michael Chen",
-      isPreview: true,
-      hasQuiz: true,
-      hasAssignment: false,
-      videoUrl: "/videos/neural-networks.mp4",
-      thumbnail: "/images/lessons/neural-networks.jpg",
-    },
-  ]
+  // Data states
+  const [lessons, setLessons] = useState<any[]>([])
+  const [courses, setCourses] = useState<any[]>([])
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true)
+  const [isLoadingLessons, setIsLoadingLessons] = useState(true)
 
-  const courses = [
-    { id: 1, title: "Blockchain Fundamentals" },
-    { id: 2, title: "Smart Contract Development" },
-    { id: 3, title: "AI Fundamentals" },
-    { id: 4, title: "Advanced Cinematography" },
-    { id: 5, title: "3D Animation Basics" },
-  ]
+  // Add lesson dialog state
+  const [isAddLessonOpen, setIsAddLessonOpen] = useState(false)
+  const [videoProvisionType, setVideoProvisionType] = useState<"url" | "upload">("url")
+  const [selectedFileName, setSelectedFileName] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // React Hook Form setup
+  const form = useForm<LessonCreateForm>({
+    resolver: zodResolver(LessonCreateFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      content: "",
+      courseId: "",
+      type: "video",
+      order: "",
+      duration: "",
+      isPreview: false,
+      videoProvisionType: "url",
+      videoUrl: "",
+      videoFile: undefined,
+      hasQuiz: false,
+      hasAssignment: false,
+      passingScore: "",
+    },
+  })
+
+  const isSubmitting = form.formState.isSubmitting
+
+  // Fetch courses function
+  const fetchCourses = async () => {
+    try {
+      setIsLoadingCourses(true)
+      // Fetch all courses (published and drafts for admin)
+      const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
+      setCourses(response.items || [])
+    } catch (error) {
+      console.error("Failed to fetch courses:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load courses. Please refresh the page.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingCourses(false)
+    }
+  }
+
+  // Fetch courses on component mount
+  useEffect(() => {
+    fetchCourses()
+
+    const fetchLessons = async () => {
+      try {
+        setIsLoadingLessons(true)
+        // TODO: Fetch lessons from API when endpoint is available
+        // For now, keep empty array
+        setLessons([])
+      } catch (error) {
+        console.error("Failed to fetch lessons:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load lessons. Please refresh the page.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingLessons(false)
+      }
+    }
+
+    fetchLessons()
+  }, [])
+
+  // Handle form submission
+  const onSubmit = async (values: LessonCreateForm) => {
+    try {
+      let videoUrl = values.videoUrl?.trim() || null
+
+      // If video file is provided, upload it first
+      if (values.videoFile) {
+        const formData = new FormData()
+        formData.append("file", values.videoFile)
+
+        // Upload video file using the proper FormData method
+        const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
+          "/api/lessons/upload-video-temp",
+          formData
+        )
+
+        videoUrl = uploadResponse.video_url
+      }
+
+      // Prepare lesson data
+      const lessonData = {
+        title: values.title.trim(),
+        slug: generateSlug(values.title),
+        description: values.description?.trim() || "",
+        content: values.content?.trim() || "",
+        course_id: values.courseId,
+        type: values.type,
+        sort_order: values.order || 0,
+        is_published: false, // Start as draft
+        is_preview: values.isPreview,
+        video_url: videoUrl,
+        estimated_duration: values.duration
+          ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
+          : null,
+      }
+
+      // Make API call to create lesson
+      await apiClient.post("/api/lessons", lessonData)
+
+      toast({
+        title: "Success",
+        description: "Lesson created successfully!",
+      })
+
+      // Reset form and close dialog
+      form.reset({
+        title: "",
+        description: "",
+        content: "",
+        courseId: "",
+        type: "video",
+        order: "",
+        duration: "",
+        isPreview: false,
+        videoProvisionType: "url",
+        videoUrl: "",
+        videoFile: undefined,
+        hasQuiz: false,
+        hasAssignment: false,
+        passingScore: "",
+      })
+      setVideoProvisionType("url")
+      setSelectedFileName("")
+      setIsAddLessonOpen(false)
+
+      // TODO: Refresh lessons list
+    } catch (error: any) {
+      console.error("Failed to create lesson:", error)
+
+      // Extract error message from API error
+      let errorMessage = "Failed to create lesson. Please try again."
+      if (error?.message) {
+        errorMessage = error.message
+      } else if (error?.detail) {
+        errorMessage = error.detail
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
+  }
 
   const filteredLessons = lessons.filter((lesson) => {
     const matchesSearch =
@@ -207,8 +263,8 @@ export default function LessonsManagement() {
   })
 
   const sortedLessons = [...filteredLessons].sort((a, b) => {
-    let aValue = a[sortField as keyof typeof a]
-    let bValue = b[sortField as keyof typeof b]
+    let aValue = a[sortField as keyof typeof a] || ""
+    let bValue = b[sortField as keyof typeof b] || ""
 
     if (typeof aValue === "string") aValue = aValue.toLowerCase()
     if (typeof bValue === "string") bValue = bValue.toLowerCase()
@@ -310,6 +366,15 @@ export default function LessonsManagement() {
       default:
         return <File className="h-4 w-4" />
     }
+  }
+
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
   }
 
   return (
@@ -426,126 +491,385 @@ export default function LessonsManagement() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Dialog>
+                  <Dialog open={isAddLessonOpen} onOpenChange={setIsAddLessonOpen}>
                     <DialogTrigger asChild>
-                      <Button size="sm">
+                      <Button size="sm" onClick={() => setIsAddLessonOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Lesson
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-3xl max-h-[90vh]">
-                      <ScrollArea className="max-h-[80vh] pr-4">
-                        <DialogHeader>
-                          <DialogTitle>Create New Lesson</DialogTitle>
-                          <DialogDescription>
-                            Add a new lesson to a course. Fill in the lesson details below.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <Tabs defaultValue="content" className="w-full mt-4">
-                          <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="content">Content</TabsTrigger>
-                            <TabsTrigger value="settings">Settings</TabsTrigger>
-                            <TabsTrigger value="media">Media</TabsTrigger>
-                            <TabsTrigger value="assessment">Assessment</TabsTrigger>
-                          </TabsList>
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)}>
+                          <ScrollArea className="max-h-[80vh] pr-4">
+                            <DialogHeader>
+                              <DialogTitle>Create New Lesson</DialogTitle>
+                              <DialogDescription>
+                                Add a new lesson to a course. Fill in the lesson details below.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Tabs defaultValue="content" className="w-full mt-4">
+                              <TabsList className="grid w-full grid-cols-4">
+                                <TabsTrigger value="content">Content</TabsTrigger>
+                                <TabsTrigger value="settings">Settings</TabsTrigger>
+                                <TabsTrigger value="media">Media</TabsTrigger>
+                                <TabsTrigger value="assessment">Assessment</TabsTrigger>
+                              </TabsList>
 
-                          <TabsContent value="content" className="space-y-4 mt-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="title">Title</Label>
-                              <Input id="title" placeholder="Lesson title" />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="description">Description</Label>
-                              <Textarea id="description" placeholder="Lesson description" />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="content">Content</Label>
-                              <Textarea
-                                id="content"
-                                placeholder="Lesson content (supports markdown)"
-                                className="min-h-[200px]"
-                              />
-                            </div>
-                          </TabsContent>
+                              <TabsContent value="content" className="space-y-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="title"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Title *</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="Lesson title" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="description"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Description</FormLabel>
+                                      <FormControl>
+                                        <Textarea placeholder="Lesson description" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="content"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Content</FormLabel>
+                                      <FormControl>
+                                        <Textarea
+                                          placeholder="Lesson content (supports markdown)"
+                                          className="min-h-[200px]"
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
 
-                          <TabsContent value="settings" className="space-y-4 mt-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="course">Course</Label>
-                              <Select>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select course" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {courses.map((course) => (
-                                    <SelectItem key={course.id} value={course.id.toString()}>
-                                      {course.title}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="type">Type</Label>
-                              <Select>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select lesson type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="video">Video</SelectItem>
-                                  <SelectItem value="text">Text/Article</SelectItem>
-                                  <SelectItem value="audio">Audio</SelectItem>
-                                  <SelectItem value="image">Image Gallery</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="order">Order</Label>
-                              <Input id="order" type="number" placeholder="1" />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="duration">Duration</Label>
-                              <Input id="duration" placeholder="15:30" />
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox id="preview" />
-                              <Label htmlFor="preview">Allow preview without enrollment</Label>
-                            </div>
-                          </TabsContent>
+                              <TabsContent value="settings" className="space-y-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="courseId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Course *</FormLabel>
+                                      <div className="flex gap-2">
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                          <FormControl>
+                                            <SelectTrigger className="flex-1">
+                                              <SelectValue placeholder="Select course" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            {isLoadingCourses ? (
+                                              <div className="flex items-center justify-center p-2">
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Loading courses...
+                                              </div>
+                                            ) : courses.length === 0 ? (
+                                              <div className="flex items-center justify-center p-2 text-muted-foreground">
+                                                No courses available
+                                              </div>
+                                            ) : (
+                                              courses.map((course) => (
+                                                <SelectItem key={course.id} value={course.id}>
+                                                  {course.title}
+                                                </SelectItem>
+                                              ))
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={fetchCourses}
+                                          disabled={isLoadingCourses}
+                                          title="Refresh courses"
+                                        >
+                                          {isLoadingCourses ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Eye className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="type"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Type</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select lesson type" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="video">Video</SelectItem>
+                                          <SelectItem value="text">Text/Article</SelectItem>
+                                          <SelectItem value="audio">Audio</SelectItem>
+                                          <SelectItem value="image">Image Gallery</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="order"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Order</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="1"
+                                          {...field}
+                                          value={field.value || ""}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="duration"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Duration (MM:SS)</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="15:30" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="isPreview"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Allow preview without enrollment</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
 
-                          <TabsContent value="media" className="space-y-4 mt-4">
-                            <div className="grid gap-2">
-                              <Label htmlFor="video">Video URL</Label>
-                              <Input id="video" placeholder="https://..." />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="thumbnail">Thumbnail</Label>
-                              <Input id="thumbnail" type="file" accept="image/*" />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="attachments">Attachments</Label>
-                              <Input id="attachments" type="file" multiple />
-                            </div>
-                          </TabsContent>
+                              <TabsContent value="media" className="space-y-4 mt-4">
+                                <div className="space-y-3">
+                                  <FormItem>
+                                    <FormLabel>Video Provision Type</FormLabel>
+                                    <Select
+                                      value={videoProvisionType}
+                                      onValueChange={(value: "url" | "upload") => {
+                                        setVideoProvisionType(value)
+                                        form.setValue("videoProvisionType", value)
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Choose how to provide video" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="url">Video URL</SelectItem>
+                                        <SelectItem value="upload">Upload Video File</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormItem>
 
-                          <TabsContent value="assessment" className="space-y-4 mt-4">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox id="hasQuiz" />
-                              <Label htmlFor="hasQuiz">Include quiz</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox id="hasAssignment" />
-                              <Label htmlFor="hasAssignment">Include assignment</Label>
-                            </div>
-                            <div className="grid gap-2">
-                              <Label htmlFor="passingScore">Passing Score</Label>
-                              <Input id="passingScore" type="number" placeholder="80" />
-                            </div>
-                          </TabsContent>
-                        </Tabs>
-                        <DialogFooter className="mt-6">
-                          <Button type="submit">Create Lesson</Button>
-                        </DialogFooter>
-                      </ScrollArea>
+                                  {/* Video URL Input - Always rendered */}
+                                  <FormField
+                                    control={form.control}
+                                    name="videoUrl"
+                                    render={({ field }) => (
+                                      <FormItem
+                                        className={videoProvisionType === "upload" ? "hidden" : ""}
+                                      >
+                                        <FormLabel>Video URL</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="https://..."
+                                            {...field}
+                                            disabled={videoProvisionType === "upload"}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  {/* Video File Input - Custom display with hidden native input */}
+                                  <FormField
+                                    control={form.control}
+                                    name="videoFile"
+                                    render={({ field }) => (
+                                      <FormItem
+                                        className={videoProvisionType === "url" ? "hidden" : ""}
+                                      >
+                                        <FormLabel>Upload Video File</FormLabel>
+                                        <FormControl>
+                                          <div className="space-y-2">
+                                            {/* Hidden native file input */}
+                                            <Input
+                                              ref={fileInputRef}
+                                              type="file"
+                                              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                field.onChange(file || undefined)
+                                                setSelectedFileName(file?.name || "")
+                                              }}
+                                              disabled={videoProvisionType === "url"}
+                                              className="hidden"
+                                            />
+                                            {/* Custom display */}
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="text"
+                                                value={selectedFileName || ""}
+                                                placeholder="No file selected"
+                                                readOnly
+                                                className="flex-1"
+                                              />
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={videoProvisionType === "url"}
+                                              >
+                                                Browse
+                                              </Button>
+                                              {selectedFileName && (
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    field.onChange(undefined)
+                                                    setSelectedFileName("")
+                                                    if (fileInputRef.current) {
+                                                      fileInputRef.current.value = ""
+                                                    }
+                                                  }}
+                                                >
+                                                  Clear
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                <div className="grid gap-2">
+                                  <Label htmlFor="thumbnail">Thumbnail</Label>
+                                  <Input id="thumbnail" type="file" accept="image/*" />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="attachments">Attachments</Label>
+                                  <Input id="attachments" type="file" multiple />
+                                </div>
+                              </TabsContent>
+
+                              <TabsContent value="assessment" className="space-y-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="hasQuiz"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Include quiz</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="hasAssignment"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Include assignment</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="passingScore"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Passing Score (%)</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="80"
+                                          {...field}
+                                          value={field.value || ""}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
+                            </Tabs>
+                            <DialogFooter className="mt-6">
+                              <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Creating...
+                                  </>
+                                ) : (
+                                  "Create Lesson"
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </ScrollArea>
+                        </form>
+                      </Form>
                     </DialogContent>
                   </Dialog>
                 </div>

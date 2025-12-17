@@ -679,8 +679,8 @@ class PaginationParams(BaseSchema):
     
     @validator('size')
     def validate_size(cls, v):
-        if v < 1 or v > 100:
-            raise ValueError('Size must be between 1 and 100')
+        if v < 1 or v > 1000:
+            raise ValueError('Size must be between 1 and 1000')
         return v
 
 class PaginatedResponse(BaseSchema):
