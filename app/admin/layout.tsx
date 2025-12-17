@@ -70,6 +70,7 @@ function Sidebar({ className }: SidebarProps) {
       children: [
         { title: "All Courses", href: "/admin/courses" },
         { title: "Categories", href: "/admin/courses/categories" },
+        { title: "Sections", href: "/admin/courses/sections" },
         { title: "Lessons", href: "/admin/courses/lessons" },
         { title: "Completions", href: "/admin/courses/completions" },
       ],

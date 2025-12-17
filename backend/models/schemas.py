@@ -885,3 +885,49 @@ class WebhookResponse(WebhookBase):
     last_triggered_at: Optional[datetime] = None
     success_count: int = 0
     failure_count: int = 0
+
+# Section schemas
+class SectionBase(BaseSchema):
+    title: str
+    description: Optional[str] = None
+    sort_order: int = 0
+    is_published: bool = True
+
+class SectionCreate(SectionBase):
+    course_id: uuid.UUID
+
+class SectionUpdate(BaseSchema):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_published: Optional[bool] = None
+
+class SectionResponse(SectionBase):
+    id: uuid.UUID
+    course_id: uuid.UUID
+    lesson_count: Optional[int] = 0
+    created_at: datetime
+    updated_at: datetime
+
+# Section schemas
+class SectionBase(BaseSchema):
+    title: str
+    description: Optional[str] = None
+    sort_order: int = 0
+    is_published: bool = True
+
+class SectionCreate(SectionBase):
+    course_id: uuid.UUID
+
+class SectionUpdate(BaseSchema):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_published: Optional[bool] = None
+
+class SectionResponse(SectionBase):
+    id: uuid.UUID
+    course_id: uuid.UUID
+    lesson_count: Optional[int] = 0
+    created_at: datetime
+    updated_at: datetime

@@ -173,6 +173,8 @@ export const LessonCreateFormSchema = z
 
     courseId: z.string().uuid("Please select a valid course"),
 
+    sectionId: z.string().optional().or(z.literal("")),
+
     type: LessonTypeSchema.default("video"),
 
     order: z

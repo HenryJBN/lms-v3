@@ -90,8 +90,10 @@ export default function LessonsManagement() {
   // Data states
   const [lessons, setLessons] = useState<any[]>([])
   const [courses, setCourses] = useState<any[]>([])
+  const [sections, setSections] = useState<any[]>([])
   const [isLoadingCourses, setIsLoadingCourses] = useState(true)
   const [isLoadingLessons, setIsLoadingLessons] = useState(true)
+  const [isLoadingSections, setIsLoadingSections] = useState(false)
 
   // Add lesson dialog state
   const [isAddLessonOpen, setIsAddLessonOpen] = useState(false)
@@ -107,6 +109,7 @@ export default function LessonsManagement() {
       description: "",
       content: "",
       courseId: "",
+      sectionId: "",
       type: "video",
       order: "",
       duration: "",
@@ -138,6 +141,25 @@ export default function LessonsManagement() {
       })
     } finally {
       setIsLoadingCourses(false)
+    }
+  }
+
+  // Fetch sections for a specific course
+  const fetchSectionsForCourse = async (courseId: string) => {
+    if (!courseId) {
+      setSections([])
+      return
+    }
+
+    try {
+      setIsLoadingSections(true)
+      const response: any[] = await apiClient.get(`/api/sections/course/${courseId}`)
+      setSections(response || [])
+    } catch (error) {
+      console.error("Failed to fetch sections:", error)
+      setSections([])
+    } finally {
+      setIsLoadingSections(false)
     }
   }
 
@@ -191,6 +213,7 @@ export default function LessonsManagement() {
         description: values.description?.trim() || "",
         content: values.content?.trim() || "",
         course_id: values.courseId,
+        section_id: values.sectionId || null,
         type: values.type,
         sort_order: values.order || 0,
         is_published: false, // Start as draft
@@ -215,6 +238,7 @@ export default function LessonsManagement() {
         description: "",
         content: "",
         courseId: "",
+        sectionId: "",
         type: "video",
         order: "",
         duration: "",
@@ -571,7 +595,14 @@ export default function LessonsManagement() {
                                     <FormItem>
                                       <FormLabel>Course *</FormLabel>
                                       <div className="flex gap-2">
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select
+                                          onValueChange={(value) => {
+                                            field.onChange(value)
+                                            // Fetch sections for the selected course
+                                            fetchSectionsForCourse(value)
+                                          }}
+                                          value={field.value}
+                                        >
                                           <FormControl>
                                             <SelectTrigger className="flex-1">
                                               <SelectValue placeholder="Select course" />
@@ -611,6 +642,45 @@ export default function LessonsManagement() {
                                           )}
                                         </Button>
                                       </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="sectionId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Section (Optional)</FormLabel>
+                                      <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value || ""}
+                                      >
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select section (optional)" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="">No section</SelectItem>
+                                          {isLoadingSections ? (
+                                            <div className="flex items-center justify-center p-2">
+                                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                              Loading sections...
+                                            </div>
+                                          ) : sections.length === 0 ? (
+                                            <div className="flex items-center justify-center p-2 text-muted-foreground">
+                                              No sections available
+                                            </div>
+                                          ) : (
+                                            sections.map((section) => (
+                                              <SelectItem key={section.id} value={section.id}>
+                                                {section.title}
+                                              </SelectItem>
+                                            ))
+                                          )}
+                                        </SelectContent>
+                                      </Select>
                                       <FormMessage />
                                     </FormItem>
                                   )}
@@ -959,6 +1029,7 @@ export default function LessonsManagement() {
                       </TableHead>
                       <TableHead className="min-w-[300px]">Lesson</TableHead>
                       <TableHead className="min-w-[150px]">Course</TableHead>
+                      <TableHead className="min-w-[120px]">Section</TableHead>
                       <TableHead className="min-w-[100px]">Type</TableHead>
                       <TableHead className="min-w-[100px]">Status</TableHead>
                       <TableHead className="min-w-[100px]">Duration</TableHead>
@@ -1008,6 +1079,11 @@ export default function LessonsManagement() {
                         <TableCell>
                           <Badge variant="outline" className="whitespace-nowrap">
                             {lesson.course}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="whitespace-nowrap">
+                            {lesson.section_title || "No Section"}
                           </Badge>
                         </TableCell>
                         <TableCell>
