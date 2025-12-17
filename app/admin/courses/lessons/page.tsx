@@ -108,6 +108,11 @@ export default function LessonsManagement() {
   const [editSelectedFileName, setEditSelectedFileName] = useState<string>("")
   const editFileInputRef = useRef<HTMLInputElement>(null)
 
+  // Delete lesson dialog state
+  const [isDeleteLessonOpen, setIsDeleteLessonOpen] = useState(false)
+  const [deletingLesson, setDeletingLesson] = useState<any>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   // React Hook Form setup
   const form = useForm<LessonCreateForm>({
     resolver: zodResolver(LessonCreateFormSchema),
@@ -471,6 +476,53 @@ export default function LessonsManagement() {
     // Fetch sections for the lesson's course
     if (lesson.course_id) {
       fetchSectionsForCourse(lesson.course_id)
+    }
+  }
+
+  // Handle delete lesson
+  const handleDeleteLesson = (lesson: any) => {
+    setDeletingLesson(lesson)
+    setIsDeleteLessonOpen(true)
+  }
+
+  const confirmDeleteLesson = async () => {
+    if (!deletingLesson) return
+
+    try {
+      setIsDeleting(true)
+
+      // Make API call to delete lesson
+      await apiClient.delete(`/api/lessons/${deletingLesson.id}`)
+
+      toast({
+        title: "Success",
+        description: "Lesson deleted successfully!",
+      })
+
+      // Refresh lessons list
+      await fetchLessons()
+
+      // Close dialog and reset state
+      setIsDeleteLessonOpen(false)
+      setDeletingLesson(null)
+    } catch (error: any) {
+      console.error("Failed to delete lesson:", error)
+
+      // Extract error message from API error
+      let errorMessage = "Failed to delete lesson. Please try again."
+      if (error?.message) {
+        errorMessage = error.message
+      } else if (error?.detail) {
+        errorMessage = error.detail
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -1513,6 +1565,63 @@ export default function LessonsManagement() {
                       </Form>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Delete Lesson Confirmation Dialog */}
+                  <Dialog open={isDeleteLessonOpen} onOpenChange={setIsDeleteLessonOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete Lesson</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this lesson? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      {deletingLesson && (
+                        <div className="py-4">
+                          <div className="flex items-start gap-3 p-4 border rounded-lg bg-muted/50">
+                            <div className="flex-shrink-0">{getTypeIcon(deletingLesson.type)}</div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm">{deletingLesson.title}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {deletingLesson.description?.substring(0, 100)}
+                                {deletingLesson.description?.length > 100 ? "..." : ""}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                <span>Course: {deletingLesson.course}</span>
+                                <span>Type: {deletingLesson.type}</span>
+                                <span>Status: {deletingLesson.status}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsDeleteLessonOpen(false)}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          onClick={confirmDeleteLesson}
+                          disabled={isDeleting}
+                        >
+                          {isDeleting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Lesson
+                            </>
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardHeader>
@@ -1708,7 +1817,10 @@ export default function LessonsManagement() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteLesson(lesson)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
