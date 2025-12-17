@@ -16,6 +16,155 @@ from utils.file_upload import upload_video, upload_file
 
 router = APIRouter()
 
+@router.get("/", response_model=PaginatedResponse)
+async def get_all_lessons(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=1000),
+    course_id: Optional[uuid.UUID] = None,
+    type: Optional[str] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = Query("created_at", regex="^(created_at|updated_at|title|sort_order)$"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Get all lessons for admin management with filtering and pagination"""
+    offset = (page - 1) * size
+
+    # Build WHERE conditions
+    where_conditions = []
+    params = {"offset": offset, "limit": size}
+
+    # Course filter
+    if course_id:
+        where_conditions.append("l.course_id = :course_id")
+        params["course_id"] = course_id
+
+    # Type filter
+    if type:
+        where_conditions.append("l.type = :type")
+        params["type"] = type
+
+    # Status filter (is_published)
+    if status:
+        if status == "published":
+            where_conditions.append("l.is_published = true")
+        elif status == "draft":
+            where_conditions.append("l.is_published = false")
+
+    # Search filter
+    if search:
+        where_conditions.append("""
+            (l.title ILIKE :search OR
+             l.description ILIKE :search OR
+             c.title ILIKE :search OR
+             u.first_name || ' ' || u.last_name ILIKE :search)
+        """)
+        params["search"] = f"%{search}%"
+
+    where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+
+    # Build ORDER BY
+    order_clause = f"l.{sort_by} {sort_order.upper()}"
+
+    # Main query
+    query = f"""
+        SELECT
+            l.id,
+            l.title,
+            l.slug,
+            l.description,
+            l.content,
+            l.video_url,
+            l.video_duration,
+            l.type,
+            l.sort_order,
+            l.is_published,
+            l.is_preview,
+            l.prerequisites,
+            l.resources,
+            l.created_at,
+            l.updated_at,
+            c.title as course_title,
+            c.id as course_id,
+            u.first_name as author_first_name,
+            u.last_name as author_last_name,
+            u.id as author_id,
+            COALESCE(lp.total_views, 0) as views,
+            COALESCE(lp.avg_completion, 0) as completion_rate
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        JOIN users u ON c.instructor_id = u.id
+        LEFT JOIN (
+            SELECT
+                lesson_id,
+                COUNT(*) as total_views,
+                AVG(CASE WHEN status = 'completed' THEN 100 ELSE progress_percentage END) as avg_completion
+            FROM lesson_progress
+            GROUP BY lesson_id
+        ) lp ON l.id = lp.lesson_id
+        WHERE {where_clause}
+        ORDER BY {order_clause}
+        LIMIT :limit OFFSET :offset
+    """
+
+    # Count query for pagination
+    count_query = f"""
+        SELECT COUNT(*) as total
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        JOIN users u ON c.instructor_id = u.id
+        WHERE {where_clause}
+    """
+
+    # Execute queries
+    lessons = await database.fetch_all(query, values=params)
+    count_result = await database.fetch_one(count_query, values={k: v for k, v in params.items() if k not in ["offset", "limit"]})
+
+    total = count_result.total if count_result else 0
+    total_pages = (total + size - 1) // size
+
+    # Transform results to match frontend expectations
+    transformed_lessons = []
+    for lesson in lessons:
+        # Convert video_duration (seconds) to MM:SS format
+        duration_str = "00:00"
+        if lesson.video_duration:
+            minutes = lesson.video_duration // 60
+            seconds = lesson.video_duration % 60
+            duration_str = f"{minutes:02d}:{seconds:02d}"
+
+        transformed_lesson = {
+            "id": lesson.id,
+            "title": lesson.title,
+            "description": lesson.description,
+            "course": lesson.course_title,
+            "course_id": str(lesson.course_id),
+            "type": lesson.type,
+            "status": "published" if lesson.is_published else "draft",
+            "duration": duration_str,
+            "views": lesson.views,
+            "completionRate": round(lesson.completion_rate, 1) if lesson.completion_rate else 0,
+            "thumbnail": None,  # Could be added later
+            "author": f"{lesson.author_first_name} {lesson.author_last_name}",
+            "author_id": str(lesson.author_id),
+            "createdDate": lesson.created_at.isoformat(),
+            "isPreview": lesson.is_preview,
+            "hasQuiz": False,  # Could be added later by checking if quiz exists
+            "sort_order": lesson.sort_order,
+            "video_url": lesson.video_url,
+            "slug": lesson.slug
+        }
+        transformed_lessons.append(transformed_lesson)
+
+    return PaginatedResponse(
+        items=transformed_lessons,
+        total=total,
+        page=page,
+        size=size,
+        pages=total_pages
+    )
+
 @router.get("/course/{course_id}", response_model=List[LessonResponse])
 async def get_course_lessons(
     course_id: uuid.UUID,

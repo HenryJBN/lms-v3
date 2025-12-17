@@ -141,28 +141,27 @@ export default function LessonsManagement() {
     }
   }
 
-  // Fetch courses on component mount
+  // Fetch lessons function
+  const fetchLessons = async () => {
+    try {
+      setIsLoadingLessons(true)
+      const response: { items: any[] } = await apiClient.get("/api/lessons?page=1&size=100")
+      setLessons(response.items || [])
+    } catch (error) {
+      console.error("Failed to fetch lessons:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load lessons. Please refresh the page.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingLessons(false)
+    }
+  }
+
+  // Fetch courses and lessons on component mount
   useEffect(() => {
     fetchCourses()
-
-    const fetchLessons = async () => {
-      try {
-        setIsLoadingLessons(true)
-        // TODO: Fetch lessons from API when endpoint is available
-        // For now, keep empty array
-        setLessons([])
-      } catch (error) {
-        console.error("Failed to fetch lessons:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load lessons. Please refresh the page.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoadingLessons(false)
-      }
-    }
-
     fetchLessons()
   }, [])
 
@@ -231,7 +230,8 @@ export default function LessonsManagement() {
       setSelectedFileName("")
       setIsAddLessonOpen(false)
 
-      // TODO: Refresh lessons list
+      // Refresh lessons list
+      fetchLessons()
     } catch (error: any) {
       console.error("Failed to create lesson:", error)
 
@@ -253,10 +253,11 @@ export default function LessonsManagement() {
 
   const filteredLessons = lessons.filter((lesson) => {
     const matchesSearch =
-      lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lesson.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lesson.author.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCourse = selectedCourse === "all" || lesson.courseId.toString() === selectedCourse
+      (lesson.title?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (lesson.course?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (lesson.author?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+    const matchesCourse =
+      selectedCourse === "all" || lesson.course_id?.toString() === selectedCourse
     const matchesType = selectedType === "all" || lesson.type === selectedType
     const matchesStatus = selectedStatus === "all" || lesson.status === selectedStatus
     return matchesSearch && matchesCourse && matchesType && matchesStatus
