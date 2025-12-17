@@ -259,6 +259,9 @@ export default function LessonsManagement() {
       // Make API call to create lesson
       await apiClient.post("/api/lessons", lessonData)
 
+      // Refresh lessons list first
+      await fetchLessons()
+
       toast({
         title: "Success",
         description: "Lesson created successfully!",
@@ -285,9 +288,6 @@ export default function LessonsManagement() {
       setVideoProvisionType("url")
       setSelectedFileName("")
       setIsAddLessonOpen(false)
-
-      // Refresh lessons list
-      fetchLessons()
     } catch (error: any) {
       console.error("Failed to create lesson:", error)
 
@@ -515,6 +515,9 @@ export default function LessonsManagement() {
       // Make API call to update lesson
       await apiClient.put(`/api/lessons/${editingLesson.id}`, lessonData)
 
+      // Refresh lessons list first
+      await fetchLessons()
+
       toast({
         title: "Success",
         description: "Lesson updated successfully!",
@@ -526,9 +529,6 @@ export default function LessonsManagement() {
       setEditVideoProvisionType("url")
       setEditSelectedFileName("")
       setIsEditLessonOpen(false)
-
-      // Refresh lessons list
-      fetchLessons()
     } catch (error: any) {
       console.error("Failed to update lesson:", error)
 
