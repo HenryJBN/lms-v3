@@ -21,15 +21,18 @@ async def get_courses(
     is_featured: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
     instructor_id: Optional[uuid.UUID] = Query(None),
-    status: Optional[CourseStatus] = Query(CourseStatus.published)
+    status: Optional[CourseStatus] = Query(None)
 ):
     # Build query with filters
-    where_conditions = ["c.status = :status"]
+    where_conditions = []
     values = {
-        "status": status,
-        "size": pagination.size, 
+        "size": pagination.size,
         "offset": (pagination.page - 1) * pagination.size
     }
+
+    if status is not None:
+        where_conditions.append("c.status = :status")
+        values["status"] = status
     
     if category_id:
         where_conditions.append("c.category_id = :category_id")
@@ -58,7 +61,7 @@ async def get_courses(
         """)
         values["search"] = f"%{search}%"
     
-    where_clause = "WHERE " + " AND ".join(where_conditions)
+    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
     
     # Get total count (exclude pagination params)
     count_query = f"""
