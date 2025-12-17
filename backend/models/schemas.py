@@ -316,6 +316,8 @@ class LessonUpdate(BaseSchema):
     content: Optional[str] = None
     video_url: Optional[str] = None
     video_duration: Optional[int] = None
+    course_id: uuid.UUID
+    section_id: Optional[uuid.UUID] = None
     type: Optional[LessonType] = None
     sort_order: Optional[int] = None
     is_published: Optional[bool] = None

@@ -369,17 +369,28 @@ async def update_lesson(
     # Build update query
     update_fields = []
     values = {"lesson_id": lesson_id}
+
+    # Get all fields from the update, including those set to None
+    update_dict = lesson_update.dict(exclude_unset=True)
+
+    # Map estimated_duration to video_duration for database compatibility
+    if 'estimated_duration' in update_dict:
+        update_dict['video_duration'] = update_dict.pop('estimated_duration')
     
-    for field, value in lesson_update.dict(exclude_unset=True).items():
-        if value is not None:
-            update_fields.append(f"{field} = :{field}")
-            values[field] = value
-    
+    # Handle section_id special case
+    if 'section_id' in update_dict and update_dict['section_id'] == "none":
+        update_dict['section_id'] = None
+
+    for field, value in update_dict.items():
+        update_fields.append(f"{field} = :{field}")
+        # Convert None to None for SQL NULL
+        values[field] = value
+
     if not update_fields:
         return LessonResponse(**existing_lesson)
-    
+
     query = f"""
-        UPDATE lessons 
+        UPDATE lessons
         SET {', '.join(update_fields)}, updated_at = NOW()
         WHERE id = :lesson_id
         RETURNING *
@@ -388,7 +399,7 @@ async def update_lesson(
     updated_lesson = await database.fetch_one(query, values=values)
     
     # Update course duration if duration changed
-    if 'estimated_duration' in lesson_update.dict(exclude_unset=True):
+    if 'estimated_duration' in lesson_update.dict(exclude_unset=True) or 'video_duration' in update_dict:
         await update_course_duration(existing_lesson.course_id)
     
     return LessonResponse(**updated_lesson)

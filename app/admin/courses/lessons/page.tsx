@@ -85,7 +85,7 @@ export default function LessonsManagement() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [sortField, setSortField] = useState("order")
   const [sortDirection, setSortDirection] = useState("asc")
-  const [selectedLessons, setSelectedLessons] = useState<number[]>([])
+  const [selectedLessons, setSelectedLessons] = useState<string[]>([])
 
   // Data states
   const [lessons, setLessons] = useState<any[]>([])
@@ -100,6 +100,13 @@ export default function LessonsManagement() {
   const [videoProvisionType, setVideoProvisionType] = useState<"url" | "upload">("url")
   const [selectedFileName, setSelectedFileName] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Edit lesson dialog state
+  const [isEditLessonOpen, setIsEditLessonOpen] = useState(false)
+  const [editingLesson, setEditingLesson] = useState<any>(null)
+  const [editVideoProvisionType, setEditVideoProvisionType] = useState<"url" | "upload">("url")
+  const [editSelectedFileName, setEditSelectedFileName] = useState<string>("")
+  const editFileInputRef = useRef<HTMLInputElement>(null)
 
   // React Hook Form setup
   const form = useForm<LessonCreateForm>({
@@ -124,6 +131,30 @@ export default function LessonsManagement() {
   })
 
   const isSubmitting = form.formState.isSubmitting
+
+  // Edit form setup
+  const editForm = useForm<LessonCreateForm>({
+    resolver: zodResolver(LessonCreateFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      content: "",
+      courseId: "",
+      sectionId: "",
+      type: "video",
+      order: "",
+      duration: "",
+      isPreview: false,
+      videoProvisionType: "url",
+      videoUrl: "",
+      videoFile: undefined,
+      hasQuiz: false,
+      hasAssignment: false,
+      passingScore: "",
+    },
+  })
+
+  const isEditSubmitting = editForm.formState.isSubmitting
 
   // Fetch courses function
   const fetchCourses = async () => {
@@ -168,6 +199,7 @@ export default function LessonsManagement() {
     try {
       setIsLoadingLessons(true)
       const response: { items: any[] } = await apiClient.get("/api/lessons?page=1&size=100")
+      console.log("Fetched lessons:", response.items?.length || 0, "items")
       setLessons(response.items || [])
     } catch (error) {
       console.error("Failed to fetch lessons:", error)
@@ -213,7 +245,7 @@ export default function LessonsManagement() {
         description: values.description?.trim() || "",
         content: values.content?.trim() || "",
         course_id: values.courseId,
-        section_id: values.sectionId || null,
+        section_id: values.sectionId === "" ? null : values.sectionId,
         type: values.type,
         sort_order: values.order || 0,
         is_published: false, // Start as draft
@@ -325,7 +357,7 @@ export default function LessonsManagement() {
     }
   }
 
-  const handleSelectLesson = (lessonId: number, checked: boolean) => {
+  const handleSelectLesson = (lessonId: string, checked: boolean) => {
     if (checked) {
       setSelectedLessons([...selectedLessons, lessonId])
     } else {
@@ -400,6 +432,120 @@ export default function LessonsManagement() {
       .replace(/[^\w\s-]/g, "")
       .replace(/[\s_-]+/g, "-")
       .replace(/^-+|-+$/g, "")
+  }
+
+  // Handle edit lesson
+  const handleEditLesson = (lesson: any) => {
+    setEditingLesson(lesson)
+    setEditVideoProvisionType(lesson.video_url ? "url" : "upload")
+
+    // Convert duration from seconds to MM:SS format
+    let durationStr = ""
+    if (lesson.video_duration) {
+      const minutes = Math.floor(lesson.video_duration / 60)
+      const seconds = lesson.video_duration % 60
+      durationStr = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    }
+
+    editForm.reset({
+      title: lesson.title || "",
+      description: lesson.description || "",
+      content: lesson.content || "",
+      courseId: lesson.course_id || "",
+      sectionId: lesson.section_id || "none",
+      type: lesson.type || "video",
+      order: lesson.sort_order?.toString() || "",
+      duration: durationStr,
+      isPreview: lesson.is_preview || false,
+      videoProvisionType: lesson.video_url ? "url" : "upload",
+      videoUrl: lesson.video_url || "",
+      videoFile: undefined,
+      hasQuiz: lesson.hasQuiz || false,
+      hasAssignment: lesson.hasAssignment || false,
+      passingScore: lesson.passingScore || "",
+    })
+
+    setEditSelectedFileName("")
+    setIsEditLessonOpen(true)
+
+    // Fetch sections for the lesson's course
+    if (lesson.course_id) {
+      fetchSectionsForCourse(lesson.course_id)
+    }
+  }
+
+  // Handle edit form submission
+  const onEditSubmit = async (values: LessonCreateForm) => {
+    if (!editingLesson) return
+
+    try {
+      let videoUrl = values.videoUrl?.trim() || null
+
+      // If video file is provided, upload it first
+      if (values.videoFile) {
+        const formData = new FormData()
+        formData.append("file", values.videoFile)
+
+        // Upload video file using the proper FormData method
+        const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
+          `/api/lessons/${editingLesson.id}/upload-video`,
+          formData
+        )
+
+        videoUrl = uploadResponse.video_url
+      }
+
+      // Prepare lesson update data
+      const lessonData = {
+        title: values.title.trim(),
+        slug: generateSlug(values.title),
+        description: values.description?.trim() || "",
+        content: values.content?.trim() || "",
+        course_id: values.courseId,
+        section_id: values.sectionId,
+        type: values.type,
+        sort_order: values.order ? parseInt(values.order) : 0,
+        is_preview: values.isPreview,
+        video_url: videoUrl,
+        estimated_duration: values.duration
+          ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
+          : null,
+      }
+
+      // Make API call to update lesson
+      await apiClient.put(`/api/lessons/${editingLesson.id}`, lessonData)
+
+      toast({
+        title: "Success",
+        description: "Lesson updated successfully!",
+      })
+
+      // Reset form and close dialog
+      editForm.reset()
+      setEditingLesson(null)
+      setEditVideoProvisionType("url")
+      setEditSelectedFileName("")
+      setIsEditLessonOpen(false)
+
+      // Refresh lessons list
+      fetchLessons()
+    } catch (error: any) {
+      console.error("Failed to update lesson:", error)
+
+      // Extract error message from API error
+      let errorMessage = "Failed to update lesson. Please try again."
+      if (error?.message) {
+        errorMessage = error.message
+      } else if (error?.detail) {
+        errorMessage = error.detail
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -653,8 +799,10 @@ export default function LessonsManagement() {
                                     <FormItem>
                                       <FormLabel>Section (Optional)</FormLabel>
                                       <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value || ""}
+                                        onValueChange={(value) =>
+                                          field.onChange(value === "none" ? "" : value)
+                                        }
+                                        value={field.value || "none"}
                                       >
                                         <FormControl>
                                           <SelectTrigger>
@@ -662,7 +810,7 @@ export default function LessonsManagement() {
                                           </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                          <SelectItem value="">No section</SelectItem>
+                                          <SelectItem value="none">No section</SelectItem>
                                           {isLoadingSections ? (
                                             <div className="flex items-center justify-center p-2">
                                               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -943,6 +1091,428 @@ export default function LessonsManagement() {
                       </Form>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Edit Lesson Dialog */}
+                  <Dialog open={isEditLessonOpen} onOpenChange={setIsEditLessonOpen}>
+                    <DialogContent className="max-w-3xl max-h-[90vh]">
+                      <Form {...editForm}>
+                        <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
+                          <ScrollArea className="max-h-[80vh] pr-4">
+                            <DialogHeader>
+                              <DialogTitle>Edit Lesson</DialogTitle>
+                              <DialogDescription>
+                                Update lesson details. Make changes below.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Tabs defaultValue="content" className="w-full mt-4">
+                              <TabsList className="grid w-full grid-cols-4">
+                                <TabsTrigger value="content">Content</TabsTrigger>
+                                <TabsTrigger value="settings">Settings</TabsTrigger>
+                                <TabsTrigger value="media">Media</TabsTrigger>
+                                <TabsTrigger value="assessment">Assessment</TabsTrigger>
+                              </TabsList>
+
+                              <TabsContent value="content" className="space-y-4 mt-4">
+                                <FormField
+                                  control={editForm.control}
+                                  name="title"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Title *</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="Lesson title" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="description"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Description</FormLabel>
+                                      <FormControl>
+                                        <Textarea placeholder="Lesson description" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="content"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Content</FormLabel>
+                                      <FormControl>
+                                        <Textarea
+                                          placeholder="Lesson content (supports markdown)"
+                                          className="min-h-[200px]"
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
+
+                              <TabsContent value="settings" className="space-y-4 mt-4">
+                                <FormField
+                                  control={editForm.control}
+                                  name="courseId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Course *</FormLabel>
+                                      <div className="flex gap-2">
+                                        <Select
+                                          onValueChange={(value) => {
+                                            field.onChange(value)
+                                            // Fetch sections for the selected course
+                                            fetchSectionsForCourse(value)
+                                          }}
+                                          value={field.value}
+                                        >
+                                          <FormControl>
+                                            <SelectTrigger className="flex-1">
+                                              <SelectValue placeholder="Select course" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            {isLoadingCourses ? (
+                                              <div className="flex items-center justify-center p-2">
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                Loading courses...
+                                              </div>
+                                            ) : courses.length === 0 ? (
+                                              <div className="flex items-center justify-center p-2 text-muted-foreground">
+                                                No courses available
+                                              </div>
+                                            ) : (
+                                              courses.map((course) => (
+                                                <SelectItem key={course.id} value={course.id}>
+                                                  {course.title}
+                                                </SelectItem>
+                                              ))
+                                            )}
+                                          </SelectContent>
+                                        </Select>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={fetchCourses}
+                                          disabled={isLoadingCourses}
+                                          title="Refresh courses"
+                                        >
+                                          {isLoadingCourses ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Eye className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="sectionId"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Section (Optional)</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select section (optional)" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="none">No section</SelectItem>
+                                          {isLoadingSections ? (
+                                            <div className="flex items-center justify-center p-2">
+                                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                              Loading sections...
+                                            </div>
+                                          ) : sections.length === 0 ? (
+                                            <div className="flex items-center justify-center p-2 text-muted-foreground">
+                                              No sections available
+                                            </div>
+                                          ) : (
+                                            sections.map((section) => (
+                                              <SelectItem key={section.id} value={section.id}>
+                                                {section.title}
+                                              </SelectItem>
+                                            ))
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="type"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Type</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select lesson type" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="video">Video</SelectItem>
+                                          <SelectItem value="text">Text/Article</SelectItem>
+                                          <SelectItem value="audio">Audio</SelectItem>
+                                          <SelectItem value="image">Image Gallery</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="order"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Order</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="1"
+                                          {...field}
+                                          value={field.value || ""}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="duration"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Duration (MM:SS)</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="15:30" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="isPreview"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Allow preview without enrollment</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
+
+                              <TabsContent value="media" className="space-y-4 mt-4">
+                                <div className="space-y-3">
+                                  <FormItem>
+                                    <FormLabel>Video Provision Type</FormLabel>
+                                    <Select
+                                      value={editVideoProvisionType}
+                                      onValueChange={(value: "url" | "upload") => {
+                                        setEditVideoProvisionType(value)
+                                        editForm.setValue("videoProvisionType", value)
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Choose how to provide video" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="url">Video URL</SelectItem>
+                                        <SelectItem value="upload">Upload Video File</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormItem>
+
+                                  {/* Video URL Input - Always rendered */}
+                                  <FormField
+                                    control={editForm.control}
+                                    name="videoUrl"
+                                    render={({ field }) => (
+                                      <FormItem
+                                        className={
+                                          editVideoProvisionType === "upload" ? "hidden" : ""
+                                        }
+                                      >
+                                        <FormLabel>Video URL</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="https://..."
+                                            {...field}
+                                            disabled={editVideoProvisionType === "upload"}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+
+                                  {/* Video File Input - Custom display with hidden native input */}
+                                  <FormField
+                                    control={editForm.control}
+                                    name="videoFile"
+                                    render={({ field }) => (
+                                      <FormItem
+                                        className={editVideoProvisionType === "url" ? "hidden" : ""}
+                                      >
+                                        <FormLabel>Upload Video File</FormLabel>
+                                        <FormControl>
+                                          <div className="space-y-2">
+                                            {/* Hidden native file input */}
+                                            <Input
+                                              ref={editFileInputRef}
+                                              type="file"
+                                              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0]
+                                                field.onChange(file || undefined)
+                                                setEditSelectedFileName(file?.name || "")
+                                              }}
+                                              disabled={editVideoProvisionType === "url"}
+                                              className="hidden"
+                                            />
+                                            {/* Custom display */}
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                type="text"
+                                                value={editSelectedFileName || ""}
+                                                placeholder="No file selected"
+                                                readOnly
+                                                className="flex-1"
+                                              />
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => editFileInputRef.current?.click()}
+                                                disabled={editVideoProvisionType === "url"}
+                                              >
+                                                Browse
+                                              </Button>
+                                              {editSelectedFileName && (
+                                                <Button
+                                                  type="button"
+                                                  variant="outline"
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    field.onChange(undefined)
+                                                    setEditSelectedFileName("")
+                                                    if (editFileInputRef.current) {
+                                                      editFileInputRef.current.value = ""
+                                                    }
+                                                  }}
+                                                >
+                                                  Clear
+                                                </Button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-thumbnail">Thumbnail</Label>
+                                  <Input id="edit-thumbnail" type="file" accept="image/*" />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="edit-attachments">Attachments</Label>
+                                  <Input id="edit-attachments" type="file" multiple />
+                                </div>
+                              </TabsContent>
+
+                              <TabsContent value="assessment" className="space-y-4 mt-4">
+                                <FormField
+                                  control={editForm.control}
+                                  name="hasQuiz"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Include quiz</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="hasAssignment"
+                                  render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                      <FormLabel>Include assignment</FormLabel>
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={editForm.control}
+                                  name="passingScore"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Passing Score (%)</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="80"
+                                          {...field}
+                                          value={field.value || ""}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </TabsContent>
+                            </Tabs>
+                            <DialogFooter className="mt-6">
+                              <Button type="submit" disabled={isEditSubmitting}>
+                                {isEditSubmitting ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Updating...
+                                  </>
+                                ) : (
+                                  "Update Lesson"
+                                )}
+                              </Button>
+                            </DialogFooter>
+                          </ScrollArea>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </CardHeader>
@@ -1045,7 +1615,7 @@ export default function LessonsManagement() {
                           <Checkbox
                             checked={selectedLessons.includes(lesson.id)}
                             onCheckedChange={(checked) =>
-                              handleSelectLesson(lesson.id, checked as boolean)
+                              handleSelectLesson(lesson.id.toString(), checked as boolean)
                             }
                           />
                         </TableCell>
@@ -1133,7 +1703,7 @@ export default function LessonsManagement() {
                                 <Eye className="mr-2 h-4 w-4" />
                                 Preview
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditLesson(lesson)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
