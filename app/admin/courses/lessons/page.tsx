@@ -285,6 +285,10 @@ export default function LessonsManagement() {
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
+        // Assessment fields
+        has_quiz: values.hasQuiz,
+        has_assignment: values.hasAssignment,
+        passing_score: values.passingScore || 70,
       }
 
       // Make API call to create lesson
@@ -576,6 +580,10 @@ export default function LessonsManagement() {
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
+        // Assessment fields
+        has_quiz: values.hasQuiz,
+        has_assignment: values.hasAssignment,
+        passing_score: values.passingScore || 70,
       }
 
       // Make API call to update lesson
