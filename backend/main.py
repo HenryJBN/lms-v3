@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from database.connection import database, engine, metadata
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
-    progress, certificates, notifications, admin, analytics, sections
+    progress, certificates, notifications, admin, analytics, sections, assignments
 )
 from middleware.auth import get_current_user
 from middleware.logging import setup_logging
@@ -59,6 +59,7 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["Not
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(sections.router, prefix="/api/sections", tags=["Sections"])
+app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 
 # Mount static files directory for uploaded files
 from utils.file_upload import LOCAL_UPLOAD_PATH

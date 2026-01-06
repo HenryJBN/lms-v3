@@ -5,10 +5,11 @@ import os
 
 from database.connection import database
 from models.schemas import (
-    LessonCreate, LessonUpdate, LessonResponse, 
+    LessonCreate, LessonUpdate, LessonResponse,
     QuizCreate, QuizUpdate, QuizResponse,
     QuizQuestionCreate, QuizQuestionUpdate, QuizQuestionResponse,
     QuizAttemptCreate, QuizAttemptResponse,
+    AssignmentCreate, AssignmentResponse,
     PaginationParams, PaginatedResponse
 )
 from middleware.auth import get_current_active_user, require_instructor_or_admin
@@ -583,6 +584,122 @@ async def create_lesson_quiz(
     
     new_quiz = await database.fetch_one(query, values=values)
     return QuizResponse(**new_quiz)
+
+@router.post("/{lesson_id}/assignments", response_model=AssignmentResponse)
+async def create_lesson_assignment(
+    lesson_id: uuid.UUID,
+    assignment: AssignmentCreate,
+    current_user = Depends(require_instructor_or_admin)
+):
+    # Check if lesson exists and user has permission
+    check_query = """
+        SELECT l.*, c.instructor_id
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        WHERE l.id = :lesson_id
+    """
+    lesson = await database.fetch_one(check_query, values={"lesson_id": lesson_id})
+
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found"
+        )
+
+    if current_user.role != "admin" and str(lesson.instructor_id) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to create assignments for this lesson"
+        )
+
+    assignment_id = uuid.uuid4()
+
+    query = """
+        INSERT INTO assignments (
+            id, lesson_id, course_id, title, description, instructions,
+            due_date, max_points, allow_late_submission, is_published
+        )
+        VALUES (
+            :id, :lesson_id, :course_id, :title, :description, :instructions,
+            :due_date, :max_points, :allow_late_submission, :is_published
+        )
+        RETURNING *
+    """
+
+    values = {
+        "id": assignment_id,
+        "lesson_id": lesson_id,
+        "course_id": lesson.course_id,
+        **assignment.dict()
+    }
+
+    try:
+        new_assignment = await database.fetch_one(query, values=values)
+        return AssignmentResponse(**new_assignment)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to create assignment: {str(e)}"
+        )
+
+@router.get("/{lesson_id}/assignments", response_model=List[AssignmentResponse])
+async def get_lesson_assignments(
+    lesson_id: uuid.UUID,
+    current_user = Depends(get_current_active_user)
+):
+    # Check access to lesson
+    access_query = """
+        SELECT l.id, c.instructor_id,
+               CASE WHEN ce.id IS NOT NULL THEN true ELSE false END as is_enrolled
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        LEFT JOIN course_enrollments ce ON c.id = ce.course_id
+            AND ce.user_id = :user_id AND ce.status = 'active'
+        WHERE l.id = :lesson_id
+    """
+
+    access_check = await database.fetch_one(access_query, values={
+        "lesson_id": lesson_id,
+        "user_id": current_user.id
+    })
+
+    if not access_check:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found"
+        )
+
+    has_access = (
+        access_check.is_enrolled or
+        str(access_check.instructor_id) == str(current_user.id) or
+        current_user.role == "admin"
+    )
+
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to lesson assignments"
+        )
+
+    # Get assignments
+    query = """
+        SELECT a.*,
+               CASE WHEN sub.id IS NOT NULL THEN sub.status ELSE 'not_submitted' END as submission_status,
+               CASE WHEN sub.id IS NOT NULL THEN sub.grade ELSE null END as user_grade,
+               sub.submitted_at as submission_date
+        FROM assignments a
+        LEFT JOIN assignment_submissions sub ON a.id = sub.assignment_id
+            AND sub.user_id = :user_id
+        WHERE a.lesson_id = :lesson_id AND a.is_published = true
+        ORDER BY a.due_date, a.created_at
+    """
+
+    assignments = await database.fetch_all(query, values={
+        "lesson_id": lesson_id,
+        "user_id": current_user.id
+    })
+
+    return [AssignmentResponse(**assignment) for assignment in assignments]
 
 @router.get("/{lesson_id}/quizzes", response_model=List[QuizResponse])
 async def get_lesson_quizzes(

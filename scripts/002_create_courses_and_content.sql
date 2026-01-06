@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS lessons (
     is_preview BOOLEAN DEFAULT FALSE, -- Can be viewed without enrollment
     prerequisites UUID[], -- Array of lesson IDs that must be completed first
     resources JSONB, -- Additional resources, files, links
+    passing_score INTEGER DEFAULT 70, -- Overall lesson passing score percentage
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(course_id, slug)
@@ -122,20 +123,20 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Media files table
-CREATE TABLE IF NOT EXISTS media_files (
+-- Assignments table
+CREATE TABLE IF NOT EXISTS assignments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    filename VARCHAR(255) NOT NULL,
-    original_filename VARCHAR(255) NOT NULL,
-    file_path TEXT NOT NULL,
-    file_size BIGINT NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    file_type VARCHAR(50) NOT NULL, -- 'image', 'video', 'audio', 'document'
-    uploaded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    alt_text TEXT,
-    caption TEXT,
-    metadata JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    instructions TEXT,
+    due_date TIMESTAMP WITH TIME ZONE,
+    max_points INTEGER DEFAULT 100,
+    allow_late_submission BOOLEAN DEFAULT TRUE,
+    is_published BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes
@@ -166,6 +167,10 @@ CREATE INDEX IF NOT EXISTS idx_quizzes_course_id ON quizzes(course_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_quiz_id ON quiz_questions(quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_questions_sort_order ON quiz_questions(quiz_id, sort_order);
 
+CREATE INDEX IF NOT EXISTS idx_assignments_lesson_id ON assignments(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_course_id ON assignments(course_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_is_published ON assignments(is_published);
+
 CREATE INDEX IF NOT EXISTS idx_media_files_uploaded_by ON media_files(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_media_files_file_type ON media_files(file_type);
 
@@ -176,3 +181,4 @@ CREATE TRIGGER update_course_sections_updated_at BEFORE UPDATE ON course_section
 CREATE TRIGGER update_lessons_updated_at BEFORE UPDATE ON lessons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_quizzes_updated_at BEFORE UPDATE ON quizzes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_quiz_questions_updated_at BEFORE UPDATE ON quiz_questions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_assignments_updated_at BEFORE UPDATE ON assignments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

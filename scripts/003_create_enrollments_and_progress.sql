@@ -56,6 +56,25 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Assignment submissions table
+CREATE TABLE IF NOT EXISTS assignment_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    assignment_id UUID NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    content TEXT, -- Text submission content
+    attachments JSONB, -- File attachments as JSON array
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    status VARCHAR(50) DEFAULT 'submitted', -- submitted, graded, late
+    grade INTEGER, -- Points earned (out of assignment max_points)
+    feedback TEXT, -- Instructor feedback
+    graded_at TIMESTAMP WITH TIME ZONE,
+    graded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, assignment_id)
+);
+
 -- Course reviews and ratings
 CREATE TABLE IF NOT EXISTS course_reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -133,6 +152,12 @@ CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user_id ON quiz_attempts(user_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_quiz_id ON quiz_attempts(quiz_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_attempts_course_id ON quiz_attempts(course_id);
 
+CREATE INDEX IF NOT EXISTS idx_assignment_submissions_user_id ON assignment_submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_submissions_assignment_id ON assignment_submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_submissions_course_id ON assignment_submissions(course_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_submissions_status ON assignment_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_assignment_submissions_submitted_at ON assignment_submissions(submitted_at);
+
 CREATE INDEX IF NOT EXISTS idx_course_reviews_user_id ON course_reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_course_reviews_course_id ON course_reviews(course_id);
 CREATE INDEX IF NOT EXISTS idx_course_reviews_rating ON course_reviews(rating);
@@ -153,6 +178,7 @@ CREATE INDEX IF NOT EXISTS idx_learning_path_enrollments_path_id ON learning_pat
 -- Apply updated_at triggers
 CREATE TRIGGER update_course_enrollments_updated_at BEFORE UPDATE ON course_enrollments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_lesson_progress_updated_at BEFORE UPDATE ON lesson_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_assignment_submissions_updated_at BEFORE UPDATE ON assignment_submissions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_course_reviews_updated_at BEFORE UPDATE ON course_reviews FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_learning_paths_updated_at BEFORE UPDATE ON learning_paths FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_learning_path_enrollments_updated_at BEFORE UPDATE ON learning_path_enrollments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
