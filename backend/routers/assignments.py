@@ -553,6 +553,34 @@ async def grade_assignment_submission(
     updated_submission = await database.fetch_one(update_query, values=values)
     return AssignmentSubmissionResponse(**updated_submission)
 
+@router.get("/submissions/{submission_id}", response_model=AssignmentSubmissionResponse)
+async def get_assignment_submission(
+    submission_id: uuid.UUID,
+    current_user = Depends(get_current_active_user)
+):
+    """Get individual submission details for the current user"""
+    # Check if submission exists and user has access
+    submission_query = """
+        SELECT sub.*, a.title as assignment_title, c.title as course_title
+        FROM assignment_submissions sub
+        JOIN assignments a ON sub.assignment_id = a.id
+        JOIN courses c ON sub.course_id = c.id
+        WHERE sub.id = :submission_id AND sub.user_id = :user_id
+    """
+
+    submission = await database.fetch_one(submission_query, values={
+        "submission_id": submission_id,
+        "user_id": current_user.id
+    })
+
+    if not submission:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Submission not found"
+        )
+
+    return AssignmentSubmissionResponse(**submission)
+
 @router.post("/upload-attachment")
 async def upload_assignment_attachment(
     file: UploadFile = File(...),

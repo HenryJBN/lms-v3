@@ -89,3 +89,9 @@
 2026-01-06 15:24:25,058 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
 2026-01-06 16:08:26,532 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
 2026-01-06 16:08:33,557 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:24:34,199 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:24:41,407 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:25:01,054 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:25:07,191 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:25:44,726 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-06 17:25:51,679 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database

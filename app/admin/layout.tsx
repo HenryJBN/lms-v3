@@ -76,6 +76,11 @@ function Sidebar({ className }: SidebarProps) {
       ],
     },
     {
+      title: "Assignments",
+      href: "/admin/assignments",
+      icon: FileText,
+    },
+    {
       title: "Content",
       icon: FileText,
       children: [
@@ -241,6 +246,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {pathname === "/admin/courses/categories" && "Course Categories"}
               {pathname === "/admin/courses/lessons" && "Lesson Management"}
               {pathname === "/admin/courses/completions" && "Course Completions"}
+              {pathname === "/admin/assignments" && "Assignment Management"}
               {pathname === "/admin/content" && "Content Management"}
               {pathname === "/admin/content/media" && "Media Library"}
               {pathname === "/admin/content/pages" && "Page Management"}
