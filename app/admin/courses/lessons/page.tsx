@@ -498,6 +498,50 @@ export default function LessonsManagement() {
   }
 
   // Handle delete lesson
+  const handlePublishLesson = async (lessonToPublish: any) => {
+    try {
+      await apiClient.put(`/api/lessons/${lessonToPublish.id}`, {
+        is_published: true,
+        course_id: lessonToPublish.course_id,
+        section_id: lessonToPublish.section_id,
+      })
+      toast({
+        title: "Success",
+        description: `Lesson "${lessonToPublish.title}" published successfully!`,
+      })
+      fetchLessons()
+    } catch (error: any) {
+      console.error("Failed to publish lesson:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish lesson",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUnpublishLesson = async (lessonToUnpublish: any) => {
+    try {
+      await apiClient.put(`/api/lessons/${lessonToUnpublish.id}`, {
+        is_published: false,
+        course_id: lessonToUnpublish.course_id,
+        section_id: lessonToUnpublish.section_id,
+      })
+      toast({
+        title: "Success",
+        description: `Lesson "${lessonToUnpublish.title}" moved back to draft!`,
+      })
+      fetchLessons()
+    } catch (error: any) {
+      console.error("Failed to unpublish lesson:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unpublish lesson",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleDeleteLesson = (lesson: any) => {
     setDeletingLesson(lesson)
     setIsDeleteLessonOpen(true)
@@ -1842,6 +1886,17 @@ export default function LessonsManagement() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
+                              {lesson.status === "draft" ? (
+                                <DropdownMenuItem onClick={() => handlePublishLesson(lesson)}>
+                                  <Upload className="mr-2 h-4 w-4" />
+                                  Publish
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => handleUnpublishLesson(lesson)}>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Unpublish
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-red-600"
