@@ -18,7 +18,7 @@ export const API_ENDPOINTS = {
   userProfile: (userId: string) => `/api/users/profile/${userId}`,
   updateProfile: "/api/users/profile",
   uploadAvatar: "/api/users/avatar",
-  tokenBalance: "/api/users/token-balance",
+  tokenBalance: "/api/users/me/tokens",
 
   // Course endpoints
   courses: "/api/courses",
@@ -52,25 +52,4 @@ export const API_ENDPOINTS = {
 
   // Categories endpoints
   categories: "/api/categories",
-}
-
-export const COOKIE_NAMES = {
-  accessToken: "access_token",
-  refreshToken: "refresh_token",
-  userId: "user_id",
-} as const
-
-export const COOKIE_OPTIONS = {
-  maxAge: 60 * 60 * 24 * 7, // 7 days
-  path: "/",
-  sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
-}
-
-// Export for backwards compatibility
-export const API_CONFIG = {
-  BASE_URL: API_BASE_URL,
-  ENDPOINTS: API_ENDPOINTS,
-  COOKIE_NAMES,
-  COOKIE_OPTIONS,
 }

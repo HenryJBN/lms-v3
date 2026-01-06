@@ -23,7 +23,8 @@ export interface TokenTransaction {
 
 export interface TokenBalanceResponse {
   balance: number
-  transactions: TokenTransaction[]
+  total_earned: number
+  total_spent: number
 }
 
 /**

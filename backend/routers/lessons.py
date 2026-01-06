@@ -233,6 +233,24 @@ async def get_lesson(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user)
 ):
+    # For admin preview, allow access to any lesson
+    if current_user.role == "admin":
+        query = """
+            SELECT l.*, c.title as course_title, s.title as section_title
+            FROM lessons l
+            JOIN courses c ON l.course_id = c.id
+            LEFT JOIN course_sections s ON l.section_id = s.id
+            WHERE l.id = :lesson_id
+        """
+        lesson = await database.fetch_one(query, values={"lesson_id": lesson_id})
+
+        if not lesson:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Lesson not found"
+            )
+
+        return LessonResponse(**lesson)
     # Check access and get lesson
     query = """
         SELECT l.*, c.instructor_id,

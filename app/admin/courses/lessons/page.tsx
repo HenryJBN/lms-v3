@@ -203,7 +203,28 @@ export default function LessonsManagement() {
   const fetchLessons = async () => {
     try {
       setIsLoadingLessons(true)
-      const response: { items: any[] } = await apiClient.get("/api/lessons?page=1&size=100")
+
+      // Build query parameters for server-side filtering
+      const params = new URLSearchParams({
+        page: "1",
+        size: "100",
+      })
+
+      // Add filters if they have values
+      if (selectedCourse && selectedCourse !== "all") {
+        params.append("course_id", selectedCourse)
+      }
+      if (selectedType && selectedType !== "all") {
+        params.append("type", selectedType)
+      }
+      if (selectedStatus && selectedStatus !== "all") {
+        params.append("status", selectedStatus === "published" ? "published" : "draft")
+      }
+      if (searchTerm.trim()) {
+        params.append("search", searchTerm.trim())
+      }
+
+      const response: { items: any[] } = await apiClient.get(`/api/lessons?${params.toString()}`)
       console.log("Fetched lessons:", response.items?.length || 0, "items")
       setLessons(response.items || [])
     } catch (error) {
@@ -223,6 +244,11 @@ export default function LessonsManagement() {
     fetchCourses()
     fetchLessons()
   }, [])
+
+  // Fetch lessons when filters change
+  useEffect(() => {
+    fetchLessons()
+  }, [selectedCourse, selectedType, selectedStatus, searchTerm])
 
   // Handle form submission
   const onSubmit = async (values: LessonCreateForm) => {
@@ -312,19 +338,7 @@ export default function LessonsManagement() {
     }
   }
 
-  const filteredLessons = lessons.filter((lesson) => {
-    const matchesSearch =
-      (lesson.title?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (lesson.course?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (lesson.author?.toLowerCase() || "").includes(searchTerm.toLowerCase())
-    const matchesCourse =
-      selectedCourse === "all" || lesson.course_id?.toString() === selectedCourse
-    const matchesType = selectedType === "all" || lesson.type === selectedType
-    const matchesStatus = selectedStatus === "all" || lesson.status === selectedStatus
-    return matchesSearch && matchesCourse && matchesType && matchesStatus
-  })
-
-  const sortedLessons = [...filteredLessons].sort((a, b) => {
+  const sortedLessons = [...lessons].sort((a, b) => {
     let aValue = a[sortField as keyof typeof a] || ""
     let bValue = b[sortField as keyof typeof b] || ""
 
@@ -1808,7 +1822,11 @@ export default function LessonsManagement() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  window.open(`/learn/lessonId/${lesson.id}`, "_blank")
+                                }
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 Preview
                               </DropdownMenuItem>
