@@ -330,27 +330,26 @@ async def send_password_reset_email(email: str, first_name: str, reset_token: st
     """Async wrapper for send_password_reset_email_sync"""
     return send_password_reset_email_sync(email, first_name, reset_token)
 
-def send_email_verification_sync(email: str, first_name: str, verification_token: str) -> bool:
-    """Send email verification (synchronous)"""
-
-    verification_url = f"https://DCA.com/verify-email?token={verification_token}"
+def send_email_verification_sync(email: str, first_name: str, verification_code: str) -> bool:
+    """Send email verification with code (synchronous)"""
 
     context = {
         "first_name": first_name,
-        "verification_url": verification_url,
-        "platform_name": "DCA LMS"
+        "verification_code": verification_code,
+        "platform_name": "DCA LMS",
+        "support_email": "support@dcalms.com"
     }
 
     return email_service.send_email(
         to_email=email,
         subject="Verify Your Email - DCA LMS",
-        template_name="email_verification.html",
+        template_name="email_verification_code.html",
         context=context
     )
 
-async def send_email_verification(email: str, first_name: str, verification_token: str) -> bool:
+async def send_email_verification(email: str, first_name: str, verification_code: str) -> bool:
     """Async wrapper for send_email_verification_sync"""
-    return send_email_verification_sync(email, first_name, verification_token)
+    return send_email_verification_sync(email, first_name, verification_code)
 
 def send_course_enrollment_email_sync(email: str, first_name: str, course_title: str, course_url: str) -> bool:
     """Send course enrollment confirmation email (synchronous)"""

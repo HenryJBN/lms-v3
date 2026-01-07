@@ -23,6 +23,8 @@ export const API_ENDPOINTS = {
   forgotPassword: "/api/auth/forgot-password",
   resetPassword: "/api/auth/reset-password",
   verifyEmail: "/api/auth/verify-email",
+  verifyEmailCode: "/api/auth/verify-email-code",
+  resendVerificationCode: "/api/auth/resend-verification-code",
 
   // User endpoints
   users: "/api/users",

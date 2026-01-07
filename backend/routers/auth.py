@@ -24,7 +24,7 @@ from utils.redis_client import two_fa_manager, check_redis_connection
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register")
 async def register(user: UserCreate):
     # Check if user already exists
     existing_user = await get_user_by_email(user.email)
@@ -33,7 +33,7 @@ async def register(user: UserCreate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
+
     # Check if username is taken
     query = "SELECT id FROM users WHERE username = :username"
     existing_username = await database.fetch_one(query, values={"username": user.username})
@@ -42,17 +42,17 @@ async def register(user: UserCreate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken"
         )
-    
+
     # Hash password and create user
     hashed_password = get_password_hash(user.password)
     user_id = uuid.uuid4()
-    
+
     query = """
-        INSERT INTO users (id, email, username, password_hash, first_name, last_name, role)
-        VALUES (:id, :email, :username, :password_hash, :first_name, :last_name, :role)
+        INSERT INTO users (id, email, username, password_hash, first_name, last_name, role, status)
+        VALUES (:id, :email, :username, :password_hash, :first_name, :last_name, :role, 'pending')
         RETURNING *
     """
-    
+
     values = {
         "id": user_id,
         "email": user.email,
@@ -62,44 +62,50 @@ async def register(user: UserCreate):
         "last_name": user.last_name,
         "role": user.role
     }
-    
+
     new_user = await database.fetch_one(query, values=values)
-    
+
     # Create user profile
     profile_query = """
         INSERT INTO user_profiles (user_id)
         VALUES (:user_id)
     """
     await database.execute(profile_query, values={"user_id": user_id})
-    
-    # Initialize L-Tokens balance
-    token_query = """
-        INSERT INTO l_tokens (user_id, balance, total_earned, total_spent)
-        VALUES (:user_id, 25.0, 25.0, 0.0)
-    """
-    await database.execute(token_query, values={"user_id": user_id})
-    
-    # Create welcome token transaction
-    transaction_query = """
-        INSERT INTO token_transactions (user_id, type, amount, balance_after, description, reference_type)
-        VALUES (:user_id, 'bonus', 25.0, 25.0, 'Welcome bonus for joining DCA LMS', 'registration')
-    """
-    await database.execute(transaction_query, values={"user_id": user_id})
 
-    # Send welcome email asynchronously via Celery (non-blocking)
+    # Generate 6-digit verification code
+    verification_code = ''.join(random.choices(string.digits, k=6))
+
+    # Store verification code in database (expires in 24 hours)
+    verification_query = """
+        INSERT INTO email_verification_tokens (user_id, token, expires_at)
+        VALUES (:user_id, :token, NOW() + INTERVAL '24 hours')
+    """
+    await database.execute(verification_query, values={
+        "user_id": user_id,
+        "token": verification_code
+    })
+
+    # Send verification email asynchronously via Celery (non-blocking)
     try:
-        task_id = send_welcome_email_async(user.email, user.first_name)
-        print(f"Welcome email queued for {user.email} (Task ID: {task_id})")
+        from utils.email_async import send_email_verification_async
+        task_id = send_email_verification_async(user.email, user.first_name, verification_code)
+        print(f"Email verification queued for {user.email} (Task ID: {task_id})")
     except Exception as e:
         # Log the error but don't fail registration if email queueing fails
-        print(f"Failed to queue welcome email for {user.email}: {e}")
+        print(f"Failed to queue verification email for {user.email}: {e}")
         # Fallback to synchronous email if Celery is not available
         try:
-            await send_welcome_email(user.email, user.first_name)
+            from utils.email import send_email_verification
+            await send_email_verification(user.email, user.first_name, verification_code)
         except Exception as e2:
             print(f"Fallback email also failed: {e2}")
 
-    return UserResponse(**new_user)
+    return {
+        "message": "Registration successful. Please check your email for verification code.",
+        "user_id": str(user_id),
+        "email": user.email,
+        "requires_verification": True
+    }
 
 @router.post("/login")
 async def login(login_data: LoginRequest, request: Request, response: Response):
@@ -414,25 +420,225 @@ async def verify_email(token: str):
         WHERE evt.token = :token AND evt.expires_at > NOW() AND evt.verified_at IS NULL
     """
     token_record = await database.fetch_one(query, values={"token": token})
-    
+
     if not token_record:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired verification token"
         )
-    
+
     # Update user as verified
     update_user_query = """
-        UPDATE users SET email_verified = TRUE, email_verified_at = NOW() 
+        UPDATE users SET email_verified = TRUE, email_verified_at = NOW()
         WHERE id = :user_id
     """
     await database.execute(update_user_query, values={"user_id": token_record.user_id})
-    
+
     # Mark token as verified
     mark_verified_query = """
-        UPDATE email_verification_tokens SET verified_at = NOW() 
+        UPDATE email_verification_tokens SET verified_at = NOW()
         WHERE token = :token
     """
     await database.execute(mark_verified_query, values={"token": token})
-    
+
     return {"message": "Email verified successfully"}
+
+@router.post("/verify-email-code")
+async def verify_email_code(verification_data: dict, response: Response):
+    """
+    Verify email using verification code and activate user account
+    """
+    code = verification_data.get("code")
+    email = verification_data.get("email")
+
+    if not code or not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code and email are required"
+        )
+
+    # Find the verification token
+    query = """
+        SELECT evt.*, u.*
+        FROM email_verification_tokens evt
+        JOIN users u ON evt.user_id = u.id
+        WHERE evt.token = :token AND u.email = :email AND evt.expires_at > NOW() AND evt.verified_at IS NULL
+    """
+    record = await database.fetch_one(query, values={"token": code, "email": email})
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code"
+        )
+
+    user_id = str(record["user_id"])
+
+    # Update user as verified and active
+    update_user_query = """
+        UPDATE users SET email_verified = TRUE, email_verified_at = NOW(), status = 'active'
+        WHERE id = :user_id
+    """
+    await database.execute(update_user_query, values={"user_id": user_id})
+
+    # Mark token as verified
+    mark_verified_query = """
+        UPDATE email_verification_tokens SET verified_at = NOW()
+        WHERE token = :token
+    """
+    await database.execute(mark_verified_query, values={"token": code})
+
+    # Initialize L-Tokens balance for verified user
+    token_query = """
+        INSERT INTO l_tokens (user_id, balance, total_earned, total_spent)
+        VALUES (:user_id, 25.0, 25.0, 0.0)
+        ON CONFLICT (user_id) DO NOTHING
+    """
+    await database.execute(token_query, values={"user_id": user_id})
+
+    # Create welcome token transaction
+    transaction_query = """
+        INSERT INTO token_transactions (user_id, type, amount, balance_after, description, reference_type)
+        VALUES (:user_id, 'bonus', 25.0, 25.0, 'Welcome bonus for joining DCA LMS', 'registration')
+        ON CONFLICT DO NOTHING
+    """
+    await database.execute(transaction_query, values={"user_id": user_id})
+
+    # Create access token for the verified user
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user_id}, expires_delta=access_token_expires
+    )
+
+    # Create refresh token
+    refresh_token = create_refresh_token(data={"sub": user_id})
+
+    # Set refresh token as HTTP-only cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,  # Only send over HTTPS in production
+        samesite="lax",  # CSRF protection
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,  # Convert days to seconds
+        path="/api/auth"  # Available site-wide for refresh mechanism
+    )
+
+    # Create user response without conflicting 'id' field
+    user_response_data = {
+        "id": user_id,
+        "email": record["email"],
+        "username": record["username"],
+        "first_name": record["first_name"],
+        "last_name": record["last_name"],
+        "role": record["role"],
+        "status": "active"
+    }
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": user_response_data
+    }
+
+@router.post("/resend-verification-code")
+async def resend_verification_code(request_data: dict):
+    """
+    Resend verification code to user's email
+    """
+    email = request_data.get("email")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required"
+        )
+
+    # Check if user exists (regardless of status)
+    user_query = """
+        SELECT id, first_name, status
+        FROM users
+        WHERE email = :email
+    """
+    user = await database.fetch_one(user_query, values={"email": email})
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User not found"
+        )
+
+    # If user is already active, they don't need verification
+    if user["status"] == "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already verified"
+        )
+
+    # Check if there's already an active verification token created within the last minute
+    token_query = """
+        SELECT id, created_at
+        FROM email_verification_tokens
+        WHERE user_id = :user_id AND expires_at > NOW() AND verified_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+    """
+    existing_token = await database.fetch_one(token_query, values={"user_id": user["id"]})
+
+    # Rate limiting: don't allow resending more than once per minute
+    if existing_token:
+        from datetime import datetime, timedelta
+        token_created = existing_token["created_at"]
+        if isinstance(token_created, str):
+            token_created = datetime.fromisoformat(token_created.replace('Z', '+00:00'))
+
+        if token_created > datetime.utcnow() - timedelta(minutes=1):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Please wait before requesting another verification code"
+            )
+
+    # Generate new 6-digit verification code
+    verification_code = ''.join(random.choices(string.digits, k=6))
+
+    # Delete any existing unverified tokens for this user
+    delete_query = """
+        DELETE FROM email_verification_tokens
+        WHERE user_id = :user_id AND verified_at IS NULL
+    """
+    await database.execute(delete_query, values={"user_id": user["id"]})
+
+    # Store new verification code in database (expires in 24 hours)
+    verification_query = """
+        INSERT INTO email_verification_tokens (user_id, token, expires_at)
+        VALUES (:user_id, :token, NOW() + INTERVAL '24 hours')
+    """
+    await database.execute(verification_query, values={
+        "user_id": user["id"],
+        "token": verification_code
+    })
+
+    # Send verification email asynchronously via Celery (non-blocking)
+    try:
+        from utils.email_async import send_email_verification_async
+        task_id = send_email_verification_async(email, user["first_name"], verification_code)
+        print(f"Email verification resent for {email} (Task ID: {task_id})")
+    except Exception as e:
+        # Log the error but don't fail resend if email queueing fails
+        print(f"Failed to queue verification email resend for {email}: {e}")
+        # Fallback to synchronous email if Celery is not available
+        try:
+            from utils.email import send_email_verification
+            await send_email_verification(email, user["first_name"], verification_code)
+        except Exception as e2:
+            print(f"Fallback email also failed: {e2}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send verification email"
+            )
+
+    return {
+        "message": "Verification code sent successfully. Please check your email.",
+        "email": email
+    }

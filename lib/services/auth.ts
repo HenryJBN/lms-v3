@@ -75,6 +75,13 @@ export interface TwoFactorVerifyRequest {
   code: string
 }
 
+export interface RegisterResponse {
+  message: string
+  user_id: string
+  email: string
+  requires_verification: boolean
+}
+
 //
 // --- Helper Functions ---
 //
@@ -125,10 +132,11 @@ class AuthService {
     return auth
   }
 
-  async register(data: RegisterRequest): Promise<AuthResponse> {
-    const auth = await this.post<AuthResponse>(API_ENDPOINTS.register, data)
-    storeUserId(auth.user.id)
-    return auth
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    const response = await this.post<RegisterResponse>(API_ENDPOINTS.register, data)
+    // Don't store user ID here - user needs to verify email first
+    // storeUserId(response.user_id)
+    return response
   }
 
   async logout(): Promise<void> {
@@ -157,6 +165,24 @@ class AuthService {
     return await this.post<{ message: string }>(API_ENDPOINTS.verifyEmail, {
       token,
     })
+  }
+
+  async verifyEmailCode(code: string, email: string): Promise<AuthResponse> {
+    const response = await this.post<AuthResponse>(API_ENDPOINTS.verifyEmailCode, {
+      code,
+      email,
+    })
+    storeUserId(response.user.id)
+    return response
+  }
+
+  async resendVerificationCode(email: string): Promise<{ message: string; email: string }> {
+    return await this.post<{ message: string; email: string }>(
+      API_ENDPOINTS.resendVerificationCode,
+      {
+        email,
+      }
+    )
   }
 
   getAccessToken(): string | null {

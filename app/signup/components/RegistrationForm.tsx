@@ -52,10 +52,22 @@ const RegistrationForm = () => {
     setIsLoading(true)
     try {
       // Call the register API
-      await register(data)
+      const response = await register({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+        role: "student",
+      })
 
-      toast.success("Account created successfully!")
-      //   setTimeout(() => router.push("/dashboard"), 1500)
+      toast.success("Account created successfully! Please check your email for verification code.")
+
+      // Store email for verification page
+      localStorage.setItem("verification_email", data.email)
+
+      // Redirect to email verification page
+      router.push(`/verify-email?email=${encodeURIComponent(data.email)}`)
     } catch (error: any) {
       console.error("Registration error:+++++", error)
 

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
 import { deleteCookie } from "cookies-next"
-import { authService, type User } from "../services/auth"
+import { authService, type User, type RegisterResponse } from "../services/auth"
 import { usersService, type TokenBalanceResponse } from "../services/users"
 import { API_ENDPOINTS, COOKIE_NAMES } from "../api-config"
 import { apiClient } from "../api-client"
@@ -15,7 +15,9 @@ interface AuthContextType {
   accessToken: string | null
   setAccessToken: (token: string | null) => void
   login: (email: string, password: string) => Promise<void>
-  register: (userData: any) => Promise<void>
+  register: (userData: any) => Promise<RegisterResponse>
+  verifyEmailCode: (code: string, email: string) => Promise<any>
+  resendVerificationCode: (email: string) => Promise<any>
   logout: () => void
   refreshUser: () => Promise<void>
   refreshTokenBalance: () => Promise<void>
@@ -104,13 +106,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: any) => {
     try {
       const response = await authService.register(userData)
+      // For email verification flow, return the response to handle verification
+      return response
+    } catch (error) {
+      console.error("Registration failed:", error)
+      throw error
+    }
+  }
+
+  const verifyEmailCode = async (code: string, email: string) => {
+    try {
+      const response = await authService.verifyEmailCode(code, email)
       if (response) {
         setAccessToken(response.access_token)
         setUser(response.user)
         await refreshTokenBalance()
       }
+      return response
     } catch (error) {
-      console.error("Registration failed:", error)
+      console.error("Email verification failed:", error)
+      throw error
+    }
+  }
+
+  const resendVerificationCode = async (email: string) => {
+    try {
+      const response = await authService.resendVerificationCode(email)
+      return response
+    } catch (error) {
+      console.error("Resend verification code failed:", error)
       throw error
     }
   }
@@ -132,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const user = await usersService.getCurrentUserProfile(true)
-      console.log(user, 'the user data is fetched')
+      console.log(user, "the user data is fetched")
       if (user) setUser(user)
     } catch (error) {
       console.error("Failed to refresh user:", error)
@@ -158,6 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken,
     login,
     register,
+    verifyEmailCode,
+    resendVerificationCode,
     logout,
     refreshUser,
     refreshTokenBalance,
