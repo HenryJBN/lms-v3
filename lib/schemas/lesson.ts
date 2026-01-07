@@ -19,6 +19,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"]
+const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/webm"]
 const ALLOWED_DOCUMENT_TYPES = [
   "application/pdf",
   "application/msword",
@@ -62,6 +63,16 @@ export const videoFileSchema = z
   )
   .refine((file) => ALLOWED_VIDEO_TYPES.includes(file.type), {
     message: `Only ${ALLOWED_VIDEO_TYPES.join(", ")} files are allowed for videos`,
+  })
+
+export const audioFileSchema = z
+  .instanceof(File)
+  .refine(
+    (file) => file.size <= MAX_VIDEO_SIZE, // Use same size limit as video for now
+    `Audio size must be under ${MAX_VIDEO_SIZE / (1024 * 1024)}MB`
+  )
+  .refine((file) => ALLOWED_AUDIO_TYPES.includes(file.type), {
+    message: `Only ${ALLOWED_AUDIO_TYPES.join(", ")} files are allowed for audio`,
   })
 
 export const attachmentFileSchema = z
@@ -115,11 +126,15 @@ export const LessonCreateSchema = z.object({
 
   is_preview: z.boolean().default(false),
 
+  // Media fields (type-specific)
   video_url: z.string().url("Please enter a valid video URL").optional().or(z.literal("")),
-
   video_file: videoFileSchema.optional(),
+  audio_url: z.string().url("Please enter a valid audio URL").optional().or(z.literal("")),
+  audio_file: audioFileSchema.optional(),
+  image_files: z.array(imageFileSchema).optional(),
+  image_urls: z.array(z.string().url("Please enter valid image URLs")).optional(),
 
-  // File attachments
+  // File attachments (supplementary materials)
   thumbnail: imageFileSchema.optional(),
   attachments: z.array(attachmentFileSchema).optional(),
 })
@@ -146,8 +161,10 @@ export const LessonUpdateSchema = LessonCreateSchema.partial().extend({
   attachments: z.array(z.string()).or(z.array(attachmentFileSchema)).optional(), // Allow URLs or Files
 })
 
-// Video provision type enum
+// Media provision type enums
 export const VideoProvisionTypeSchema = z.enum(["url", "upload"])
+export const AudioProvisionTypeSchema = z.enum(["url", "upload"])
+export const ImageProvisionTypeSchema = z.enum(["url", "upload"])
 
 // Form-specific schema (for React Hook Form)
 export const LessonCreateFormSchema = z
@@ -192,11 +209,18 @@ export const LessonCreateFormSchema = z
 
     isPreview: z.boolean().default(false),
 
+    // Media provision types (conditional based on lesson type)
     videoProvisionType: VideoProvisionTypeSchema.default("url"),
+    audioProvisionType: AudioProvisionTypeSchema.default("url"),
+    imageProvisionType: ImageProvisionTypeSchema.default("url"),
 
+    // Media URLs and files
     videoUrl: z.string().url("Please enter a valid video URL").optional().or(z.literal("")),
-
     videoFile: videoFileSchema.optional(),
+    audioUrl: z.string().url("Please enter a valid audio URL").optional().or(z.literal("")),
+    audioFile: audioFileSchema.optional(),
+    imageUrls: z.array(z.string().url("Please enter valid image URLs")).optional(),
+    imageFiles: z.array(imageFileSchema).optional(),
 
     hasQuiz: z.boolean().default(false),
 
@@ -209,23 +233,75 @@ export const LessonCreateFormSchema = z
       .optional()
       .or(z.literal("")),
   })
-  .refine(
-    (data) => {
-      // Ensure video content is provided for video lessons based on provision type
-      if (data.type === "video") {
+  .superRefine((data, ctx) => {
+    // Validate media content based on lesson type
+    switch (data.type) {
+      case "video":
         if (data.videoProvisionType === "url") {
-          return data.videoUrl && data.videoUrl.trim() !== ""
+          if (!data.videoUrl || data.videoUrl.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Video URL is required for video lessons",
+              path: ["videoUrl"],
+            })
+          }
         } else if (data.videoProvisionType === "upload") {
-          return data.videoFile !== undefined
+          if (!data.videoFile) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Video file is required for video lessons",
+              path: ["videoFile"],
+            })
+          }
         }
-      }
-      return true
-    },
-    {
-      message: "Please provide video content based on your selected provision type",
-      path: ["videoUrl"], // Error will show on videoUrl field
+        break
+
+      case "audio":
+        if (data.audioProvisionType === "url") {
+          if (!data.audioUrl || data.audioUrl.trim() === "") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Audio URL is required for audio lessons",
+              path: ["audioUrl"],
+            })
+          }
+        } else if (data.audioProvisionType === "upload") {
+          if (!data.audioFile) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Audio file is required for audio lessons",
+              path: ["audioFile"],
+            })
+          }
+        }
+        break
+
+      case "image":
+        if (data.imageProvisionType === "url") {
+          if (!data.imageUrls || data.imageUrls.length === 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "At least one image URL is required for image lessons",
+              path: ["imageUrls"],
+            })
+          }
+        } else if (data.imageProvisionType === "upload") {
+          if (!data.imageFiles || data.imageFiles.length === 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "At least one image file is required for image lessons",
+              path: ["imageFiles"],
+            })
+          }
+        }
+        break
+
+      case "text":
+        // Text lessons don't require media, only content is optional but recommended
+        // We could add validation here if content is required for text lessons
+        break
     }
-  )
+  })
 
 // Export TypeScript types
 export type LessonCreate = z.infer<typeof LessonCreateSchema>

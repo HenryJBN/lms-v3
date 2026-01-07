@@ -32,6 +32,8 @@ class CourseLevel(str, Enum):
 class LessonType(str, Enum):
     video = "video"
     text = "text"
+    audio = "audio"
+    image = "image"
     quiz = "quiz"
     assignment = "assignment"
     live_session = "live_session"

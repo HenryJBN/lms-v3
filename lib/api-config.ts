@@ -1,6 +1,18 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export const REQUEST_TIMEOUT = 10000
+
+export const COOKIE_NAMES = {
+  userId: "user_id",
+  refreshToken: "refresh_token",
+}
+
+export const COOKIE_OPTIONS = {
+  path: "/",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 30 * 24 * 60 * 60, // 30 days
+}
 export const API_ENDPOINTS = {
   // Auth endpoints
   login: "/api/auth/login",

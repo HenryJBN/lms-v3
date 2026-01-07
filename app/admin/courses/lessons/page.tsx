@@ -98,15 +98,27 @@ export default function LessonsManagement() {
   // Add lesson dialog state
   const [isAddLessonOpen, setIsAddLessonOpen] = useState(false)
   const [videoProvisionType, setVideoProvisionType] = useState<"url" | "upload">("url")
-  const [selectedFileName, setSelectedFileName] = useState<string>("")
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [audioProvisionType, setAudioProvisionType] = useState<"url" | "upload">("url")
+  const [imageProvisionType, setImageProvisionType] = useState<"url" | "upload">("url")
+  const [selectedVideoFileName, setSelectedVideoFileName] = useState<string>("")
+  const [selectedAudioFileName, setSelectedAudioFileName] = useState<string>("")
+  const [selectedImageFileNames, setSelectedImageFileNames] = useState<string[]>([])
+  const videoFileInputRef = useRef<HTMLInputElement>(null)
+  const audioFileInputRef = useRef<HTMLInputElement>(null)
+  const imageFileInputRef = useRef<HTMLInputElement>(null)
 
   // Edit lesson dialog state
   const [isEditLessonOpen, setIsEditLessonOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<any>(null)
   const [editVideoProvisionType, setEditVideoProvisionType] = useState<"url" | "upload">("url")
-  const [editSelectedFileName, setEditSelectedFileName] = useState<string>("")
-  const editFileInputRef = useRef<HTMLInputElement>(null)
+  const [editAudioProvisionType, setEditAudioProvisionType] = useState<"url" | "upload">("url")
+  const [editImageProvisionType, setEditImageProvisionType] = useState<"url" | "upload">("url")
+  const [editSelectedVideoFileName, setEditSelectedVideoFileName] = useState<string>("")
+  const [editSelectedAudioFileName, setEditSelectedAudioFileName] = useState<string>("")
+  const [editSelectedImageFileNames, setEditSelectedImageFileNames] = useState<string[]>([])
+  const editVideoFileInputRef = useRef<HTMLInputElement>(null)
+  const editAudioFileInputRef = useRef<HTMLInputElement>(null)
+  const editImageFileInputRef = useRef<HTMLInputElement>(null)
 
   // Delete lesson dialog state
   const [isDeleteLessonOpen, setIsDeleteLessonOpen] = useState(false)
@@ -253,20 +265,55 @@ export default function LessonsManagement() {
   // Handle form submission
   const onSubmit = async (values: LessonCreateForm) => {
     try {
-      let videoUrl = values.videoUrl?.trim() || null
+      let mediaUrl = null
 
-      // If video file is provided, upload it first
-      if (values.videoFile) {
-        const formData = new FormData()
-        formData.append("file", values.videoFile)
+      // Handle media uploads based on lesson type
+      if (values.type === "video") {
+        if (values.videoFile) {
+          const formData = new FormData()
+          formData.append("file", values.videoFile)
 
-        // Upload video file using the proper FormData method
-        const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
-          "/api/lessons/upload-video-temp",
-          formData
-        )
+          const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
+            "/api/lessons/upload-video-temp",
+            formData
+          )
+          mediaUrl = uploadResponse.video_url
+        } else {
+          mediaUrl = values.videoUrl?.trim() || null
+        }
+      } else if (values.type === "audio") {
+        if (values.audioFile) {
+          const formData = new FormData()
+          formData.append("file", values.audioFile)
 
-        videoUrl = uploadResponse.video_url
+          const uploadResponse = await apiClient.postFormData<{ audio_url: string }>(
+            "/api/lessons/upload-audio-temp",
+            formData
+          )
+          mediaUrl = uploadResponse.audio_url
+        } else {
+          mediaUrl = values.audioUrl?.trim() || null
+        }
+      } else if (values.type === "image") {
+        if (values.imageFiles && values.imageFiles.length > 0) {
+          // For multiple images, upload them and get URLs
+          const imageUrls = []
+          for (const file of values.imageFiles) {
+            const formData = new FormData()
+            formData.append("file", file)
+
+            const uploadResponse = await apiClient.postFormData<{ image_url: string }>(
+              "/api/lessons/upload-image-temp",
+              formData
+            )
+            imageUrls.push(uploadResponse.image_url)
+          }
+          // Store the first image URL for now (database limitation)
+          mediaUrl = imageUrls[0] || null
+        } else if (values.imageUrls && values.imageUrls.length > 0) {
+          // Use the first provided URL
+          mediaUrl = values.imageUrls[0]
+        }
       }
 
       // Prepare lesson data
@@ -281,14 +328,14 @@ export default function LessonsManagement() {
         sort_order: values.order || 0,
         is_published: false, // Start as draft
         is_preview: values.isPreview,
-        video_url: videoUrl,
+        video_url: mediaUrl, // Store media URL in video_url field (temporary)
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
         // Assessment fields
         has_quiz: values.hasQuiz,
         has_assignment: values.hasAssignment,
-        passing_score: values.passingScore || 70,
+        passing_score: values.passingScore ? parseInt(values.passingScore.toString()) : 70,
       }
 
       // Make API call to create lesson
@@ -321,7 +368,9 @@ export default function LessonsManagement() {
         passingScore: "",
       })
       setVideoProvisionType("url")
-      setSelectedFileName("")
+      setSelectedVideoFileName("")
+      setSelectedAudioFileName("")
+      setSelectedImageFileNames([])
       setIsAddLessonOpen(false)
     } catch (error: any) {
       console.error("Failed to create lesson:", error)
@@ -488,7 +537,7 @@ export default function LessonsManagement() {
       passingScore: lesson.passingScore || "",
     })
 
-    setEditSelectedFileName("")
+    setEditSelectedVideoFileName("")
     setIsEditLessonOpen(true)
 
     // Fetch sections for the lesson's course
@@ -593,20 +642,55 @@ export default function LessonsManagement() {
     if (!editingLesson) return
 
     try {
-      let videoUrl = values.videoUrl?.trim() || null
+      let mediaUrl = null
 
-      // If video file is provided, upload it first
-      if (values.videoFile) {
-        const formData = new FormData()
-        formData.append("file", values.videoFile)
+      // Handle media uploads based on lesson type
+      if (values.type === "video") {
+        if (values.videoFile) {
+          const formData = new FormData()
+          formData.append("file", values.videoFile)
 
-        // Upload video file using the proper FormData method
-        const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
-          `/api/lessons/${editingLesson.id}/upload-video`,
-          formData
-        )
+          const uploadResponse = await apiClient.postFormData<{ video_url: string }>(
+            `/api/lessons/${editingLesson.id}/upload-video`,
+            formData
+          )
+          mediaUrl = uploadResponse.video_url
+        } else {
+          mediaUrl = values.videoUrl?.trim() || null
+        }
+      } else if (values.type === "audio") {
+        if (values.audioFile) {
+          const formData = new FormData()
+          formData.append("file", values.audioFile)
 
-        videoUrl = uploadResponse.video_url
+          const uploadResponse = await apiClient.postFormData<{ audio_url: string }>(
+            `/api/lessons/${editingLesson.id}/upload-audio`,
+            formData
+          )
+          mediaUrl = uploadResponse.audio_url
+        } else {
+          mediaUrl = values.audioUrl?.trim() || null
+        }
+      } else if (values.type === "image") {
+        if (values.imageFiles && values.imageFiles.length > 0) {
+          // For multiple images, upload them and get URLs
+          const imageUrls = []
+          for (const file of values.imageFiles) {
+            const formData = new FormData()
+            formData.append("file", file)
+
+            const uploadResponse = await apiClient.postFormData<{ image_url: string }>(
+              `/api/lessons/${editingLesson.id}/upload-images`,
+              formData
+            )
+            imageUrls.push(uploadResponse.image_url)
+          }
+          // Store the first image URL for now (database limitation)
+          mediaUrl = imageUrls[0] || null
+        } else if (values.imageUrls && values.imageUrls.length > 0) {
+          // Use the first provided URL
+          mediaUrl = values.imageUrls[0]
+        }
       }
 
       // Prepare lesson update data
@@ -620,14 +704,14 @@ export default function LessonsManagement() {
         type: values.type,
         sort_order: values.order ? parseInt(values.order) : 0,
         is_preview: values.isPreview,
-        video_url: videoUrl,
+        video_url: mediaUrl,
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
         // Assessment fields
         has_quiz: values.hasQuiz,
         has_assignment: values.hasAssignment,
-        passing_score: values.passingScore || 70,
+        passing_score: values.passingScore ? parseInt(values.passingScore.toString()) : 70,
       }
 
       // Make API call to update lesson
@@ -645,7 +729,9 @@ export default function LessonsManagement() {
       editForm.reset()
       setEditingLesson(null)
       setEditVideoProvisionType("url")
-      setEditSelectedFileName("")
+      setEditSelectedVideoFileName("")
+      setEditSelectedAudioFileName("")
+      setEditSelectedImageFileNames([])
       setIsEditLessonOpen(false)
     } catch (error: any) {
       console.error("Failed to update lesson:", error)
@@ -1023,121 +1109,352 @@ export default function LessonsManagement() {
                               </TabsContent>
 
                               <TabsContent value="media" className="space-y-4 mt-4">
-                                <div className="space-y-3">
-                                  <FormItem>
-                                    <FormLabel>Video Provision Type</FormLabel>
-                                    <Select
-                                      value={videoProvisionType}
-                                      onValueChange={(value: "url" | "upload") => {
-                                        setVideoProvisionType(value)
-                                        form.setValue("videoProvisionType", value)
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Choose how to provide video" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="url">Video URL</SelectItem>
-                                        <SelectItem value="upload">Upload Video File</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormItem>
-
-                                  {/* Video URL Input - Always rendered */}
-                                  <FormField
-                                    control={form.control}
-                                    name="videoUrl"
-                                    render={({ field }) => (
-                                      <FormItem
-                                        className={videoProvisionType === "upload" ? "hidden" : ""}
-                                      >
-                                        <FormLabel>Video URL</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="https://..."
-                                            {...field}
-                                            disabled={videoProvisionType === "upload"}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
+                                {/* Dynamic media content based on lesson type */}
+                                {form.watch("type") === "video" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Video Provision Type</FormLabel>
+                                        <Select
+                                          value={videoProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setVideoProvisionType(value)
+                                            form.setValue("videoProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide video" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Video URL</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Video File
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
                                       </FormItem>
-                                    )}
-                                  />
 
-                                  {/* Video File Input - Custom display with hidden native input */}
-                                  <FormField
-                                    control={form.control}
-                                    name="videoFile"
-                                    render={({ field }) => (
-                                      <FormItem
-                                        className={videoProvisionType === "url" ? "hidden" : ""}
-                                      >
-                                        <FormLabel>Upload Video File</FormLabel>
-                                        <FormControl>
-                                          <div className="space-y-2">
-                                            {/* Hidden native file input */}
-                                            <Input
-                                              ref={fileInputRef}
-                                              type="file"
-                                              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
-                                              onChange={(e) => {
-                                                const file = e.target.files?.[0]
-                                                field.onChange(file || undefined)
-                                                setSelectedFileName(file?.name || "")
-                                              }}
-                                              disabled={videoProvisionType === "url"}
-                                              className="hidden"
-                                            />
-                                            {/* Custom display */}
-                                            <div className="flex items-center gap-2">
+                                      <FormField
+                                        control={form.control}
+                                        name="videoUrl"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              videoProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Video URL</FormLabel>
+                                            <FormControl>
                                               <Input
-                                                type="text"
-                                                value={selectedFileName || ""}
-                                                placeholder="No file selected"
-                                                readOnly
-                                                className="flex-1"
+                                                placeholder="https://..."
+                                                {...field}
+                                                disabled={videoProvisionType === "upload"}
                                               />
-                                              <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={videoProvisionType === "url"}
-                                              >
-                                                Browse
-                                              </Button>
-                                              {selectedFileName && (
-                                                <Button
-                                                  type="button"
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    field.onChange(undefined)
-                                                    setSelectedFileName("")
-                                                    if (fileInputRef.current) {
-                                                      fileInputRef.current.value = ""
-                                                    }
-                                                  }}
-                                                >
-                                                  Clear
-                                                </Button>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
 
-                                <div className="grid gap-2">
-                                  <Label htmlFor="thumbnail">Thumbnail</Label>
-                                  <Input id="thumbnail" type="file" accept="image/*" />
-                                </div>
-                                <div className="grid gap-2">
-                                  <Label htmlFor="attachments">Attachments</Label>
-                                  <Input id="attachments" type="file" multiple />
+                                      <FormField
+                                        control={form.control}
+                                        name="videoFile"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={videoProvisionType === "url" ? "hidden" : ""}
+                                          >
+                                            <FormLabel>Upload Video File</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={videoFileInputRef}
+                                                  type="file"
+                                                  accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                                  onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    field.onChange(file || undefined)
+                                                    setSelectedVideoFileName(file?.name || "")
+                                                  }}
+                                                  disabled={videoProvisionType === "url"}
+                                                  className="hidden"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                  <Input
+                                                    type="text"
+                                                    value={selectedVideoFileName || ""}
+                                                    placeholder="No file selected"
+                                                    readOnly
+                                                    className="flex-1"
+                                                  />
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      videoFileInputRef.current?.click()
+                                                    }
+                                                    disabled={videoProvisionType === "url"}
+                                                  >
+                                                    Browse
+                                                  </Button>
+                                                  {selectedVideoFileName && (
+                                                    <Button
+                                                      type="button"
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => {
+                                                        field.onChange(undefined)
+                                                        setSelectedVideoFileName("")
+                                                        if (videoFileInputRef.current) {
+                                                          videoFileInputRef.current.value = ""
+                                                        }
+                                                      }}
+                                                    >
+                                                      Clear
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {form.watch("type") === "audio" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Audio Provision Type</FormLabel>
+                                        <Select
+                                          value={audioProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setAudioProvisionType(value)
+                                            form.setValue("audioProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide audio" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Audio URL</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Audio File
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+
+                                      <FormField
+                                        control={form.control}
+                                        name="audioUrl"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              audioProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Audio URL</FormLabel>
+                                            <FormControl>
+                                              <Input
+                                                placeholder="https://..."
+                                                {...field}
+                                                disabled={audioProvisionType === "upload"}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={form.control}
+                                        name="audioFile"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={audioProvisionType === "url" ? "hidden" : ""}
+                                          >
+                                            <FormLabel>Upload Audio File</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={audioFileInputRef}
+                                                  type="file"
+                                                  accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
+                                                  onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    field.onChange(file || undefined)
+                                                    setSelectedAudioFileName(file?.name || "")
+                                                  }}
+                                                  disabled={audioProvisionType === "url"}
+                                                  className="hidden"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                  <Input
+                                                    type="text"
+                                                    value={selectedAudioFileName || ""}
+                                                    placeholder="No file selected"
+                                                    readOnly
+                                                    className="flex-1"
+                                                  />
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      audioFileInputRef.current?.click()
+                                                    }
+                                                    disabled={audioProvisionType === "url"}
+                                                  >
+                                                    Browse
+                                                  </Button>
+                                                  {selectedAudioFileName && (
+                                                    <Button
+                                                      type="button"
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => {
+                                                        field.onChange(undefined)
+                                                        setSelectedAudioFileName("")
+                                                        if (audioFileInputRef.current) {
+                                                          audioFileInputRef.current.value = ""
+                                                        }
+                                                      }}
+                                                    >
+                                                      Clear
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {form.watch("type") === "image" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Image Provision Type</FormLabel>
+                                        <Select
+                                          value={imageProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setImageProvisionType(value)
+                                            form.setValue("imageProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide images" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Image URLs</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Image Files
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+
+                                      <FormField
+                                        control={form.control}
+                                        name="imageUrls"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              imageProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Image URLs (one per line)</FormLabel>
+                                            <FormControl>
+                                              <Textarea
+                                                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                                                {...field}
+                                                disabled={imageProvisionType === "upload"}
+                                                value={field.value?.join("\n") || ""}
+                                                onChange={(e) => {
+                                                  const urls = e.target.value
+                                                    .split("\n")
+                                                    .filter((url) => url.trim())
+                                                  field.onChange(urls)
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={form.control}
+                                        name="imageFiles"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={imageProvisionType === "url" ? "hidden" : ""}
+                                          >
+                                            <FormLabel>Upload Image Files</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={imageFileInputRef}
+                                                  type="file"
+                                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                                  multiple
+                                                  onChange={(e) => {
+                                                    const files = Array.from(e.target.files || [])
+                                                    field.onChange(files)
+                                                    setSelectedImageFileNames(
+                                                      files.map((f) => f.name)
+                                                    )
+                                                  }}
+                                                  disabled={imageProvisionType === "url"}
+                                                />
+                                                {selectedImageFileNames.length > 0 && (
+                                                  <div className="text-sm text-muted-foreground">
+                                                    Selected: {selectedImageFileNames.join(", ")}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {form.watch("type") === "text" && (
+                                  <div className="text-sm text-muted-foreground p-4 bg-muted rounded-lg">
+                                    Text lessons don't require primary media content. The lesson
+                                    content will be displayed directly to students.
+                                  </div>
+                                )}
+
+                                {/* Common fields for all lesson types */}
+                                <div className="grid gap-4 pt-4 border-t">
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                                    <Input id="thumbnail" type="file" accept="image/*" />
+                                    <p className="text-xs text-muted-foreground">
+                                      Optional thumbnail image for the lesson
+                                    </p>
+                                  </div>
+
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="attachments">Additional Attachments</Label>
+                                    <Input id="attachments" type="file" multiple />
+                                    <p className="text-xs text-muted-foreground">
+                                      Supplementary files (PDFs, documents, etc.) that students can
+                                      download
+                                    </p>
+                                  </div>
                                 </div>
                               </TabsContent>
 
@@ -1443,123 +1760,359 @@ export default function LessonsManagement() {
                               </TabsContent>
 
                               <TabsContent value="media" className="space-y-4 mt-4">
-                                <div className="space-y-3">
-                                  <FormItem>
-                                    <FormLabel>Video Provision Type</FormLabel>
-                                    <Select
-                                      value={editVideoProvisionType}
-                                      onValueChange={(value: "url" | "upload") => {
-                                        setEditVideoProvisionType(value)
-                                        editForm.setValue("videoProvisionType", value)
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Choose how to provide video" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="url">Video URL</SelectItem>
-                                        <SelectItem value="upload">Upload Video File</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormItem>
-
-                                  {/* Video URL Input - Always rendered */}
-                                  <FormField
-                                    control={editForm.control}
-                                    name="videoUrl"
-                                    render={({ field }) => (
-                                      <FormItem
-                                        className={
-                                          editVideoProvisionType === "upload" ? "hidden" : ""
-                                        }
-                                      >
-                                        <FormLabel>Video URL</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="https://..."
-                                            {...field}
-                                            disabled={editVideoProvisionType === "upload"}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
+                                {/* Dynamic media content based on lesson type */}
+                                {editForm.watch("type") === "video" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Video Provision Type</FormLabel>
+                                        <Select
+                                          value={editVideoProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setEditVideoProvisionType(value)
+                                            editForm.setValue("videoProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide video" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Video URL</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Video File
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
                                       </FormItem>
-                                    )}
-                                  />
 
-                                  {/* Video File Input - Custom display with hidden native input */}
-                                  <FormField
-                                    control={editForm.control}
-                                    name="videoFile"
-                                    render={({ field }) => (
-                                      <FormItem
-                                        className={editVideoProvisionType === "url" ? "hidden" : ""}
-                                      >
-                                        <FormLabel>Upload Video File</FormLabel>
-                                        <FormControl>
-                                          <div className="space-y-2">
-                                            {/* Hidden native file input */}
-                                            <Input
-                                              ref={editFileInputRef}
-                                              type="file"
-                                              accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
-                                              onChange={(e) => {
-                                                const file = e.target.files?.[0]
-                                                field.onChange(file || undefined)
-                                                setEditSelectedFileName(file?.name || "")
-                                              }}
-                                              disabled={editVideoProvisionType === "url"}
-                                              className="hidden"
-                                            />
-                                            {/* Custom display */}
-                                            <div className="flex items-center gap-2">
+                                      <FormField
+                                        control={editForm.control}
+                                        name="videoUrl"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editVideoProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Video URL</FormLabel>
+                                            <FormControl>
                                               <Input
-                                                type="text"
-                                                value={editSelectedFileName || ""}
-                                                placeholder="No file selected"
-                                                readOnly
-                                                className="flex-1"
+                                                placeholder="https://..."
+                                                {...field}
+                                                disabled={editVideoProvisionType === "upload"}
                                               />
-                                              <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => editFileInputRef.current?.click()}
-                                                disabled={editVideoProvisionType === "url"}
-                                              >
-                                                Browse
-                                              </Button>
-                                              {editSelectedFileName && (
-                                                <Button
-                                                  type="button"
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    field.onChange(undefined)
-                                                    setEditSelectedFileName("")
-                                                    if (editFileInputRef.current) {
-                                                      editFileInputRef.current.value = ""
-                                                    }
-                                                  }}
-                                                >
-                                                  Clear
-                                                </Button>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
 
-                                <div className="grid gap-2">
-                                  <Label htmlFor="edit-thumbnail">Thumbnail</Label>
-                                  <Input id="edit-thumbnail" type="file" accept="image/*" />
-                                </div>
-                                <div className="grid gap-2">
-                                  <Label htmlFor="edit-attachments">Attachments</Label>
-                                  <Input id="edit-attachments" type="file" multiple />
+                                      <FormField
+                                        control={editForm.control}
+                                        name="videoFile"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editVideoProvisionType === "url" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Upload Video File</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={editVideoFileInputRef}
+                                                  type="file"
+                                                  accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                                  onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    field.onChange(file || undefined)
+                                                    setEditSelectedVideoFileName(file?.name || "")
+                                                  }}
+                                                  disabled={editVideoProvisionType === "url"}
+                                                  className="hidden"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                  <Input
+                                                    type="text"
+                                                    value={editSelectedVideoFileName || ""}
+                                                    placeholder="No file selected"
+                                                    readOnly
+                                                    className="flex-1"
+                                                  />
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      editVideoFileInputRef.current?.click()
+                                                    }
+                                                    disabled={editVideoProvisionType === "url"}
+                                                  >
+                                                    Browse
+                                                  </Button>
+                                                  {editSelectedVideoFileName && (
+                                                    <Button
+                                                      type="button"
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => {
+                                                        field.onChange(undefined)
+                                                        setEditSelectedVideoFileName("")
+                                                        if (editVideoFileInputRef.current) {
+                                                          editVideoFileInputRef.current.value = ""
+                                                        }
+                                                      }}
+                                                    >
+                                                      Clear
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {editForm.watch("type") === "audio" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Audio Provision Type</FormLabel>
+                                        <Select
+                                          value={editAudioProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setEditAudioProvisionType(value)
+                                            editForm.setValue("audioProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide audio" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Audio URL</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Audio File
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+
+                                      <FormField
+                                        control={editForm.control}
+                                        name="audioUrl"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editAudioProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Audio URL</FormLabel>
+                                            <FormControl>
+                                              <Input
+                                                placeholder="https://..."
+                                                {...field}
+                                                disabled={editAudioProvisionType === "upload"}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={editForm.control}
+                                        name="audioFile"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editAudioProvisionType === "url" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Upload Audio File</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={editAudioFileInputRef}
+                                                  type="file"
+                                                  accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"
+                                                  onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    field.onChange(file || undefined)
+                                                    setEditSelectedAudioFileName(file?.name || "")
+                                                  }}
+                                                  disabled={editAudioProvisionType === "url"}
+                                                  className="hidden"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                  <Input
+                                                    type="text"
+                                                    value={editSelectedAudioFileName || ""}
+                                                    placeholder="No file selected"
+                                                    readOnly
+                                                    className="flex-1"
+                                                  />
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                      editAudioFileInputRef.current?.click()
+                                                    }
+                                                    disabled={editAudioProvisionType === "url"}
+                                                  >
+                                                    Browse
+                                                  </Button>
+                                                  {editSelectedAudioFileName && (
+                                                    <Button
+                                                      type="button"
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={() => {
+                                                        field.onChange(undefined)
+                                                        setEditSelectedAudioFileName("")
+                                                        if (editAudioFileInputRef.current) {
+                                                          editAudioFileInputRef.current.value = ""
+                                                        }
+                                                      }}
+                                                    >
+                                                      Clear
+                                                    </Button>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {editForm.watch("type") === "image" && (
+                                  <div className="space-y-4">
+                                    <div className="space-y-3">
+                                      <FormItem>
+                                        <FormLabel>Image Provision Type</FormLabel>
+                                        <Select
+                                          value={editImageProvisionType}
+                                          onValueChange={(value: "url" | "upload") => {
+                                            setEditImageProvisionType(value)
+                                            editForm.setValue("imageProvisionType", value)
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Choose how to provide images" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="url">Image URLs</SelectItem>
+                                            <SelectItem value="upload">
+                                              Upload Image Files
+                                            </SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormItem>
+
+                                      <FormField
+                                        control={editForm.control}
+                                        name="imageUrls"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editImageProvisionType === "upload" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Image URLs (one per line)</FormLabel>
+                                            <FormControl>
+                                              <Textarea
+                                                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                                                {...field}
+                                                disabled={editImageProvisionType === "upload"}
+                                                value={field.value?.join("\n") || ""}
+                                                onChange={(e) => {
+                                                  const urls = e.target.value
+                                                    .split("\n")
+                                                    .filter((url) => url.trim())
+                                                  field.onChange(urls)
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={editForm.control}
+                                        name="imageFiles"
+                                        render={({ field }) => (
+                                          <FormItem
+                                            className={
+                                              editImageProvisionType === "url" ? "hidden" : ""
+                                            }
+                                          >
+                                            <FormLabel>Upload Image Files</FormLabel>
+                                            <FormControl>
+                                              <div className="space-y-2">
+                                                <Input
+                                                  ref={editImageFileInputRef}
+                                                  type="file"
+                                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                                  multiple
+                                                  onChange={(e) => {
+                                                    const files = Array.from(e.target.files || [])
+                                                    field.onChange(files)
+                                                    setEditSelectedImageFileNames(
+                                                      files.map((f) => f.name)
+                                                    )
+                                                  }}
+                                                  disabled={editImageProvisionType === "url"}
+                                                />
+                                                {editSelectedImageFileNames.length > 0 && (
+                                                  <div className="text-sm text-muted-foreground">
+                                                    Selected:{" "}
+                                                    {editSelectedImageFileNames.join(", ")}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {editForm.watch("type") === "text" && (
+                                  <div className="text-sm text-muted-foreground p-4 bg-muted rounded-lg">
+                                    Text lessons don't require primary media content. The lesson
+                                    content will be displayed directly to students.
+                                  </div>
+                                )}
+
+                                {/* Common fields for all lesson types */}
+                                <div className="grid gap-4 pt-4 border-t">
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-thumbnail">Thumbnail Image</Label>
+                                    <Input id="edit-thumbnail" type="file" accept="image/*" />
+                                    <p className="text-xs text-muted-foreground">
+                                      Optional thumbnail image for the lesson
+                                    </p>
+                                  </div>
+
+                                  <div className="grid gap-2">
+                                    <Label htmlFor="edit-attachments">Additional Attachments</Label>
+                                    <Input id="edit-attachments" type="file" multiple />
+                                    <p className="text-xs text-muted-foreground">
+                                      Supplementary files (PDFs, documents, etc.) that students can
+                                      download
+                                    </p>
+                                  </div>
                                 </div>
                               </TabsContent>
 
@@ -1726,6 +2279,7 @@ export default function LessonsManagement() {
                       <SelectItem value="video">Video</SelectItem>
                       <SelectItem value="text">Text</SelectItem>
                       <SelectItem value="audio">Audio</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={selectedStatus} onValueChange={setSelectedStatus}>

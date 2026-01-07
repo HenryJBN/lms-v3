@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -35,6 +35,7 @@ import {
   LogOut,
   User,
 } from "lucide-react"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 interface SidebarProps {
   className?: string
@@ -203,10 +204,17 @@ function Sidebar({ className }: SidebarProps) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Hide sidebar on login and forgot password pages
   const hideSidebar = pathname === "/admin/login" || pathname === "/admin/forgot-password"
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/admin/login")
+  }
 
   if (hideSidebar) {
     return <div className="min-h-screen bg-background">{children}</div>
@@ -282,7 +290,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
               </DropdownMenuItem>

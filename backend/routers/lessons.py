@@ -13,7 +13,7 @@ from models.schemas import (
     PaginationParams, PaginatedResponse
 )
 from middleware.auth import get_current_active_user, require_instructor_or_admin
-from utils.file_upload import upload_video, upload_file
+from utils.file_upload import upload_video, upload_image, upload_file
 
 router = APIRouter()
 
@@ -532,6 +532,151 @@ async def upload_lesson_video(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload video: {str(e)}"
+        )
+
+@router.post("/upload-audio-temp")
+async def upload_audio_temp(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload audio file temporarily for lesson creation"""
+    try:
+        # Upload audio file using generic upload function with audio types
+        audio_result = await upload_file(file, "temp/audio")
+
+        return {"audio_url": audio_result["url"], "message": "Audio uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload audio: {str(e)}"
+        )
+
+@router.post("/{lesson_id}/upload-audio")
+async def upload_lesson_audio(
+    lesson_id: uuid.UUID,
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    # Check if lesson exists and user has permission
+    check_query = """
+        SELECT l.*, c.instructor_id
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        WHERE l.id = :lesson_id
+    """
+    lesson = await database.fetch_one(check_query, values={"lesson_id": lesson_id})
+
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found"
+        )
+
+    if current_user.role != "admin" and str(lesson.instructor_id) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to upload audio for this lesson"
+        )
+
+    # Upload audio file
+    try:
+        audio_result = await upload_file(file, f"lessons/{lesson_id}/audio")
+
+        # Update lesson with audio URL (using video_url field for now)
+        update_query = """
+            UPDATE lessons
+            SET video_url = :audio_url, updated_at = NOW()
+            WHERE id = :lesson_id
+            RETURNING *
+        """
+
+        updated_lesson = await database.fetch_one(update_query, values={
+            "audio_url": audio_result["url"],
+            "lesson_id": lesson_id
+        })
+
+        return {"audio_url": audio_result["url"], "message": "Audio uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload audio: {str(e)}"
+        )
+
+@router.post("/upload-image-temp")
+async def upload_image_temp(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload image file temporarily for lesson creation"""
+    try:
+        # Upload image file
+        image_result = await upload_image(file, "temp/images")
+
+        return {"image_url": image_result["url"], "message": "Image uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload image: {str(e)}"
+        )
+
+@router.post("/{lesson_id}/upload-images")
+async def upload_lesson_images(
+    lesson_id: uuid.UUID,
+    files: List[UploadFile] = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    # Check if lesson exists and user has permission
+    check_query = """
+        SELECT l.*, c.instructor_id
+        FROM lessons l
+        JOIN courses c ON l.course_id = c.id
+        WHERE l.id = :lesson_id
+    """
+    lesson = await database.fetch_one(check_query, values={"lesson_id": lesson_id})
+
+    if not lesson:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lesson not found"
+        )
+
+    if current_user.role != "admin" and str(lesson.instructor_id) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to upload images for this lesson"
+        )
+
+    # Upload image files
+    try:
+        uploaded_urls = []
+        for file in files:
+            image_result = await upload_image(file, f"lessons/{lesson_id}/images")
+            uploaded_urls.append(image_result["url"])
+
+        # For now, store the first image URL in video_url field
+        # TODO: Update database schema to support multiple image URLs
+        if uploaded_urls:
+            update_query = """
+                UPDATE lessons
+                SET video_url = :image_url, updated_at = NOW()
+                WHERE id = :lesson_id
+                RETURNING *
+            """
+
+            await database.fetch_one(update_query, values={
+                "image_url": uploaded_urls[0],  # Store first image URL
+                "lesson_id": lesson_id
+            })
+
+        return {"image_urls": uploaded_urls, "message": f"{len(uploaded_urls)} images uploaded successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload images: {str(e)}"
         )
 
 @router.post("/{lesson_id}/quizzes", response_model=QuizResponse)
