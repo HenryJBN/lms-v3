@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import AIChatAssistant from "@/components/ai-chat-assistant"
-import { courseService, type Course } from "@/lib/services/courses" // 👈 import your service
+import { courseService, type CourseReponse } from "@/lib/services/courses" // 👈 import your service
 
 type Lesson = {
   id: string
@@ -43,7 +43,7 @@ export default function CoursePage() {
   const params = useParams()
   const courseId = params?.courseId as string
 
-  const [course, setCourse] = useState<Course | null>(null)
+  const [course, setCourse] = useState<CourseReponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})

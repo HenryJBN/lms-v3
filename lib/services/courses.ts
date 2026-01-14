@@ -176,11 +176,11 @@ class CourseService {
   }
 
   /**
-   * ✅ Fetch single course details
+   * ✅ Fetch single course details by slug
    */
-  async getCourse(courseId: string): Promise<Course> {
+  async getCourse(courseSlug: string): Promise<CourseReponse> {
     try {
-      return await apiClient.get<Course>(`${API_ENDPOINTS.courses}/${courseId}`)
+      return await apiClient.get<CourseReponse>(`${API_ENDPOINTS.courses}/slug/${courseSlug}`)
     } catch (error) {
       console.error("❌ Failed to get course:", error)
       throw error

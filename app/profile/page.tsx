@@ -172,7 +172,12 @@ export default function ProfilePage() {
                   )}
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    <span>Joined {format(new Date(user.created_at), "MMMM yyyy")}</span>
+                    <span>
+                      Joined{" "}
+                      {user.created_at
+                        ? format(new Date(user.created_at), "MMMM yyyy")
+                        : "Recently"}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-2">
