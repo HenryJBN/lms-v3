@@ -74,7 +74,8 @@ async def get_courses(
     
     # Get courses with instructor info
     query = f"""
-        SELECT c.*, u.first_name as instructor_first_name, u.last_name as instructor_last_name,
+        SELECT c.*,
+            c.enrollment_count AS total_students, u.first_name as instructor_first_name, u.last_name as instructor_last_name,
                cat.name as category_name
         FROM courses c
         LEFT JOIN users u ON c.instructor_id = u.id
@@ -97,7 +98,7 @@ async def get_courses(
 @router.get("/featured/", response_model=List[CourseResponse])
 async def get_featured_courses():
     query = """
-        SELECT * FROM courses 
+        SELECT *, enrollment_count AS total_students FROM courses 
         WHERE is_featured = true 
         ORDER BY title
     """
@@ -115,6 +116,7 @@ async def get_course(slug: str):
     query = """
         SELECT
             c.*,
+            c.enrollment_count AS total_students,
             u.first_name AS instructor_first_name,
             u.last_name AS instructor_last_name,
             cat.name AS category_name
@@ -139,6 +141,7 @@ async def get_course_by_id(course_id: uuid.UUID):
     query = """
         SELECT
             c.*,
+            c.enrollment_count AS total_students,
             u.first_name AS instructor_first_name,
             u.last_name AS instructor_last_name,
             cat.name AS category_name
@@ -211,7 +214,7 @@ async def update_course(
     current_user = Depends(require_instructor_or_admin)
 ):
     # Check if course exists and user has permission
-    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    check_query = "SELECT *, enrollment_count AS total_students FROM courses WHERE id = :course_id"
     existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
     
     if not existing_course:
@@ -269,7 +272,7 @@ async def delete_course(
     current_user = Depends(require_instructor_or_admin)
 ):
     # Check if course exists and user has permission
-    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    check_query = "SELECT *, enrollment_count AS total_students FROM courses WHERE id = :course_id"
     existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
     
     if not existing_course:
@@ -314,7 +317,7 @@ async def publish_course(
     current_user = Depends(require_instructor_or_admin)
 ):
     # Check if course exists and user has permission
-    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    check_query = "SELECT *, enrollment_count AS total_students FROM courses WHERE id = :course_id"
     existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
     
     if not existing_course:
@@ -360,7 +363,7 @@ async def unpublish_course(
     current_user = Depends(require_instructor_or_admin)
 ):
     # Check if course exists and user has permission
-    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    check_query = "SELECT *, enrollment_count AS total_students FROM courses WHERE id = :course_id"
     existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
 
     if not existing_course:
@@ -444,7 +447,7 @@ async def get_course_stats(
     current_user = Depends(require_instructor_or_admin)
 ):
     # Check if course exists and user has permission
-    check_query = "SELECT * FROM courses WHERE id = :course_id"
+    check_query = "SELECT *, enrollment_count AS total_students FROM courses WHERE id = :course_id"
     existing_course = await database.fetch_one(check_query, values={"course_id": course_id})
     
     if not existing_course:
