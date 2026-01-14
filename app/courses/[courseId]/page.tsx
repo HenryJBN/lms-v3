@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -23,6 +23,9 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import AIChatAssistant from "@/components/ai-chat-assistant"
 import { courseService, type CourseReponse } from "@/lib/services/courses" // 👈 import your service
+import { enrollmentsService } from "@/lib/services/enrollments"
+import { useAuth } from "@/lib/contexts/auth-context"
+import { useToast } from "@/hooks/use-toast"
 
 type Lesson = {
   id: string
@@ -41,12 +44,18 @@ type Module = {
 
 export default function CoursePage() {
   const params = useParams()
+  const router = useRouter()
   const courseId = params?.courseId as string
 
   const [course, setCourse] = useState<CourseReponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
+  const [isEnrolling, setIsEnrolling] = useState(false)
+  const [isEnrolled, setIsEnrolled] = useState(false)
+
+  const { isAuthenticated } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -56,6 +65,22 @@ export default function CoursePage() {
         console.log(`One course Data ${response}`)
 
         setCourse(response)
+
+        // Check if user is enrolled in this course
+        if (isAuthenticated && response?.id) {
+          try {
+            const enrollments = await enrollmentsService.getUserEnrollments()
+            console.log(enrollments, "Enrollmentszzzzz")
+            const isUserEnrolled = enrollments.some(
+              (enrollment: any) =>
+                enrollment.course_id === response.id && enrollment.status === "active"
+            )
+            setIsEnrolled(isUserEnrolled)
+          } catch (error) {
+            console.error("Failed to check enrollment status:", error)
+          }
+        }
+
         // if (response?.modules?.length > 0) {
         //   setExpandedModules({ [response.modules[0].id]: true });
         // }
@@ -67,7 +92,7 @@ export default function CoursePage() {
       }
     }
     if (courseId) fetchCourse()
-  }, [courseId])
+  }, [courseId, isAuthenticated])
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => ({
@@ -78,6 +103,47 @@ export default function CoursePage() {
 
   const handlePurchaseCourse = () => {
     alert("Redirecting to payment gateway...")
+  }
+
+  const handleEnroll = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to enroll in courses.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!course) {
+      toast({
+        title: "Error",
+        description: "Course data not available.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsEnrolling(true)
+      await enrollmentsService.enrollInCourse(String(course.id))
+
+      toast({
+        title: "Enrollment Successful",
+        description: "You have been enrolled in the course!",
+      })
+
+      // Redirect to learn page after successful enrollment
+      router.push(`/learn/${course.id}`)
+    } catch (err: any) {
+      toast({
+        title: "Enrollment Failed",
+        description: err.message || "Failed to enroll in course.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsEnrolling(false)
+    }
   }
 
   if (loading)
@@ -109,12 +175,24 @@ export default function CoursePage() {
             />
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
               {canAccessCourse ? (
-                <Link href={`/learn/${course.id}`}>
-                  <Button size="lg" className="rounded-full" variant="default">
-                    <Play className="mr-2 h-4 w-4" />
-                    Continue Learning
+                isEnrolled ? (
+                  <Link href={`/learn/${course.id}`}>
+                    <Button size="lg" className="rounded-full" variant="default">
+                      <Play className="mr-2 h-4 w-4" />
+                      Continue Learning
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="rounded-full"
+                    variant="default"
+                    onClick={handleEnroll}
+                    disabled={isEnrolling}
+                  >
+                    {isEnrolling ? "Enrolling..." : "Enroll Now"}
                   </Button>
-                </Link>
+                )
               ) : (
                 <div className="text-center space-y-2">
                   <p className="text-white font-medium bg-black/50 px-4 py-2 rounded-md">

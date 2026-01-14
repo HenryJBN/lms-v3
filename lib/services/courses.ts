@@ -339,6 +339,103 @@ class CourseService {
       throw error
     }
   }
+
+  /**
+   * ✅ Fetch course lessons for learning
+   */
+  async getCourseLessons(courseId: string): Promise<any[]> {
+    try {
+      return await apiClient.get(`${API_ENDPOINTS.courses}/course/${courseId}/lessons`)
+    } catch (error) {
+      console.error("❌ Failed to get course lessons:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Fetch course sections
+   */
+  async getCourseSections(courseId: string): Promise<any[]> {
+    try {
+      return await apiClient.get(`${API_ENDPOINTS.courses}/sections/course/${courseId}`)
+    } catch (error) {
+      console.error("❌ Failed to get course sections:", error)
+      throw error
+    }
+  }
 }
 
 export const courseService = new CourseService()
+
+// Progress Service for handling user progress
+export interface UserProgress {
+  courseId: string
+  completedLessons: string[]
+  completedQuizzes: string[]
+  lastAccessedLessonId?: string
+}
+
+export interface LessonProgressUpdate {
+  progress_percentage?: number
+  time_spent?: number
+  last_position?: number
+  notes?: string
+}
+
+class ProgressService {
+  /**
+   * Get user progress for a course
+   */
+  async getCourseProgress(courseId: string): Promise<UserProgress> {
+    try {
+      const progress = await apiClient.get<UserProgress>(
+        `${API_ENDPOINTS.progress}/course/${courseId}`
+      )
+      return progress
+    } catch (error) {
+      console.error("❌ Failed to get course progress:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Update lesson progress
+   */
+  async updateLessonProgress(lessonId: string, progress: LessonProgressUpdate): Promise<any> {
+    try {
+      return await apiClient.put(`${API_ENDPOINTS.progress}/lesson/${lessonId}`, progress)
+    } catch (error) {
+      console.error("❌ Failed to update lesson progress:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Mark lesson as completed
+   */
+  async markLessonCompleted(courseId: string, lessonId: string): Promise<any> {
+    try {
+      return await this.updateLessonProgress(lessonId, { progress_percentage: 100 })
+    } catch (error) {
+      console.error("❌ Failed to mark lesson as completed:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Submit quiz attempt
+   */
+  async submitQuizAttempt(quizId: string, answers: Record<string, string>): Promise<any> {
+    try {
+      return await apiClient.post(`${API_ENDPOINTS.progress}/quiz/attempt`, {
+        quiz_id: quizId,
+        answers: answers,
+      })
+    } catch (error) {
+      console.error("❌ Failed to submit quiz attempt:", error)
+      throw error
+    }
+  }
+}
+
+export const progressService = new ProgressService()

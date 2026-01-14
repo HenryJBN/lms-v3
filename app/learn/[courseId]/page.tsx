@@ -18,12 +18,7 @@ import VideoPlayer from "@/components/video-player"
 import LessonQuiz from "@/components/lesson-quiz"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
-import {
-  getCourseData,
-  getUserProgress,
-  markLessonAsCompleted,
-  markQuizAsCompleted,
-} from "@/lib/course-progress"
+import { courseService, progressService } from "@/lib/services/courses"
 
 export default function CourseLessonPage({ params }: { params: { courseId: string } }) {
   const router = useRouter()
@@ -39,27 +34,65 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load course data and user progress
-    const courseData = getCourseData(courseId)
-    if (!courseData) {
-      router.push("/learn")
-      return
-    }
+    const fetchCourseData = async () => {
+      try {
+        setLoading(true)
 
-    const progress = getUserProgress(courseId)
+        // Fetch course lessons and basic course info
+        const [lessons, progress] = await Promise.all([
+          courseService.getCourseLessons(courseId),
+          progressService.getCourseProgress(courseId).catch(() => ({
+            courseId,
+            completedLessons: [],
+            completedQuizzes: [],
+          })),
+        ])
 
-    setCourse(courseData)
-    setUserProgress(progress)
+        if (!lessons || lessons.length === 0) {
+          router.push("/learn")
+          return
+        }
 
-    // If there's a lesson ID in the URL, set the current lesson
-    if (lessonParam) {
-      const lessonIndex = courseData.lessons.findIndex((lesson: any) => lesson.id === lessonParam)
-      if (lessonIndex !== -1) {
-        setCurrentLessonIndex(lessonIndex)
+        // Transform lessons to match expected format
+        const transformedLessons = lessons.map((lesson: any) => ({
+          id: lesson.id,
+          title: lesson.title,
+          description: lesson.description || lesson.content || "",
+          videoUrl: lesson.video_url || "",
+          duration: lesson.duration || "00:00",
+          hasQuiz: lesson.has_quiz || false,
+          prerequisites: lesson.prerequisites || [],
+          quiz: lesson.quiz || null,
+        }))
+
+        // Create course object
+        const courseData = {
+          id: courseId,
+          title: lessons[0]?.course_title || "Course",
+          lessons: transformedLessons,
+        }
+
+        setCourse(courseData)
+        setUserProgress(progress)
+
+        // If there's a lesson ID in the URL, set the current lesson
+        if (lessonParam) {
+          const lessonIndex = transformedLessons.findIndex(
+            (lesson: any) => lesson.id === lessonParam
+          )
+          if (lessonIndex !== -1) {
+            setCurrentLessonIndex(lessonIndex)
+          }
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error("Failed to load course data:", error)
+        router.push("/learn")
       }
     }
 
-    setLoading(false)
+    fetchCourseData()
   }, [courseId, lessonParam, router])
 
   // Early return for loading state
@@ -84,11 +117,19 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
       userProgress.completedLessons.includes(prereqId)
     )
 
-  const handleVideoComplete = () => {
+  const handleVideoComplete = async () => {
     setVideoCompleted(true)
     if (!isLessonCompleted) {
-      const updatedProgress = markLessonAsCompleted(courseId, currentLesson.id)
-      setUserProgress(updatedProgress)
+      try {
+        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 })
+        // Update local progress state
+        setUserProgress((prev: any) => ({
+          ...prev,
+          completedLessons: [...prev.completedLessons, currentLesson.id],
+        }))
+      } catch (error) {
+        console.error("Failed to mark lesson as completed:", error)
+      }
     }
 
     // If the lesson has a quiz, show it after video completion
@@ -97,11 +138,22 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
     }
   }
 
-  const handleQuizComplete = (passed: boolean) => {
+  const handleQuizComplete = async (passed: boolean) => {
     if (passed) {
-      const updatedProgress = markQuizAsCompleted(courseId, currentLesson.id)
-      setUserProgress(updatedProgress)
-      setShowQuiz(false)
+      try {
+        // Submit quiz attempt (assuming quiz ID is available)
+        if (currentLesson.quiz?.id) {
+          await progressService.submitQuizAttempt(currentLesson.quiz.id, {})
+        }
+        // Update local progress state
+        setUserProgress((prev: any) => ({
+          ...prev,
+          completedQuizzes: [...prev.completedQuizzes, currentLesson.id],
+        }))
+        setShowQuiz(false)
+      } catch (error) {
+        console.error("Failed to mark quiz as completed:", error)
+      }
     }
   }
 

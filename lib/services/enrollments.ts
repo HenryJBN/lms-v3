@@ -20,7 +20,10 @@ export interface EnrollRequest {
 class EnrollmentsService {
   async getUserEnrollments(): Promise<Enrollment[]> {
     try {
-      return await apiClient.get<Enrollment[]>(API_ENDPOINTS.userEnrollments)
+      const response = await apiClient.get<{ items: Enrollment[] }>(
+        `${API_ENDPOINTS.enrollments}/my-courses`
+      )
+      return response.items || []
     } catch (error) {
       console.error("Failed to get user enrollments:", error)
       throw error
@@ -29,13 +32,17 @@ class EnrollmentsService {
 
   async enroll(courseId: string): Promise<Enrollment> {
     try {
-      return await apiClient.post<Enrollment>(API_ENDPOINTS.enroll, {
+      return await apiClient.post<Enrollment>(API_ENDPOINTS.enrollments, {
         course_id: courseId,
       })
     } catch (error) {
       console.error("Failed to enroll in course:", error)
       throw error
     }
+  }
+
+  async enrollInCourse(courseId: string): Promise<Enrollment> {
+    return this.enroll(courseId)
   }
 
   async getEnrollment(enrollmentId: string): Promise<Enrollment> {

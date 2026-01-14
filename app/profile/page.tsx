@@ -53,10 +53,8 @@ export default function ProfilePage() {
   const loadEnrollments = async () => {
     try {
       setIsLoading(true)
-      const response = await enrollmentsService.getUserEnrollments()
-      if (response.success && response.data) {
-        setEnrollments(response.data)
-      }
+      const enrollments = await enrollmentsService.getUserEnrollments()
+      setEnrollments(enrollments)
     } catch (error) {
       console.error("Failed to load enrollments:", error)
     } finally {
@@ -221,7 +219,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {enrollments.filter((e) => e.completion_percentage === 100).length}
+                {enrollments.filter((e) => e.progress_percentage === 100).length}
               </div>
             </CardContent>
           </Card>
@@ -232,7 +230,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {enrollments.filter((e) => e.certificate_earned).length}
+                {enrollments.filter((e) => e.completion_date).length}
               </div>
             </CardContent>
           </Card>
@@ -365,20 +363,21 @@ export default function ProfilePage() {
                         <div className="flex-1">
                           <h3 className="font-semibold">{enrollment.course?.title || "Course"}</h3>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Enrolled on {format(new Date(enrollment.enrolled_at), "MMM dd, yyyy")}
+                            Enrolled on{" "}
+                            {format(new Date(enrollment.enrollment_date), "MMM dd, yyyy")}
                           </p>
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between text-sm">
                               <span>Progress</span>
                               <span className="font-semibold">
-                                {enrollment.completion_percentage}%
+                                {enrollment.progress_percentage}%
                               </span>
                             </div>
-                            <Progress value={enrollment.completion_percentage} className="h-2" />
+                            <Progress value={enrollment.progress_percentage} className="h-2" />
                           </div>
                         </div>
                         <div className="ml-4 flex items-center gap-2">
-                          {enrollment.certificate_earned && (
+                          {enrollment.completion_date && (
                             <Badge variant="secondary">
                               <Award className="h-3 w-3 mr-1" />
                               Certified

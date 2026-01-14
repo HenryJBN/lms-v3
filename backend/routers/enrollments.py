@@ -114,21 +114,22 @@ async def get_my_enrollments(
         "size": pagination.size,
         "offset": (pagination.page - 1) * pagination.size
     }
-    
+
     if status:
         where_conditions.append("ce.status = :status")
         values["status"] = status
-    
+
     where_clause = "WHERE " + " AND ".join(where_conditions)
-    
-    # Get total count
+
+    # Get total count (exclude pagination params)
+    count_values = {k: v for k, v in values.items() if k not in ["size", "offset"]}
     count_query = f"""
-        SELECT COUNT(*) as total 
+        SELECT COUNT(*) as total
         FROM course_enrollments ce {where_clause}
     """
-    total_result = await database.fetch_one(count_query, values=values)
+    total_result = await database.fetch_one(count_query, values=count_values)
     total = total_result.total
-    
+
     # Get enrollments with course info
     query = f"""
         SELECT ce.*, c.title, c.thumbnail_url, c.description, c.level,
@@ -140,7 +141,7 @@ async def get_my_enrollments(
         ORDER BY ce.enrolled_at DESC
         LIMIT :size OFFSET :offset
     """
-    
+
     enrollments = await database.fetch_all(query, values=values)
     
     return PaginatedResponse(
