@@ -227,7 +227,7 @@ async def get_enrollment_progress(
     query = """
         SELECT progress_percentage
         FROM course_enrollments
-        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
+        WHERE user_id = :user_id AND course_id = :course_id AND status IN ('active', 'completed')
     """
 
     enrollment = await database.fetch_one(query, values={
@@ -263,7 +263,7 @@ async def get_enrollment_progress_by_slug(
     query = """
         SELECT progress_percentage
         FROM course_enrollments
-        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
+        WHERE user_id = :user_id AND course_id = :course_id AND status IN ('active', 'completed')
     """
 
     enrollment = await database.fetch_one(query, values={

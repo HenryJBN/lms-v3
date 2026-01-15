@@ -119,6 +119,9 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const previousLesson = currentLessonIndex > 0 ? course.lessons[currentLessonIndex - 1] : null
 
   const isLessonCompleted = userProgress.completedLessons?.includes(currentLesson.id) || false
+
+  console.log(userProgress.completedLessons, "userProgress.completedLessons")
+
   const isQuizCompleted = currentLesson.hasQuiz
     ? userProgress.completedQuizzes?.includes(currentLesson.id) || false
     : true
