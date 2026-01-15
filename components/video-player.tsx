@@ -131,6 +131,11 @@ export default function VideoPlayer({
     const video = videoRef.current
     if (!video) return
 
+    // Guard against invalid duration
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      return
+    }
+
     setIsDragging(true)
     const newTime = (value[0] / 100) * video.duration
     setProgress(value[0])
@@ -141,18 +146,36 @@ export default function VideoPlayer({
     const video = videoRef.current
     if (!video) return
 
+    // Guard against invalid duration
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+      setIsDragging(false)
+      return
+    }
+
     setIsDragging(false)
     const newTime = (value[0] / 100) * video.duration
-    video.currentTime = newTime
-    setProgress(value[0])
-    setCurrentTime(newTime)
+    
+    // Ensure newTime is valid before setting
+    if (Number.isFinite(newTime)) {
+        video.currentTime = newTime
+        setCurrentTime(newTime)
+        setProgress(value[0])
+    }
   }
 
   const skip = (seconds: number) => {
     const video = videoRef.current
     if (!video) return
 
-    video.currentTime += seconds
+    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+        return
+    }
+
+    const newTime = video.currentTime + seconds
+    // Clamp time between 0 and duration
+    const clampedTime = Math.max(0, Math.min(newTime, video.duration))
+    
+    video.currentTime = clampedTime
   }
 
   const handleSpeedChange = (speed: number) => {
@@ -239,6 +262,7 @@ export default function VideoPlayer({
         className="w-full h-full"
         onClick={togglePlay}
         playsInline
+        crossOrigin="anonymous"
       />
 
       {hasWatched85Percent && (
