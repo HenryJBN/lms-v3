@@ -183,7 +183,7 @@ async def get_course_lessons_by_slug(
                CASE WHEN ce.id IS NOT NULL THEN true ELSE false END as is_enrolled
         FROM courses c
         LEFT JOIN course_enrollments ce ON c.id = ce.course_id
-            AND ce.user_id = :user_id AND ce.status = 'active'
+            AND ce.user_id = :user_id AND ce.status IN ('active', 'completed')
         WHERE c.slug = :course_slug
     """
 
@@ -240,7 +240,7 @@ async def get_course_lessons(
                CASE WHEN ce.id IS NOT NULL THEN true ELSE false END as is_enrolled
         FROM courses c
         LEFT JOIN course_enrollments ce ON c.id = ce.course_id
-            AND ce.user_id = :user_id AND ce.status = 'active'
+            AND ce.user_id = :user_id AND ce.status IN ('active', 'completed')
         WHERE c.id = :course_id
     """
 
@@ -318,7 +318,7 @@ async def get_lesson(
         FROM lessons l
         JOIN courses c ON l.course_id = c.id
         LEFT JOIN course_enrollments ce ON c.id = ce.course_id 
-            AND ce.user_id = :user_id AND ce.status = 'active'
+            AND ce.user_id = :user_id AND ce.status IN ('active', 'completed')
         LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.user_id = :user_id
         WHERE l.id = :lesson_id
     """
