@@ -315,7 +315,7 @@ async def refresh_token(request: Request, response: Response):
 
     if not user_id:
         # Clear invalid refresh token cookie
-        response.delete_cookie(key="refresh_token", path="/")
+        response.delete_cookie(key="refresh_token", path="/api/auth")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token"
@@ -351,7 +351,7 @@ async def logout(response: Response):
     Logout user by clearing the HTTP-only refresh token cookie
     """
     # Clear refresh token cookie
-    response.delete_cookie(key="refresh_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/api/auth")
 
     return {"message": "Logged out successfully"}
 
