@@ -19,6 +19,7 @@ import LessonQuiz from "@/components/lesson-quiz"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
 import { courseService, progressService } from "@/lib/services/courses"
+import { formatDuration } from "@/lib/utils"
 
 export default function CourseLessonPage({ params }: { params: { courseSlug: string } }) {
   const router = useRouter()
@@ -63,7 +64,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           title: lesson.title,
           description: lesson.description || lesson.content || "",
           videoUrl: lesson.video_url || "",
-          duration: lesson.duration || "00:00",
+          duration: formatDuration(lesson.video_duration || 0),
           hasQuiz: lesson.has_quiz || false,
           prerequisites: lesson.prerequisites || [],
           quiz: lesson.quiz || null,
