@@ -28,6 +28,7 @@ import CourseCard from "@/components/course-card"
 import TokenBalance from "@/components/token-balance"
 import RecommendedCourses from "@/components/recommended-courses"
 import LearningPathProgress from "@/components/learning-path-progress"
+import RecentActivity from "@/components/recent-activity"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { apiClient } from "@/lib/api-client"
 import { API_ENDPOINTS } from "@/lib/api-config"
@@ -47,9 +48,7 @@ export default function DashboardPage() {
   const { user, tokenBalance, isLoading } = useAuth()
   const [inProgressCourses, setInProgressCourses] = useState<Course[]>([])
   const [completedCourses, setCompletedCourses] = useState<Course[]>([])
-  const [userProgress, setUserProgress] = useState<{
-    lastAccessedLessonId?: string
-  }>({})
+  const [analytics, setAnalytics] = useState<any>(null)
 
   useEffect(() => {
     if (!user) return
@@ -58,15 +57,27 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [progressRes, inProgressRes, completedRes] = await Promise.all([
-        apiClient.get(API_ENDPOINTS.userProgress),
+      const results = await Promise.allSettled([
         apiClient.get(API_ENDPOINTS.inProgressCourses),
         apiClient.get(API_ENDPOINTS.completedCourses),
+        apiClient.get(API_ENDPOINTS.userOverview),
       ])
 
-      setUserProgress(progressRes || {})
-      setInProgressCourses(inProgressRes || [])
-      setCompletedCourses(completedRes || [])
+      if (results[0].status === 'fulfilled') {
+        const inProgressRes = results[0].value;
+        setInProgressCourses(inProgressRes?.items || inProgressRes || [])
+      }
+      
+      if (results[1].status === 'fulfilled') {
+        const completedRes = results[1].value;
+        setCompletedCourses(completedRes?.items || completedRes || [])
+      }
+
+      if (results[2].status === 'fulfilled') {
+        const analyticsRes = results[2].value;
+        setAnalytics(analyticsRes)
+      }
+      
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error)
     }
@@ -92,10 +103,10 @@ export default function DashboardPage() {
   }
 
   const userProgressStats = {
-    coursesCompleted: completedCourses.length,
-    coursesInProgress: inProgressCourses.length,
-    certificatesEarned: user?.certificates?.length || 0,
-    tokensEarned: tokenBalance?.balance || 0,
+    coursesCompleted: analytics?.stats?.courses_completed ?? completedCourses.length,
+    coursesInProgress: analytics?.stats?.courses_in_progress ?? inProgressCourses.length,
+    certificatesEarned: analytics?.stats?.certificates_earned ?? user?.certificates?.length ?? 0,
+    tokensEarned: analytics?.stats?.tokens_balance ?? tokenBalance?.balance ?? 0,
   }
 
   return (
@@ -209,10 +220,10 @@ export default function DashboardPage() {
                 <Button variant="ghost" className="w-full" asChild>
                   <Link
                     href={
-                      userProgress.lastAccessedLessonId
+                      analytics?.last_accessed?.lesson_id
                         ? `/learn/${
-                            inProgressCourses[0]?.id || "default-course"
-                          }?lesson=${userProgress.lastAccessedLessonId}`
+                            analytics.last_accessed.course_slug || inProgressCourses[0]?.id || "default-course"
+                          }?lesson=${analytics.last_accessed.lesson_id}`
                         : `/learn/${inProgressCourses[0]?.id || "default-course"}`
                     }
                   >
@@ -222,6 +233,9 @@ export default function DashboardPage() {
                 </Button>
               </CardFooter>
             </Card>
+
+            {/* Recent Activity */}
+            <RecentActivity activities={analytics?.recent_activity} />
 
             {/* Courses Tabs */}
             <Tabs defaultValue="in-progress">
@@ -265,7 +279,7 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LearningPathProgress />
+                <LearningPathProgress steps={analytics?.learning_path} />
               </CardContent>
               <CardFooter>
                 <Button variant="ghost" className="w-full">

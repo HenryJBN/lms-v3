@@ -12,6 +12,84 @@ from middleware.auth import get_current_active_user, require_instructor_or_admin
 
 router = APIRouter()
 
+@router.get("/me")
+async def get_student_analytics(
+    current_user = Depends(get_current_active_user)
+):
+    """Return consolidated analytics for the current student dashboard"""
+    user_id = current_user.id
+    
+    # 1. Basic Stats
+    stats_query = """
+        SELECT 
+            (SELECT COUNT(*) FROM course_enrollments WHERE user_id = :user_id AND status = 'completed') as courses_completed,
+            (SELECT COUNT(*) FROM course_enrollments WHERE user_id = :user_id AND status = 'active') as courses_in_progress,
+            (SELECT COUNT(*) FROM certificates WHERE user_id = :user_id) as certificates_earned,
+            (SELECT balance FROM l_tokens WHERE user_id = :user_id) as tokens_balance
+    """
+    stats = await database.fetch_one(stats_query, values={"user_id": user_id})
+    
+    # 2. Recent Activity (Last 5 lesson interactions)
+    activity_query = """
+        SELECT lp.status, lp.updated_at, l.title as lesson_title, c.title as course_title, c.slug as course_slug
+        FROM lesson_progress lp
+        JOIN lessons l ON lp.lesson_id = l.id
+        JOIN courses c ON lp.course_id = c.id
+        WHERE lp.user_id = :user_id
+        ORDER BY lp.updated_at DESC
+        LIMIT 5
+    """
+    recent_activity = await database.fetch_all(activity_query, values={"user_id": user_id})
+    
+    # 3. Weekly Progress (last 7 days completions)
+    weekly_query = """
+        SELECT DATE(updated_at) as date, COUNT(*) as count
+        FROM lesson_progress
+        WHERE user_id = :user_id AND status = 'completed' AND updated_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(updated_at)
+        ORDER BY date ASC
+    """
+    weekly_progress = await database.fetch_all(weekly_query, values={"user_id": user_id})
+    
+    # 4. Active Learning Path Progress
+    path_query = """
+        SELECT ce.progress_percentage, c.title, c.slug, c.thumbnail_url, c.id as course_id
+        FROM course_enrollments ce
+        JOIN courses c ON ce.course_id = c.id
+        WHERE ce.user_id = :user_id AND ce.status = 'active'
+        ORDER BY ce.last_accessed_at DESC NULLS LAST
+        LIMIT 4
+    """
+    learning_path = await database.fetch_all(path_query, values={"user_id": user_id})
+    
+    # 5. Last Accessed Lesson
+    last_lesson_query = """
+        SELECT lp.lesson_id, lp.course_id, c.slug as course_slug
+        FROM lesson_progress lp
+        JOIN courses c ON lp.course_id = c.id
+        WHERE lp.user_id = :user_id
+        ORDER BY lp.updated_at DESC
+        LIMIT 1
+    """
+    last_lesson = await database.fetch_one(last_lesson_query, values={"user_id": user_id})
+    
+    return {
+        "stats": {
+            "courses_completed": stats.courses_completed if stats else 0,
+            "courses_in_progress": stats.courses_in_progress if stats else 0,
+            "certificates_earned": stats.certificates_earned if stats else 0,
+            "tokens_balance": float(stats.tokens_balance) if stats and stats.tokens_balance else 0.0
+        },
+        "recent_activity": [dict(a) for a in recent_activity],
+        "weekly_progress": [dict(w) for w in weekly_progress],
+        "learning_path": [dict(p) for p in learning_path],
+        "last_accessed": {
+            "lesson_id": str(last_lesson.lesson_id) if last_lesson else None,
+            "course_id": str(last_lesson.course_id) if last_lesson else None,
+            "course_slug": last_lesson.course_slug if last_lesson else None
+        }
+    }
+
 @router.get("/users")
 async def get_user_analytics(
     current_user = Depends(require_admin)

@@ -44,7 +44,6 @@ export const API_ENDPOINTS = {
   myEnrollments: "/api/enrollments/my-enrollments",
 
   // Progress endpoints
-  progress: "/api/progress",
   lessonProgress: "/api/progress/lesson",
 
   // Certificate endpoints
@@ -63,7 +62,12 @@ export const API_ENDPOINTS = {
 
   // Analytics endpoints
   analytics: "/api/analytics",
+  userOverview: "/api/analytics/me",
 
   // Categories endpoints
   categories: "/api/categories",
+  
+  // Extra specific endpoints often used in dashboard
+  inProgressCourses: "/api/enrollments/my-courses?status=active",
+  completedCourses: "/api/enrollments/my-courses?status=completed",
 }
