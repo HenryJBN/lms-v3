@@ -51,14 +51,6 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           })),
         ])
 
-        console.log(
-          lessons,
-          "lessons",
-          lessonProgress,
-          "lessonProgress",
-          enrollmentProgress,
-          "enrollmentProgress"
-        )
 
         if (!lessons || lessons.length === 0) {
           router.push("/learn")
@@ -120,7 +112,6 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
   const isLessonCompleted = userProgress.completedLessons?.includes(currentLesson.id) || false
 
-  console.log(userProgress.completedLessons, "userProgress.completedLessons")
 
   const isQuizCompleted = currentLesson.hasQuiz
     ? userProgress.completedQuizzes?.includes(currentLesson.id) || false

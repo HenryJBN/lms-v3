@@ -4,7 +4,14 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, RotateCcw, RotateCw, Settings } from "lucide-react"
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -25,6 +32,8 @@ export default function VideoPlayer({
   const [isMuted, setIsMuted] = useState(false)
   const [showControls, setShowControls] = useState(true)
   const [hasWatched85Percent, setHasWatched85Percent] = useState(isCompleted)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [isDragging, setIsDragging] = useState(false)
 
   // Handle video events
   useEffect(() => {
@@ -32,8 +41,10 @@ export default function VideoPlayer({
     if (!video) return
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime)
-      setProgress((video.currentTime / video.duration) * 100)
+      if (!isDragging) {
+        setCurrentTime(video.currentTime)
+        setProgress((video.currentTime / video.duration) * 100)
+      }
 
       // Mark as completed when user has watched 85% of the video
       if (!hasWatched85Percent && video.currentTime / video.duration >= 0.85) {
@@ -63,7 +74,7 @@ export default function VideoPlayer({
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
       video.removeEventListener("ended", handleEnded)
     }
-  }, [hasWatched85Percent, onComplete])
+  }, [hasWatched85Percent, onComplete, isDragging])
 
   // Hide controls after inactivity
   useEffect(() => {
@@ -116,15 +127,40 @@ export default function VideoPlayer({
     setIsMuted(!isMuted)
   }
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSeekChange = (value: number[]) => {
     const video = videoRef.current
     if (!video) return
 
-    const progressBar = e.currentTarget
-    const rect = progressBar.getBoundingClientRect()
-    const pos = (e.clientX - rect.left) / rect.width
+    setIsDragging(true)
+    const newTime = (value[0] / 100) * video.duration
+    setProgress(value[0])
+    setCurrentTime(newTime)
+  }
 
-    video.currentTime = pos * video.duration
+  const handleSeekCommit = (value: number[]) => {
+    const video = videoRef.current
+    if (!video) return
+
+    setIsDragging(false)
+    const newTime = (value[0] / 100) * video.duration
+    video.currentTime = newTime
+    setProgress(value[0])
+    setCurrentTime(newTime)
+  }
+
+  const skip = (seconds: number) => {
+    const video = videoRef.current
+    if (!video) return
+
+    video.currentTime += seconds
+  }
+
+  const handleSpeedChange = (speed: number) => {
+    const video = videoRef.current
+    if (!video) return
+
+    video.playbackRate = speed
+    setPlaybackRate(speed)
   }
 
   const toggleFullscreen = () => {
@@ -147,6 +183,8 @@ export default function VideoPlayer({
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`
   }
+
+  const playbackSpeeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
   // Extract video ID from YouTube URL if it's a YouTube video
   const getYouTubeEmbedUrl = (url: string) => {
@@ -212,16 +250,20 @@ export default function VideoPlayer({
 
       {/* Video controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 ${
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-opacity duration-300 z-20 ${
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >
         {/* Progress bar */}
-        <div
-          className="h-2 bg-gray-600 rounded-full mb-3 cursor-pointer"
-          onClick={handleProgressClick}
-        >
-          <div className="h-full bg-red rounded-full" style={{ width: `${progress}%` }} />
+        <div className="mb-3">
+          <Slider
+            value={[progress]}
+            max={100}
+            step={0.1}
+            onValueChange={handleSeekChange}
+            onValueCommit={handleSeekCommit}
+            className="cursor-pointer"
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -230,9 +272,27 @@ export default function VideoPlayer({
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-white hover:bg-white/20"
+              onClick={() => skip(-10)}
+            >
+              <RotateCcw className="h-5 w-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20"
               onClick={togglePlay}
             >
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20"
+              onClick={() => skip(10)}
+            >
+              <RotateCw className="h-5 w-5" />
             </Button>
 
             <Button
@@ -249,21 +309,39 @@ export default function VideoPlayer({
             </span>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={toggleFullscreen}
-          >
-            <Maximize className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 h-8 px-2 text-xs">
+                  <Settings className="h-4 w-4 mr-1" />
+                  {playbackRate}x
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {playbackSpeeds.map((speed) => (
+                  <DropdownMenuItem key={speed} onClick={() => handleSpeedChange(speed)}>
+                    {speed}x
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20"
+              onClick={toggleFullscreen}
+            >
+              <Maximize className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Play button overlay when paused */}
       {!isPlaying && (
         <div
-          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
+          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
           onClick={togglePlay}
         >
           <div className="rounded-full bg-red/80 p-4">
