@@ -45,7 +45,7 @@ type Module = {
 export default function CoursePage() {
   const params = useParams()
   const router = useRouter()
-  const courseId = params?.courseId as string
+  const courseSlug = params?.courseSlug as string
 
   const [course, setCourse] = useState<CourseReponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,7 +61,7 @@ export default function CoursePage() {
     const fetchCourse = async () => {
       try {
         setLoading(true)
-        const response = await courseService.getCourse(courseId)
+        const response = await courseService.getCourse(courseSlug)
         console.log(`One course Data ${response}`)
 
         setCourse(response)
@@ -70,10 +70,9 @@ export default function CoursePage() {
         if (isAuthenticated && response?.id) {
           try {
             const enrollments = await enrollmentsService.getUserEnrollments()
-            console.log(enrollments, "Enrollmentszzzzz")
             const isUserEnrolled = enrollments.some(
               (enrollment: any) =>
-                enrollment.course_id === response.id && enrollment.status === "active"
+                String(enrollment.course_id) === String(response.id) && enrollment.status === "active"
             )
             setIsEnrolled(isUserEnrolled)
           } catch (error) {
@@ -91,8 +90,8 @@ export default function CoursePage() {
         setLoading(false)
       }
     }
-    if (courseId) fetchCourse()
-  }, [courseId, isAuthenticated])
+    if (courseSlug) fetchCourse()
+  }, [courseSlug, isAuthenticated])
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => ({
@@ -134,7 +133,7 @@ export default function CoursePage() {
       })
 
       // Redirect to learn page after successful enrollment
-      router.push(`/learn/${course.id}`)
+      router.push(`/learn/${course.slug}`)
     } catch (err: any) {
       toast({
         title: "Enrollment Failed",
@@ -176,7 +175,7 @@ export default function CoursePage() {
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
               {canAccessCourse ? (
                 isEnrolled ? (
-                  <Link href={`/learn/${course.id}`}>
+                  <Link href={`/learn/${course.slug}`}>
                     <Button size="lg" className="rounded-full" variant="default">
                       <Play className="mr-2 h-4 w-4" />
                       Continue Learning

@@ -172,6 +172,63 @@ async def get_all_lessons(
         pages=total_pages
     )
 
+@router.get("/course/slug/{course_slug}", response_model=List[LessonResponse])
+async def get_course_lessons_by_slug(
+    course_slug: str,
+    current_user = Depends(get_current_active_user)
+):
+    # First get the course ID from slug
+    course_query = """
+        SELECT c.id, c.instructor_id,
+               CASE WHEN ce.id IS NOT NULL THEN true ELSE false END as is_enrolled
+        FROM courses c
+        LEFT JOIN course_enrollments ce ON c.id = ce.course_id
+            AND ce.user_id = :user_id AND ce.status = 'active'
+        WHERE c.slug = :course_slug
+    """
+
+    course = await database.fetch_one(course_query, values={
+        "course_slug": course_slug,
+        "user_id": current_user.id
+    })
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Check if user has access
+    has_access = (
+        course.is_enrolled or
+        str(course.instructor_id) == str(current_user.id) or
+        current_user.role == "admin"
+    )
+
+    if not has_access:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to course lessons"
+        )
+
+    # Get lessons
+    query = """
+        SELECT l.*,
+               CASE WHEN lp.id IS NOT NULL THEN lp.status ELSE 'not_started' END as progress_status,
+               CASE WHEN lp.id IS NOT NULL THEN lp.progress_percentage ELSE 0 END as progress_percentage
+        FROM lessons l
+        LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.user_id = :user_id
+        WHERE l.course_id = :course_id AND l.is_published = true
+        ORDER BY l.sort_order, l.created_at
+    """
+
+    lessons = await database.fetch_all(query, values={
+        "course_id": course.id,
+        "user_id": current_user.id
+    })
+
+    return [LessonResponse(**lesson) for lesson in lessons]
+
 @router.get("/course/{course_id}", response_model=List[LessonResponse])
 async def get_course_lessons(
     course_id: uuid.UUID,
@@ -182,38 +239,38 @@ async def get_course_lessons(
         SELECT c.id, c.instructor_id,
                CASE WHEN ce.id IS NOT NULL THEN true ELSE false END as is_enrolled
         FROM courses c
-        LEFT JOIN course_enrollments ce ON c.id = ce.course_id 
+        LEFT JOIN course_enrollments ce ON c.id = ce.course_id
             AND ce.user_id = :user_id AND ce.status = 'active'
         WHERE c.id = :course_id
     """
-    
+
     access_check = await database.fetch_one(access_query, values={
         "course_id": course_id,
         "user_id": current_user.id
     })
-    
+
     if not access_check:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"
         )
-    
+
     # Check if user has access
     has_access = (
-        access_check.is_enrolled or 
+        access_check.is_enrolled or
         str(access_check.instructor_id) == str(current_user.id) or
         current_user.role == "admin"
     )
-    
+
     if not has_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to course lessons"
         )
-    
+
     # Get lessons
     query = """
-        SELECT l.*, 
+        SELECT l.*,
                CASE WHEN lp.id IS NOT NULL THEN lp.status ELSE 'not_started' END as progress_status,
                CASE WHEN lp.id IS NOT NULL THEN lp.progress_percentage ELSE 0 END as progress_percentage
         FROM lessons l
@@ -221,12 +278,12 @@ async def get_course_lessons(
         WHERE l.course_id = :course_id AND l.is_published = true
         ORDER BY l.sort_order, l.created_at
     """
-    
+
     lessons = await database.fetch_all(query, values={
         "course_id": course_id,
         "user_id": current_user.id
     })
-    
+
     return [LessonResponse(**lesson) for lesson in lessons]
 
 @router.get("/{lesson_id}", response_model=LessonResponse)

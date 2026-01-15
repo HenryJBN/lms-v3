@@ -20,10 +20,10 @@ import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
 import { courseService, progressService } from "@/lib/services/courses"
 
-export default function CourseLessonPage({ params }: { params: { courseId: string } }) {
+export default function CourseLessonPage({ params }: { params: { courseSlug: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const courseId = params.courseId
+  const courseSlug = params.courseSlug
   const lessonParam = searchParams.get("lesson")
 
   const [course, setCourse] = useState<any>(null)
@@ -38,15 +38,27 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
       try {
         setLoading(true)
 
-        // Fetch course lessons and basic course info
-        const [lessons, progress] = await Promise.all([
-          courseService.getCourseLessons(courseId),
-          progressService.getCourseProgress(courseId).catch(() => ({
-            courseId,
+        // Fetch course lessons, lesson progress, and enrollment progress
+        const [lessons, lessonProgress, enrollmentProgress] = await Promise.all([
+          courseService.getCourseLessons(courseSlug),
+          progressService.getCourseProgress(courseSlug).catch(() => ({
+            courseId: courseSlug,
             completedLessons: [],
             completedQuizzes: [],
           })),
+          progressService.getEnrollmentProgress(courseSlug).catch(() => ({
+            progress_percentage: 0,
+          })),
         ])
+
+        console.log(
+          lessons,
+          "lessons",
+          lessonProgress,
+          "lessonProgress",
+          enrollmentProgress,
+          "enrollmentProgress"
+        )
 
         if (!lessons || lessons.length === 0) {
           router.push("/learn")
@@ -65,15 +77,16 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
           quiz: lesson.quiz || null,
         }))
 
-        // Create course object
+        // Create course object with enrollment progress
         const courseData = {
-          id: courseId,
+          id: courseSlug,
           title: lessons[0]?.course_title || "Course",
           lessons: transformedLessons,
+          progressPercentage: enrollmentProgress.progress_percentage || 0,
         }
 
         setCourse(courseData)
-        setUserProgress(progress)
+        setUserProgress(lessonProgress)
 
         // If there's a lesson ID in the URL, set the current lesson
         if (lessonParam) {
@@ -93,7 +106,7 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
     }
 
     fetchCourseData()
-  }, [courseId, lessonParam, router])
+  }, [courseSlug, lessonParam, router])
 
   // Early return for loading state
   if (loading || !course || !userProgress) {
@@ -105,16 +118,16 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
     currentLessonIndex < course.lessons.length - 1 ? course.lessons[currentLessonIndex + 1] : null
   const previousLesson = currentLessonIndex > 0 ? course.lessons[currentLessonIndex - 1] : null
 
-  const isLessonCompleted = userProgress.completedLessons.includes(currentLesson.id)
+  const isLessonCompleted = userProgress.completedLessons?.includes(currentLesson.id) || false
   const isQuizCompleted = currentLesson.hasQuiz
-    ? userProgress.completedQuizzes.includes(currentLesson.id)
+    ? userProgress.completedQuizzes?.includes(currentLesson.id) || false
     : true
 
   // Check if the current lesson is accessible (either no prerequisites or all prerequisites completed)
   const isLessonAccessible =
     !currentLesson.prerequisites ||
-    currentLesson.prerequisites.every((prereqId: string) =>
-      userProgress.completedLessons.includes(prereqId)
+    currentLesson.prerequisites.every(
+      (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
     )
 
   const handleVideoComplete = async () => {
@@ -122,10 +135,17 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
     if (!isLessonCompleted) {
       try {
         await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 })
-        // Update local progress state
+        // Update local lesson progress state
         setUserProgress((prev: any) => ({
           ...prev,
           completedLessons: [...prev.completedLessons, currentLesson.id],
+        }))
+
+        // Fetch updated enrollment progress to update course progress UI
+        const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug)
+        setCourse((prevCourse: any) => ({
+          ...prevCourse,
+          progressPercentage: updatedEnrollmentProgress.progress_percentage || 0,
         }))
       } catch (error) {
         console.error("Failed to mark lesson as completed:", error)
@@ -162,23 +182,23 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
     const targetLesson = course.lessons[index]
     const isAccessible =
       !targetLesson.prerequisites ||
-      targetLesson.prerequisites.every((prereqId: string) =>
-        userProgress.completedLessons.includes(prereqId)
+      targetLesson.prerequisites.every(
+        (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
       )
 
     if (isAccessible) {
       setCurrentLessonIndex(index)
       setShowQuiz(false)
-      setVideoCompleted(userProgress.completedLessons.includes(targetLesson.id))
-      router.push(`/learn/${courseId}?lesson=${targetLesson.id}`)
+      setVideoCompleted(userProgress.completedLessons?.includes(targetLesson.id) || false)
+      router.push(`/learn/${courseSlug}?lesson=${targetLesson.id}`)
     }
   }
 
   const canNavigateToNext =
     nextLesson &&
     (!nextLesson.prerequisites ||
-      nextLesson.prerequisites.every((prereqId: string) =>
-        userProgress.completedLessons.includes(prereqId)
+      nextLesson.prerequisites.every(
+        (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
       ))
 
   return (
@@ -191,15 +211,9 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
               Lesson {currentLessonIndex + 1} of {course.lessons.length}
             </span>
             <Separator orientation="vertical" className="mx-2 h-4" />
-            <span>
-              {Math.round((userProgress.completedLessons.length / course.lessons.length) * 100)}%
-              Complete
-            </span>
+            <span>{Math.round(course.progressPercentage)}% Complete</span>
           </div>
-          <Progress
-            value={(userProgress.completedLessons.length / course.lessons.length) * 100}
-            className="h-2 mt-2"
-          />
+          <Progress value={course.progressPercentage} className="h-2 mt-2" />
         </div>
 
         <div className="grid gap-6 md:grid-cols-[3fr_1fr]">
@@ -224,7 +238,7 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
                         return (
                           <li key={prereqId} className="text-sm">
                             {prereq?.title}
-                            {userProgress.completedLessons.includes(prereqId) ? (
+                            {userProgress.completedLessons?.includes(prereqId) ? (
                               <CheckCircle className="inline ml-2 h-4 w-4 text-green-500" />
                             ) : (
                               <AlertCircle className="inline ml-2 h-4 w-4 text-amber-500" />
@@ -301,14 +315,15 @@ export default function CourseLessonPage({ params }: { params: { courseId: strin
               <CardContent>
                 <div className="space-y-2">
                   {course.lessons.map((lesson: any, index: number) => {
-                    const isCompleted = userProgress.completedLessons.includes(lesson.id)
+                    const isCompleted = userProgress.completedLessons?.includes(lesson.id) || false
                     const hasCompletedQuiz = lesson.hasQuiz
-                      ? userProgress.completedQuizzes.includes(lesson.id)
+                      ? userProgress.completedQuizzes?.includes(lesson.id) || false
                       : true
                     const isAccessible =
                       !lesson.prerequisites ||
-                      lesson.prerequisites.every((prereqId: string) =>
-                        userProgress.completedLessons.includes(prereqId)
+                      lesson.prerequisites.every(
+                        (prereqId: string) =>
+                          userProgress.completedLessons?.includes(prereqId) || false
                       )
 
                     return (

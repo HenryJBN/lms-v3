@@ -218,6 +218,67 @@ async def drop_course(
     
     return {"message": "Successfully dropped from course"}
 
+@router.get("/progress/{course_id}")
+async def get_enrollment_progress(
+    course_id: uuid.UUID,
+    current_user = Depends(get_current_active_user)
+):
+    """Get enrollment progress for a course by UUID"""
+    query = """
+        SELECT progress_percentage
+        FROM course_enrollments
+        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
+    """
+
+    enrollment = await database.fetch_one(query, values={
+        "user_id": current_user.id,
+        "course_id": course_id
+    })
+
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not enrolled in this course"
+        )
+
+    return {"progress_percentage": enrollment.progress_percentage or 0}
+
+@router.get("/progress/slug/{course_slug}")
+async def get_enrollment_progress_by_slug(
+    course_slug: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Get enrollment progress for a course by slug"""
+    # First get the course ID from slug
+    course_query = "SELECT id FROM courses WHERE slug = :course_slug"
+    course = await database.fetch_one(course_query, values={"course_slug": course_slug})
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
+    # Get enrollment progress
+    query = """
+        SELECT progress_percentage
+        FROM course_enrollments
+        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
+    """
+
+    enrollment = await database.fetch_one(query, values={
+        "user_id": current_user.id,
+        "course_id": course.id
+    })
+
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not enrolled in this course"
+        )
+
+    return {"progress_percentage": enrollment.progress_percentage or 0}
+
 @router.get("/course/{course_id}/students", response_model=PaginatedResponse)
 async def get_course_students(
     course_id: uuid.UUID,
@@ -227,28 +288,28 @@ async def get_course_students(
     # Check if user is instructor of the course or admin
     course_query = "SELECT instructor_id FROM courses WHERE id = :course_id"
     course = await database.fetch_one(course_query, values={"course_id": course_id})
-    
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"
         )
-    
+
     if current_user.role != "admin" and str(course.instructor_id) != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view course students"
         )
-    
+
     # Get total count
     count_query = """
-        SELECT COUNT(*) as total 
+        SELECT COUNT(*) as total
         FROM course_enrollments ce
         WHERE ce.course_id = :course_id AND ce.status = 'active'
     """
     total_result = await database.fetch_one(count_query, values={"course_id": course_id})
     total = total_result.total
-    
+
     # Get students
     query = """
         SELECT ce.*, u.first_name, u.last_name, u.email, u.avatar_url
@@ -258,15 +319,15 @@ async def get_course_students(
         ORDER BY ce.enrolled_at DESC
         LIMIT :size OFFSET :offset
     """
-    
+
     values = {
         "course_id": course_id,
         "size": pagination.size,
         "offset": (pagination.page - 1) * pagination.size
     }
-    
+
     students = await database.fetch_all(query, values=values)
-    
+
     return PaginatedResponse(
         items=[EnrollmentResponse(**student) for student in students],
         total=total,

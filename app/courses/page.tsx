@@ -27,19 +27,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/contexts/auth-context"
 
-import { courseService, type Course, type CourseFilters } from "@/lib/services/courses"
+import { courseService, type CourseReponse, type CourseFilters } from "@/lib/services/courses"
 import { enrollmentsService } from "@/lib/services/enrollments"
 import { useDebounce } from "@/hooks/use-debounce"
 import { categoryService, type Category } from "@/lib/services/categories"
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([])
+  const [courses, setCourses] = useState<CourseReponse[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories")
   const [selectedLevel, setSelectedLevel] = useState<string>("all-levels")
   const [enrollingCourses, setEnrollingCourses] = useState<Set<number>>(new Set())
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set())
 
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
@@ -51,11 +52,28 @@ export default function CoursesPage() {
     loadCourses()
   }, [debouncedSearch, selectedCategory, selectedLevel])
 
+  // Fetch enrollments when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadUserEnrollments()
+    } else {
+      setEnrolledCourseIds(new Set())
+    }
+  }, [isAuthenticated])
+
+  const loadUserEnrollments = async () => {
+    try {
+      const enrollments = await enrollmentsService.getUserEnrollments()
+      const enrolledIds = new Set(enrollments.map((e) => String(e.course_id)))
+      setEnrolledCourseIds(enrolledIds)
+    } catch (error) {
+      console.error("Failed to load user enrollments:", error)
+    }
+  }
+
   const loadCategories = async () => {
     try {
       const response = await categoryService.getAllCategories()
-      console.log(`Categories: ${response}`)
-
       setCategories(response || [])
     } catch (err) {
       console.error("Error loading categories:", err)
@@ -74,9 +92,8 @@ export default function CoursesPage() {
         filters.level = selectedLevel as "beginner" | "intermediate" | "advanced"
 
       const response = await courseService.getCourses(filters)
-      console.log("Course API Response:", response)
-
-      const validCourses = (response.items || []).filter((c): c is Course => c !== null)
+      
+      const validCourses = (response.items || []).filter((c): c is CourseReponse => c !== null)
 
       setCourses(validCourses)
     } catch (err: any) {
@@ -100,16 +117,19 @@ export default function CoursesPage() {
     try {
       setEnrollingCourses((prev) => new Set(prev).add(courseId))
 
-      await enrollmentsService.enrollInCourse(courseId)
+      await enrollmentsService.enrollInCourse(String(courseId))
 
       toast({
         title: "Enrollment Successful",
         description: "You have been enrolled in the course!",
       })
 
+      // Update both local course state and enrolled IDs set
       setCourses((prev) =>
         prev.map((course) => (course.id === courseId ? { ...course, is_enrolled: true } : course))
       )
+      setEnrolledCourseIds((prev) => new Set(prev).add(String(courseId)))
+      
     } catch (err: any) {
       toast({
         title: "Enrollment Failed",
@@ -130,6 +150,12 @@ export default function CoursesPage() {
       return `${Math.round(hours * 60)}m`
     }
     return `${hours}h`
+  }
+
+  const isCourseEnrolled = (course: CourseReponse) => {
+    // Check both API flag and local enrollment check
+    // Ensure we handle string/number comparison correctly
+    return course.is_enrolled || enrolledCourseIds.has(String(course.id))
   }
 
   if (error) {
@@ -282,17 +308,17 @@ export default function CoursesPage() {
                   </Link>
                 </Button>
 
-                {course.is_enrolled ? (
+                {isCourseEnrolled(course) ? (
                   <Button asChild className="flex-1">
-                    <Link href={`/learn/${course.id}`}>Continue Learning</Link>
+                    <Link href={`/learn/${course.slug}`}>Continue Learning</Link>
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => handleEnroll(course.id)}
-                    disabled={enrollingCourses.has(course.id)}
+                    onClick={() => handleEnroll(course.id as unknown as number)}
+                    disabled={enrollingCourses.has(course.id as unknown as number)}
                     className="flex-1"
                   >
-                    {enrollingCourses.has(course.id) ? "Enrolling..." : "Enroll Now"}
+                    {enrollingCourses.has(course.id as unknown as number) ? "Enrolling..." : "Enroll Now"}
                   </Button>
                 )}
               </CardFooter>

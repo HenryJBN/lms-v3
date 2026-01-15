@@ -14,27 +14,40 @@ from utils.notifications import send_lesson_completion_notification
 
 router = APIRouter()
 
-@router.get("/course/{course_id}", response_model=List[LessonProgressResponse])
-async def get_course_progress(
-    course_id: uuid.UUID,
+@router.get("/course/slug/{course_slug}", response_model=List[LessonProgressResponse])
+async def get_course_progress_by_slug(
+    course_slug: str,
     current_user = Depends(get_current_active_user)
 ):
+    # First get the course ID from slug
+    course_query = """
+        SELECT c.id FROM courses c
+        WHERE c.slug = :course_slug
+    """
+    course = await database.fetch_one(course_query, values={"course_slug": course_slug})
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Course not found"
+        )
+
     # Check if user is enrolled in the course
     enrollment_query = """
-        SELECT id FROM course_enrollments 
+        SELECT id FROM course_enrollments
         WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
     """
     enrollment = await database.fetch_one(enrollment_query, values={
         "user_id": current_user.id,
-        "course_id": course_id
+        "course_id": course.id
     })
-    
+
     if not enrollment:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enrolled in this course"
         )
-    
+
     # Get lesson progress
     query = """
         SELECT lp.*, l.title as lesson_title, l.type as lesson_type
@@ -43,12 +56,49 @@ async def get_course_progress(
         WHERE lp.user_id = :user_id AND lp.course_id = :course_id
         ORDER BY l.sort_order
     """
-    
+
+    progress = await database.fetch_all(query, values={
+        "user_id": current_user.id,
+        "course_id": course.id
+    })
+
+    return [LessonProgressResponse(**p) for p in progress]
+
+@router.get("/course/{course_id}", response_model=List[LessonProgressResponse])
+async def get_course_progress(
+    course_id: uuid.UUID,
+    current_user = Depends(get_current_active_user)
+):
+    # Check if user is enrolled in the course
+    enrollment_query = """
+        SELECT id FROM course_enrollments
+        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
+    """
+    enrollment = await database.fetch_one(enrollment_query, values={
+        "user_id": current_user.id,
+        "course_id": course_id
+    })
+
+    if not enrollment:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enrolled in this course"
+        )
+
+    # Get lesson progress
+    query = """
+        SELECT lp.*, l.title as lesson_title, l.type as lesson_type
+        FROM lesson_progress lp
+        JOIN lessons l ON lp.lesson_id = l.id
+        WHERE lp.user_id = :user_id AND lp.course_id = :course_id
+        ORDER BY l.sort_order
+    """
+
     progress = await database.fetch_all(query, values={
         "user_id": current_user.id,
         "course_id": course_id
     })
-    
+
     return [LessonProgressResponse(**p) for p in progress]
 
 @router.put("/lesson/{lesson_id}", response_model=LessonProgressResponse)
@@ -93,53 +143,61 @@ async def update_lesson_progress(
     video_progress = progress_update.progress_percentage if progress_update.progress_percentage is not None else 0
     assessment_complete = assessment_status['overall_complete']
 
-    status_value = CompletionStatus.not_started
+    # Use string values directly instead of enum
+    status_string = "not_started"
     final_progress_percentage = video_progress
 
     if video_progress > 0 or assessment_status['has_started']:
-        status_value = CompletionStatus.in_progress
+        status_string = "in_progress"
 
     # Lesson is complete if video is watched AND all assessments are complete
     if video_progress >= 100 and assessment_complete:
-        status_value = CompletionStatus.completed
+        status_string = "completed"
         final_progress_percentage = 100
     elif video_progress >= 100 and not assessment_complete:
         # Video complete but assessments pending
         final_progress_percentage = min(95, video_progress)  # Cap at 95% until assessments done
     elif assessment_complete and video_progress < 100:
         # Assessments done but video not complete - allow completion anyway
-        status_value = CompletionStatus.completed
+        status_string = "completed"
         final_progress_percentage = 100
 
     if existing_progress:
         # Update existing progress
-        update_fields = []
+        # Always update status and progress percentage
+        update_fields = [
+            "status = CAST(:status AS completion_status)",
+            "progress_percentage = :progress_percentage",
+        ]
         values = {
-            "user_id": current_user.id,
-            "lesson_id": lesson_id,
-            "status": status_value,
-            "progress_percentage": final_progress_percentage
+            "user_id": str(current_user.id),
+            "lesson_id": str(lesson_id),
+            "status": status_string,
+            "progress_percentage": int(final_progress_percentage),
         }
 
+        # Optional fields from payload
         for field, value in progress_update.dict(exclude_unset=True).items():
-            if field != 'progress_percentage':  # We override this with our calculated value
-                if value is not None:
-                    update_fields.append(f"{field} = :{field}")
-                    values[field] = value
+            if field and value is not None and field not in ("progress_percentage",):
+                update_fields.append(f"{field} = :{field}")
+                values[field] = value
 
-        # Set completion timestamp if just completed
-        if (status_value == CompletionStatus.completed and
-            existing_progress.status != CompletionStatus.completed):
+        # Set timestamps based on status transitions
+        if (status_string == "completed" and existing_progress.status != "completed"):
             update_fields.append("completed_at = NOW()")
             update_fields.append("started_at = COALESCE(started_at, NOW())")
-        elif status_value == CompletionStatus.in_progress and existing_progress.status == CompletionStatus.not_started:
+        elif status_string == "in_progress" and existing_progress.status == "not_started":
             update_fields.append("started_at = NOW()")
 
         query = f"""
             UPDATE lesson_progress
             SET {', '.join(update_fields)}, updated_at = NOW()
             WHERE user_id = :user_id AND lesson_id = :lesson_id
-            RETURNING *
+            RETURNING id, user_id, lesson_id, course_id, status, started_at, completed_at,
+                      COALESCE(time_spent, 0) AS time_spent,
+                      COALESCE(progress_percentage, 0) AS progress_percentage,
+                      COALESCE(last_position, 0) AS last_position,
+                      notes, created_at, updated_at
         """
 
         updated_progress = await database.fetch_one(query, values=values)
@@ -153,29 +211,29 @@ async def update_lesson_progress(
                 time_spent, last_position, notes, started_at, completed_at
             )
             VALUES (
-                :id, :user_id, :lesson_id, :course_id, :status, :progress_percentage,
-                :time_spent, :last_position, :notes,
-                CASE WHEN :status != 'not_started' THEN NOW() END,
-                CASE WHEN :status = 'completed' THEN NOW() END
+                :id, :user_id, :lesson_id, :course_id, CAST(:status AS completion_status), :progress_percentage,
+                COALESCE(:time_spent, 0), COALESCE(:last_position, 0), :notes,
+                CASE WHEN CAST(:status AS completion_status) != 'not_started'::completion_status THEN NOW() END,
+                CASE WHEN CAST(:status AS completion_status) = 'completed'::completion_status THEN NOW() END
             )
             RETURNING *
         """
 
         values = {
-            "id": progress_id,
-            "user_id": current_user.id,
-            "lesson_id": lesson_id,
-            "course_id": lesson.course_id,
-            "status": status_value,
-            "progress_percentage": final_progress_percentage,
+            "id": str(progress_id),
+            "user_id": str(current_user.id),
+            "lesson_id": str(lesson_id),
+            "course_id": str(lesson.course_id),
+            "status": status_string,  # Use string directly
+            "progress_percentage": int(final_progress_percentage),
             **progress_update.dict()
         }
 
         updated_progress = await database.fetch_one(query, values=values)
 
     # Award tokens if lesson just completed
-    if (status_value == CompletionStatus.completed and
-        (not existing_progress or existing_progress.status != CompletionStatus.completed)):
+    if (status_string == "completed" and
+        (not existing_progress or existing_progress.status != "completed")):
 
         await award_tokens(
             user_id=current_user.id,
@@ -404,9 +462,9 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
     Returns dict with completion status for quizzes, assignments, and overall.
     """
 
-    # Get lesson assessment requirements
-    lesson_query = """
-        SELECT l.has_quiz, l.has_assignment, l.passing_score,
+    # Get lesson assessment requirements - check for existence of related records
+    assessment_query = """
+        SELECT
                q.id as quiz_id, q.passing_score as quiz_passing_score,
                a.id as assignment_id
         FROM lessons l
@@ -414,7 +472,7 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
         LEFT JOIN assignments a ON a.lesson_id = l.id AND a.is_published = true
         WHERE l.id = :lesson_id
     """
-    lesson = await database.fetch_one(lesson_query, values={"lesson_id": lesson_id})
+    lesson = await database.fetch_one(assessment_query, values={"lesson_id": lesson_id})
 
     if not lesson:
         return {
@@ -426,8 +484,9 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
             'has_started': False
         }
 
-    has_quiz = lesson.has_quiz and lesson.quiz_id
-    has_assignment = lesson.has_assignment and lesson.assignment_id
+    # Lesson has assessments if related records exist
+    has_quiz = lesson.quiz_id is not None
+    has_assignment = lesson.assignment_id is not None
     has_started = False
 
     # Check quiz completion

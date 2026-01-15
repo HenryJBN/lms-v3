@@ -343,9 +343,15 @@ class CourseService {
   /**
    * ✅ Fetch course lessons for learning
    */
-  async getCourseLessons(courseId: string): Promise<any[]> {
+  async getCourseLessons(courseIdOrSlug: string): Promise<any[]> {
     try {
-      return await apiClient.get(`${API_ENDPOINTS.courses}/course/${courseId}/lessons`)
+      // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
+      const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      const endpoint = isUUID
+        ? `${API_ENDPOINTS.courses}/course/${courseIdOrSlug}/lessons`
+        : `${API_ENDPOINTS.courseLessons}/course/slug/${courseIdOrSlug}`
+
+      return await apiClient.get(endpoint)
     } catch (error) {
       console.error("❌ Failed to get course lessons:", error)
       throw error
@@ -386,15 +392,44 @@ class ProgressService {
   /**
    * Get user progress for a course
    */
-  async getCourseProgress(courseId: string): Promise<UserProgress> {
+  async getCourseProgress(courseIdOrSlug: string): Promise<UserProgress> {
     try {
-      const progress = await apiClient.get<UserProgress>(
-        `${API_ENDPOINTS.progress}/course/${courseId}`
-      )
-      return progress
+      // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
+      const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      const endpoint = isUUID
+        ? `${API_ENDPOINTS.progress}/course/${courseIdOrSlug}`
+        : `${API_ENDPOINTS.progress}/course/slug/${courseIdOrSlug}`
+
+      // API returns LessonProgressResponse[] - transform to UserProgress format
+      const progressRecords = await apiClient.get<any[]>(endpoint)
+
+      // Transform API response to expected UserProgress format
+      const completedLessons: string[] = []
+      const completedQuizzes: string[] = []
+
+      progressRecords.forEach((record: any) => {
+        // If lesson status is 'completed', add to completedLessons
+        if (record.status === "completed") {
+          completedLessons.push(record.lesson_id)
+        }
+        // Note: quiz completion logic would need to be added here if needed
+        // For now, we'll focus on lesson completion
+      })
+
+      return {
+        courseId: courseIdOrSlug,
+        completedLessons,
+        completedQuizzes,
+        lastAccessedLessonId: undefined, // Could be calculated from progress records
+      }
     } catch (error) {
       console.error("❌ Failed to get course progress:", error)
-      throw error
+      // Return default structure on error
+      return {
+        courseId: courseIdOrSlug,
+        completedLessons: [],
+        completedQuizzes: [],
+      }
     }
   }
 
@@ -434,6 +469,25 @@ class ProgressService {
     } catch (error) {
       console.error("❌ Failed to submit quiz attempt:", error)
       throw error
+    }
+  }
+
+  /**
+   * Get enrollment progress for a course
+   */
+  async getEnrollmentProgress(courseIdOrSlug: string): Promise<{ progress_percentage: number }> {
+    try {
+      // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
+      const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      const endpoint = isUUID
+        ? `${API_ENDPOINTS.enrollments}/progress/${courseIdOrSlug}`
+        : `${API_ENDPOINTS.enrollments}/progress/slug/${courseIdOrSlug}`
+
+      return await apiClient.get<{ progress_percentage: number }>(endpoint)
+    } catch (error) {
+      console.error("❌ Failed to get enrollment progress:", error)
+      // Return default on error
+      return { progress_percentage: 0 }
     }
   }
 }

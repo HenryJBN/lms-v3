@@ -16,7 +16,7 @@ import { Calendar, MapPin, Briefcase, Award, BookOpen, Trophy, Loader2 } from "l
 import { useAuth } from "@/lib/contexts/auth-context"
 import { usersService } from "@/lib/services/users"
 import { enrollmentsService, type Enrollment } from "@/lib/services/enrollments"
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser, tokenBalance } = useAuth()
@@ -117,6 +117,13 @@ export default function ProfilePage() {
     return Math.round((filledFields / fields.length) * 100)
   }
 
+  // Safe date formatting helper
+  const formatDate = (dateString: string | undefined | null, formatStr: string, fallback = "N/A") => {
+    if (!dateString) return fallback
+    const date = new Date(dateString)
+    return isValid(date) ? format(date, formatStr) : fallback
+  }
+
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -172,9 +179,7 @@ export default function ProfilePage() {
                     <Calendar className="h-4 w-4" />
                     <span>
                       Joined{" "}
-                      {user.created_at
-                        ? format(new Date(user.created_at), "MMMM yyyy")
-                        : "Recently"}
+                      {formatDate(user.created_at, "MMMM yyyy", "Recently")}
                     </span>
                   </div>
                 </div>
@@ -364,7 +369,7 @@ export default function ProfilePage() {
                           <h3 className="font-semibold">{enrollment.course?.title || "Course"}</h3>
                           <p className="text-sm text-muted-foreground mt-1">
                             Enrolled on{" "}
-                            {format(new Date(enrollment.enrollment_date), "MMM dd, yyyy")}
+                            {formatDate(enrollment.enrollment_date, "MMM dd, yyyy")}
                           </p>
                           <div className="mt-4 space-y-2">
                             <div className="flex items-center justify-between text-sm">
@@ -399,3 +404,4 @@ export default function ProfilePage() {
     </div>
   )
 }
+

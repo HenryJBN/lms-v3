@@ -485,9 +485,9 @@ class LessonProgressResponse(BaseSchema):
     status: CompletionStatus
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    time_spent: int
-    progress_percentage: int
-    last_position: int
+    time_spent: Optional[int] = 0
+    progress_percentage: int = 0
+    last_position: Optional[int] = 0
     notes: Optional[str] = None
     lesson_title: Optional[str] = None
     lesson_type: Optional[str] = None
