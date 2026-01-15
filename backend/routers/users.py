@@ -11,52 +11,44 @@ from middleware.auth import get_current_active_user, require_admin, get_password
 
 router = APIRouter()
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(current_user=Depends(get_current_active_user)):
-    try:
-        if not current_user:
-            return {"success": False, "error": "User not found"}
-
-        return {"success": True, "data": current_user}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    return current_user
 
 
-@router.put("/me")
+@router.put("/me", response_model=UserResponse)
 async def update_current_user(
     user_update: UserUpdate,
     current_user=Depends(get_current_active_user)
 ):
-    try:
-        update_fields = []
-        values = {"user_id": current_user.id}
+    update_fields = []
+    values = {"user_id": current_user.id}
 
-        for field, value in user_update.dict(exclude_unset=True).items():
-            if value is not None:
-                update_fields.append(f"{field} = :{field}")
-                values[field] = value
+    for field, value in user_update.dict(exclude_unset=True).items():
+        if value is not None:
+            update_fields.append(f"{field} = :{field}")
+            values[field] = value
 
-        if not update_fields:
-            # No update requested — just return current user
-            return {"success": True, "data": current_user}
+    if not update_fields:
+        # No update requested — just return current user
+        return current_user
 
-        query = f"""
-            UPDATE users 
-            SET {', '.join(update_fields)}, updated_at = NOW()
-            WHERE id = :user_id
-            RETURNING *
-        """
+    query = f"""
+        UPDATE users 
+        SET {', '.join(update_fields)}, updated_at = NOW()
+        WHERE id = :user_id
+        RETURNING *
+    """
 
-        updated_user = await database.fetch_one(query, values=values)
+    updated_user = await database.fetch_one(query, values=values)
 
-        if not updated_user:
-            return {"success": False, "error": "User not found"}
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
 
-        return {"success": True, "data": updated_user}
-
-    except Exception as e:
-        # Catch any database or logic errors
-        return {"success": False, "error": str(e)}
+    return updated_user
 
 @router.get("/me/profile", response_model=UserProfile)
 async def get_user_profile(current_user = Depends(get_current_active_user)):
