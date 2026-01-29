@@ -1,0 +1,4 @@
+2026-01-29 09:29:43,191 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-29 09:29:50,856 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-29 09:30:01,413 - databases - INFO - Disconnected from database postgresql+asyncpg://postgres:********@localhost:5432/lms_database
+2026-01-29 09:30:06,918 - databases - INFO - Connected to database postgresql+asyncpg://postgres:********@localhost:5432/lms_database

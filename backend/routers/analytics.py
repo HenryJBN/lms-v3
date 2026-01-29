@@ -51,8 +51,8 @@ async def get_student_analytics(
     """
     weekly_progress = await database.fetch_all(weekly_query, values={"user_id": user_id})
     
-    # 4. Active Learning Path Progress
-    path_query = """
+    # 4. Active Course Enrollments (not learning paths)
+    course_enrollments_query = """
         SELECT ce.progress_percentage, c.title, c.slug, c.thumbnail_url, c.id as course_id
         FROM course_enrollments ce
         JOIN courses c ON ce.course_id = c.id
@@ -60,7 +60,7 @@ async def get_student_analytics(
         ORDER BY ce.last_accessed_at DESC NULLS LAST
         LIMIT 4
     """
-    learning_path = await database.fetch_all(path_query, values={"user_id": user_id})
+    active_courses = await database.fetch_all(course_enrollments_query, values={"user_id": user_id})
     
     # 5. Last Accessed Lesson
     last_lesson_query = """
@@ -82,7 +82,7 @@ async def get_student_analytics(
         },
         "recent_activity": [dict(a) for a in recent_activity],
         "weekly_progress": [dict(w) for w in weekly_progress],
-        "learning_path": [dict(p) for p in learning_path],
+        "learning_path": [dict(p) for p in active_courses],
         "last_accessed": {
             "lesson_id": str(last_lesson.lesson_id) if last_lesson else None,
             "course_id": str(last_lesson.course_id) if last_lesson else None,
