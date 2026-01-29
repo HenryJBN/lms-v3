@@ -412,9 +412,9 @@ export default function LessonsManagement() {
     totalViews: lessons.reduce((sum, lesson) => sum + lesson.views, 0),
     averageCompletion:
       lessons
-        .filter((l) => l.completionRate > 0)
-        .reduce((sum, lesson) => sum + lesson.completionRate, 0) /
-      lessons.filter((l) => l.completionRate > 0).length,
+        .filter((l) => (l.completionRate ?? 0) > 0)
+        .reduce((sum, lesson) => sum + (lesson.completionRate ?? 0), 0) /
+      lessons.filter((l) => (l.completionRate ?? 0) > 0).length,
     totalDuration: lessons.reduce((sum, lesson) => {
       const [minutes, seconds] = lesson.duration.split(":").map(Number)
       return sum + minutes + seconds / 60
@@ -2358,7 +2358,7 @@ export default function LessonsManagement() {
                             <div className="min-w-0">
                               <div className="font-medium truncate">{lesson.title}</div>
                               <div className="text-sm text-muted-foreground truncate">
-                                {lesson.description.substring(0, 50)}...
+                                {lesson?.description?.substring(0, 50)}...
                               </div>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {lesson.isPreview && (
@@ -2410,11 +2410,13 @@ export default function LessonsManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 whitespace-nowrap">
-                            <div className="text-sm">{lesson.completionRate.toFixed(1)}%</div>
+                            <div className="text-sm">
+                              {Number(lesson?.completionRate ?? 0).toFixed(1)}%
+                            </div>
                             <div className="w-16 bg-gray-200 rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${lesson.completionRate}%` }}
+                                style={{ width: `${Number(lesson.completionRate ?? 0)}%` }}
                               ></div>
                             </div>
                           </div>
