@@ -30,10 +30,11 @@ class EnrollmentsService {
     }
   }
 
-  async enroll(courseId: string): Promise<Enrollment> {
+  async enroll(courseId: string, cohortId?: string): Promise<Enrollment> {
     try {
       return await apiClient.post<Enrollment>(API_ENDPOINTS.enrollments, {
         course_id: courseId,
+        ...(cohortId && { cohort_id: cohortId }),
       })
     } catch (error) {
       console.error("Failed to enroll in course:", error)
@@ -41,8 +42,8 @@ class EnrollmentsService {
     }
   }
 
-  async enrollInCourse(courseId: string): Promise<Enrollment> {
-    return this.enroll(courseId)
+  async enrollInCourse(courseId: string, cohortId?: string): Promise<Enrollment> {
+    return this.enroll(courseId, cohortId)
   }
 
   async getEnrollment(enrollmentId: string): Promise<Enrollment> {

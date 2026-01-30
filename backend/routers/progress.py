@@ -3,11 +3,16 @@ from typing import List, Optional
 import uuid
 from datetime import datetime
 
-from database.connection import database
-from models.schemas import (
-    LessonProgressUpdate, LessonProgressResponse, QuizAttemptCreate,
-    QuizAttemptResponse, CompletionStatus
-)
+from sqlmodel import select, and_, func
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from database.session import get_session
+from models.course import Course
+from models.enrollment import Enrollment, LessonProgress
+from models.lesson import Lesson, QuizAttempt
+from models.enums import CompletionStatus, EnrollmentStatus
+from schemas.enrollment import LessonProgressResponse, LessonProgressUpdate
+from schemas.lesson import QuizAttemptCreate, QuizAttemptResponse
 from middleware.auth import get_current_active_user
 from utils.tokens import award_tokens
 from utils.notifications import send_lesson_completion_notification
@@ -17,14 +22,13 @@ router = APIRouter()
 @router.get("/course/slug/{course_slug}", response_model=List[LessonProgressResponse])
 async def get_course_progress_by_slug(
     course_slug: str,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
 ):
     # First get the course ID from slug
-    course_query = """
-        SELECT c.id FROM courses c
-        WHERE c.slug = :course_slug
-    """
-    course = await database.fetch_one(course_query, values={"course_slug": course_slug})
+    query = select(Course).where(Course.slug == course_slug)
+    result = await session.exec(query)
+    course = result.first()
 
     if not course:
         raise HTTPException(
@@ -33,14 +37,13 @@ async def get_course_progress_by_slug(
         )
 
     # Check if user is enrolled in the course
-    enrollment_query = """
-        SELECT id FROM course_enrollments
-        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
-    """
-    enrollment = await database.fetch_one(enrollment_query, values={
-        "user_id": current_user.id,
-        "course_id": course.id
-    })
+    enrollment_query = select(Enrollment).where(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course.id,
+        Enrollment.status == "active"
+    )
+    enrollment_result = await session.exec(enrollment_query)
+    enrollment = enrollment_result.first()
 
     if not enrollment:
         raise HTTPException(
@@ -48,36 +51,39 @@ async def get_course_progress_by_slug(
             detail="Not enrolled in this course"
         )
 
-    # Get lesson progress
-    query = """
-        SELECT lp.*, l.title as lesson_title, l.type as lesson_type
-        FROM lesson_progress lp
-        JOIN lessons l ON lp.lesson_id = l.id
-        WHERE lp.user_id = :user_id AND lp.course_id = :course_id
-        ORDER BY l.sort_order
-    """
+    # Get lesson progress joined with lessons
+    progress_query = select(LessonProgress, Lesson.title, Lesson.type).join(
+        Lesson, LessonProgress.lesson_id == Lesson.id
+    ).where(
+        LessonProgress.user_id == current_user.id,
+        LessonProgress.course_id == course.id
+    ).order_by(Lesson.sort_order)
+    
+    progress_result = await session.exec(progress_query)
+    progress_list = []
+    
+    for lp, title, ltype in progress_result.all():
+        p_dict = lp.model_dump()
+        p_dict["lesson_title"] = title
+        p_dict["lesson_type"] = ltype
+        progress_list.append(p_dict)
 
-    progress = await database.fetch_all(query, values={
-        "user_id": current_user.id,
-        "course_id": course.id
-    })
-
-    return [LessonProgressResponse(**p) for p in progress]
+    return progress_list
 
 @router.get("/course/{course_id}", response_model=List[LessonProgressResponse])
 async def get_course_progress(
     course_id: uuid.UUID,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
 ):
     # Check if user is enrolled in the course
-    enrollment_query = """
-        SELECT id FROM course_enrollments
-        WHERE user_id = :user_id AND course_id = :course_id AND status = 'active'
-    """
-    enrollment = await database.fetch_one(enrollment_query, values={
-        "user_id": current_user.id,
-        "course_id": course_id
-    })
+    enrollment_query = select(Enrollment).where(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course_id,
+        Enrollment.status == "active"
+    )
+    enrollment_result = await session.exec(enrollment_query)
+    enrollment = enrollment_result.first()
 
     if not enrollment:
         raise HTTPException(
@@ -85,220 +91,199 @@ async def get_course_progress(
             detail="Not enrolled in this course"
         )
 
-    # Get lesson progress
-    query = """
-        SELECT lp.*, l.title as lesson_title, l.type as lesson_type
-        FROM lesson_progress lp
-        JOIN lessons l ON lp.lesson_id = l.id
-        WHERE lp.user_id = :user_id AND lp.course_id = :course_id
-        ORDER BY l.sort_order
-    """
+    # Get lesson progress joined with lessons
+    progress_query = select(LessonProgress, Lesson.title, Lesson.type).join(
+        Lesson, LessonProgress.lesson_id == Lesson.id
+    ).where(
+        LessonProgress.user_id == current_user.id,
+        LessonProgress.course_id == course_id
+    ).order_by(Lesson.sort_order)
+    
+    progress_result = await session.exec(progress_query)
+    progress_list = []
+    
+    for lp, title, ltype in progress_result.all():
+        p_dict = lp.model_dump()
+        p_dict["lesson_title"] = title
+        p_dict["lesson_type"] = ltype
+        progress_list.append(p_dict)
 
-    progress = await database.fetch_all(query, values={
-        "user_id": current_user.id,
-        "course_id": course_id
-    })
-
-    return [LessonProgressResponse(**p) for p in progress]
+    return progress_list
 
 @router.put("/lesson/{lesson_id}", response_model=LessonProgressResponse)
 async def update_lesson_progress(
     lesson_id: uuid.UUID,
     progress_update: LessonProgressUpdate,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
 ):
     # Get lesson info and check enrollment
-    lesson_query = """
-        SELECT l.*, ce.id as enrollment_id
-        FROM lessons l
-        JOIN course_enrollments ce ON l.course_id = ce.course_id
-        WHERE l.id = :lesson_id AND ce.user_id = :user_id AND ce.status = 'active'
-    """
+    lesson_query = select(Lesson, Enrollment.id.label("enrollment_id")).join(
+        Enrollment, Lesson.course_id == Enrollment.course_id
+    ).where(
+        Lesson.id == lesson_id,
+        Enrollment.user_id == current_user.id,
+        Enrollment.status == "active"
+    )
+    lesson_result = await session.exec(lesson_query)
+    row = lesson_result.first()
 
-    lesson = await database.fetch_one(lesson_query, values={
-        "lesson_id": lesson_id,
-        "user_id": current_user.id
-    })
-
-    if not lesson:
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Lesson not found or not enrolled in course"
         )
+    
+    lesson = row[0]
 
     # Check assessment completion status
-    assessment_status = await check_lesson_assessment_completion(current_user.id, lesson_id)
+    assessment_status = await check_lesson_assessment_completion(current_user.id, lesson_id, session)
 
     # Check if progress record exists
-    existing_query = """
-        SELECT * FROM lesson_progress
-        WHERE user_id = :user_id AND lesson_id = :lesson_id
-    """
-    existing_progress = await database.fetch_one(existing_query, values={
-        "user_id": current_user.id,
-        "lesson_id": lesson_id
-    })
+    existing_query = select(LessonProgress).where(
+        LessonProgress.user_id == current_user.id,
+        LessonProgress.lesson_id == lesson_id
+    )
+    existing_result = await session.exec(existing_query)
+    existing_progress = existing_result.first()
 
     # Determine completion status based on video progress AND assessments
     video_progress = progress_update.progress_percentage if progress_update.progress_percentage is not None else 0
     assessment_complete = assessment_status['overall_complete']
 
-    # Use string values directly instead of enum
-    status_string = "not_started"
+    # Use enum values
+    status_enum = CompletionStatus.not_started
     final_progress_percentage = video_progress
 
     if video_progress > 0 or assessment_status['has_started']:
-        status_string = "in_progress"
+        status_enum = CompletionStatus.in_progress
 
     # Lesson is complete if video is watched AND all assessments are complete
     if video_progress >= 100 and assessment_complete:
-        status_string = "completed"
+        status_enum = CompletionStatus.completed
         final_progress_percentage = 100
     elif video_progress >= 100 and not assessment_complete:
         # Video complete but assessments pending
         final_progress_percentage = min(95, video_progress)  # Cap at 95% until assessments done
     elif assessment_complete and video_progress < 100:
         # Assessments done but video not complete - allow completion anyway
-        status_string = "completed"
+        status_enum = CompletionStatus.completed
         final_progress_percentage = 100
 
     if existing_progress:
         # Update existing progress
-        # Always update status and progress percentage
-        update_fields = [
-            "status = CAST(:status AS completion_status)",
-            "progress_percentage = :progress_percentage",
-        ]
-        values = {
-            "user_id": str(current_user.id),
-            "lesson_id": str(lesson_id),
-            "status": status_string,
-            "progress_percentage": int(final_progress_percentage),
-        }
-
+        prev_status = existing_progress.status
+        existing_progress.status = status_enum
+        existing_progress.progress_percentage = int(final_progress_percentage)
+        
         # Optional fields from payload
         for field, value in progress_update.dict(exclude_unset=True).items():
             if field and value is not None and field not in ("progress_percentage",):
-                update_fields.append(f"{field} = :{field}")
-                values[field] = value
+                setattr(existing_progress, field, value)
 
         # Set timestamps based on status transitions
-        if (status_string == "completed" and existing_progress.status != "completed"):
-            update_fields.append("completed_at = NOW()")
-            update_fields.append("started_at = COALESCE(started_at, NOW())")
-        elif status_string == "in_progress" and existing_progress.status == "not_started":
-            update_fields.append("started_at = NOW()")
-
-        query = f"""
-            UPDATE lesson_progress
-            SET {', '.join(update_fields)}, updated_at = NOW()
-            WHERE user_id = :user_id AND lesson_id = :lesson_id
-            RETURNING id, user_id, lesson_id, course_id, status, started_at, completed_at,
-                      COALESCE(time_spent, 0) AS time_spent,
-                      COALESCE(progress_percentage, 0) AS progress_percentage,
-                      COALESCE(last_position, 0) AS last_position,
-                      notes, created_at, updated_at
-        """
-
-        updated_progress = await database.fetch_one(query, values=values)
+        if status_enum == CompletionStatus.completed and prev_status != CompletionStatus.completed:
+            existing_progress.completed_at = datetime.utcnow()
+            if not existing_progress.started_at:
+                existing_progress.started_at = datetime.utcnow()
+        elif status_enum == CompletionStatus.in_progress and prev_status == CompletionStatus.not_started:
+            existing_progress.started_at = datetime.utcnow()
+        
+        existing_progress.updated_at = datetime.utcnow()
+        session.add(existing_progress)
+        updated_progress = existing_progress
     else:
         # Create new progress record
-        progress_id = uuid.uuid4()
+        updated_progress = LessonProgress(
+            user_id=current_user.id,
+            lesson_id=lesson_id,
+            course_id=lesson.course_id,
+            status=status_enum,
+            progress_percentage=int(final_progress_percentage),
+            time_spent=progress_update.time_spent or 0,
+            last_position=progress_update.last_position or 0,
+            notes=progress_update.notes,
+            started_at=datetime.utcnow() if status_enum != CompletionStatus.not_started else None,
+            completed_at=datetime.utcnow() if status_enum == CompletionStatus.completed else None
+        )
+        session.add(updated_progress)
 
-        query = """
-            INSERT INTO lesson_progress (
-                id, user_id, lesson_id, course_id, status, progress_percentage,
-                time_spent, last_position, notes, started_at, completed_at
-            )
-            VALUES (
-                :id, :user_id, :lesson_id, :course_id, CAST(:status AS completion_status), :progress_percentage,
-                COALESCE(:time_spent, 0), COALESCE(:last_position, 0), :notes,
-                CASE WHEN CAST(:status AS completion_status) != 'not_started'::completion_status THEN NOW() END,
-                CASE WHEN CAST(:status AS completion_status) = 'completed'::completion_status THEN NOW() END
-            )
-            RETURNING *
-        """
-
-        values = {
-            "id": str(progress_id),
-            "user_id": str(current_user.id),
-            "lesson_id": str(lesson_id),
-            "course_id": str(lesson.course_id),
-            "status": status_string,  # Use string directly
-            "progress_percentage": int(final_progress_percentage),
-            **progress_update.dict()
-        }
-
-        updated_progress = await database.fetch_one(query, values=values)
+    await session.commit()
+    await session.refresh(updated_progress)
 
     # Award tokens if lesson just completed
-    if (status_string == "completed" and
-        (not existing_progress or existing_progress.status != "completed")):
-
+    if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
         await award_tokens(
             user_id=current_user.id,
             amount=10.0,
             description=f"Completed lesson: {lesson.title}",
+            session=session,
             reference_type="lesson_completed",
             reference_id=lesson_id
         )
 
         # Send completion notification
-        await send_lesson_completion_notification(current_user.id, lesson.title, lesson.course_id)
+        await send_lesson_completion_notification(current_user.id, lesson.title, lesson.course_id, session)
 
         # Update course progress
-        await update_course_progress(current_user.id, lesson.course_id)
+        await update_course_progress(current_user.id, lesson.course_id, session)
 
-    return LessonProgressResponse(**updated_progress)
+    # Prepare response from updated_progress
+    res_dict = updated_progress.model_dump()
+    res_dict["lesson_title"] = lesson.title
+    res_dict["lesson_type"] = lesson.type
+    return res_dict
 
 @router.post("/quiz/attempt", response_model=QuizAttemptResponse)
 async def submit_quiz_attempt(
     attempt: QuizAttemptCreate,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
 ):
+    from models.lesson import Quiz, QuizQuestion, QuizAttempt
     # Get quiz info and check enrollment
-    quiz_query = """
-        SELECT q.*, ce.id as enrollment_id, l.title as lesson_title
-        FROM quizzes q
-        LEFT JOIN lessons l ON q.lesson_id = l.id
-        JOIN course_enrollments ce ON q.course_id = ce.course_id
-        WHERE q.id = :quiz_id AND ce.user_id = :user_id AND ce.status = 'active'
-    """
+    quiz_query = select(Quiz, Lesson.title.label("lesson_title")).outerjoin(
+        Lesson, Quiz.lesson_id == Lesson.id
+    ).join(
+        Enrollment, Quiz.course_id == Enrollment.course_id
+    ).where(
+        Quiz.id == attempt.quiz_id,
+        Enrollment.user_id == current_user.id,
+        Enrollment.status == "active"
+    )
     
-    quiz = await database.fetch_one(quiz_query, values={
-        "quiz_id": attempt.quiz_id,
-        "user_id": current_user.id
-    })
+    quiz_result = await session.exec(quiz_query)
+    row = quiz_result.first()
     
-    if not quiz:
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Quiz not found or not enrolled in course"
         )
     
-    # Check attempt limit
-    attempts_query = """
-        SELECT COUNT(*) as count FROM quiz_attempts 
-        WHERE user_id = :user_id AND quiz_id = :quiz_id
-    """
-    attempts_count = await database.fetch_one(attempts_query, values={
-        "user_id": current_user.id,
-        "quiz_id": attempt.quiz_id
-    })
+    quiz = row[0]
     
-    if attempts_count.count >= quiz.max_attempts:
+    # Check attempt limit
+    attempts_query = select(func.count(QuizAttempt.id)).where(
+        QuizAttempt.user_id == current_user.id,
+        QuizAttempt.quiz_id == attempt.quiz_id
+    )
+    count_result = await session.exec(attempts_query)
+    attempts_count = count_result.one()
+    
+    if attempts_count >= quiz.max_attempts:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum attempts exceeded"
         )
     
     # Get quiz questions for scoring
-    questions_query = """
-        SELECT * FROM quiz_questions 
-        WHERE quiz_id = :quiz_id 
-        ORDER BY sort_order
-    """
-    questions = await database.fetch_all(questions_query, values={"quiz_id": attempt.quiz_id})
+    questions_query = select(QuizQuestion).where(
+        QuizQuestion.quiz_id == attempt.quiz_id
+    ).order_by(QuizQuestion.sort_order)
+    
+    questions_result = await session.exec(questions_query)
+    questions = questions_result.all()
     
     # Calculate score
     total_points = sum(q.points for q in questions)
@@ -306,40 +291,28 @@ async def submit_quiz_attempt(
     
     for question in questions:
         user_answer = attempt.answers.get(str(question.id))
-        if user_answer and user_answer.lower().strip() == question.correct_answer.lower().strip():
+        if user_answer and str(user_answer).lower().strip() == str(question.correct_answer).lower().strip():
             earned_points += question.points
     
     score = int((earned_points / total_points) * 100) if total_points > 0 else 0
     passed = score >= quiz.passing_score
     
     # Create quiz attempt record
-    attempt_id = uuid.uuid4()
-    attempt_number = attempts_count.count + 1
+    new_attempt = QuizAttempt(
+        user_id=current_user.id,
+        quiz_id=attempt.quiz_id,
+        course_id=quiz.course_id,
+        attempt_number=attempts_count + 1,
+        started_at=datetime.utcnow(),
+        completed_at=datetime.utcnow(),
+        score=score,
+        passed=passed,
+        answers=attempt.answers
+    )
     
-    insert_query = """
-        INSERT INTO quiz_attempts (
-            id, user_id, quiz_id, course_id, attempt_number, started_at,
-            completed_at, score, passed, answers
-        )
-        VALUES (
-            :id, :user_id, :quiz_id, :course_id, :attempt_number, NOW(),
-            NOW(), :score, :passed, :answers
-        )
-        RETURNING *
-    """
-    
-    values = {
-        "id": attempt_id,
-        "user_id": current_user.id,
-        "quiz_id": attempt.quiz_id,
-        "course_id": quiz.course_id,
-        "attempt_number": attempt_number,
-        "score": score,
-        "passed": passed,
-        "answers": attempt.answers
-    }
-    
-    new_attempt = await database.fetch_one(insert_query, values=values)
+    session.add(new_attempt)
+    await session.commit()
+    await session.refresh(new_attempt)
     
     # Award tokens if passed
     if passed:
@@ -347,192 +320,178 @@ async def submit_quiz_attempt(
             user_id=current_user.id,
             amount=15.0,
             description=f"Passed quiz: {quiz.title} ({score}%)",
+            session=session,
             reference_type="quiz_passed",
             reference_id=attempt.quiz_id
         )
     
-    return QuizAttemptResponse(**new_attempt)
+    return new_attempt
 
 @router.get("/quiz/{quiz_id}/attempts", response_model=List[QuizAttemptResponse])
 async def get_quiz_attempts(
     quiz_id: uuid.UUID,
-    current_user = Depends(get_current_active_user)
+    current_user = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
 ):
+    from models.lesson import Quiz, QuizAttempt
     # Check if user has access to this quiz
-    quiz_query = """
-        SELECT q.id FROM quizzes q
-        JOIN course_enrollments ce ON q.course_id = ce.course_id
-        WHERE q.id = :quiz_id AND ce.user_id = :user_id AND ce.status = 'active'
-    """
+    quiz_query = select(Quiz.id).join(
+        Enrollment, Quiz.course_id == Enrollment.course_id
+    ).where(
+        Quiz.id == quiz_id,
+        Enrollment.user_id == current_user.id,
+        Enrollment.status == "active"
+    )
     
-    quiz = await database.fetch_one(quiz_query, values={
-        "quiz_id": quiz_id,
-        "user_id": current_user.id
-    })
+    quiz_result = await session.exec(quiz_query)
+    quiz_id_found = quiz_result.first()
     
-    if not quiz:
+    if not quiz_id_found:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Quiz not found or not enrolled in course"
         )
     
     # Get user's attempts
-    query = """
-        SELECT * FROM quiz_attempts 
-        WHERE user_id = :user_id AND quiz_id = :quiz_id
-        ORDER BY attempt_number DESC
-    """
+    query = select(QuizAttempt).where(
+        QuizAttempt.user_id == current_user.id,
+        QuizAttempt.quiz_id == quiz_id
+    ).order_by(QuizAttempt.attempt_number.desc())
     
-    attempts = await database.fetch_all(query, values={
-        "user_id": current_user.id,
-        "quiz_id": quiz_id
-    })
-    
-    return [QuizAttemptResponse(**attempt) for attempt in attempts]
+    attempts_result = await session.exec(query)
+    return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID):
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession):
     """Update overall course progress based on lesson completions"""
+    from models.enrollment import Enrollment, LessonProgress
+    from models.lesson import Lesson
+    from models.gamification import TokenTransaction
     
     # Get total lessons and completed lessons
-    progress_query = """
-        SELECT 
-            COUNT(l.id) as total_lessons,
-            COUNT(CASE WHEN lp.status = 'completed' THEN 1 END) as completed_lessons
-        FROM lessons l
-        LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.user_id = :user_id
-        WHERE l.course_id = :course_id AND l.is_published = true
-    """
+    # We use a join to ensure we only count published lessons
+    total_query = select(func.count(Lesson.id)).where(
+        Lesson.course_id == course_id,
+        Lesson.is_published == True
+    )
+    total_result = await session.exec(total_query)
+    total_lessons = total_result.one()
     
-    progress_data = await database.fetch_one(progress_query, values={
-        "user_id": user_id,
-        "course_id": course_id
-    })
-    
-    if progress_data.total_lessons == 0:
+    if total_lessons == 0:
         return
     
-    progress_percentage = int((progress_data.completed_lessons / progress_data.total_lessons) * 100)
+    completed_query = select(func.count(LessonProgress.id)).join(
+        Lesson, LessonProgress.lesson_id == Lesson.id
+    ).where(
+        LessonProgress.user_id == user_id,
+        LessonProgress.course_id == course_id,
+        LessonProgress.status == CompletionStatus.completed,
+        Lesson.is_published == True
+    )
+    completed_result = await session.exec(completed_query)
+    completed_lessons = completed_result.one()
+    
+    progress_percentage = int((completed_lessons / total_lessons) * 100)
     
     # Update enrollment progress
-    update_query = """
-        UPDATE course_enrollments 
-        SET progress_percentage = :progress_percentage,
-            last_accessed_at = NOW(),
-            completed_at = CASE WHEN :progress_percentage >= 100 THEN NOW() ELSE completed_at END,
-            status = CASE WHEN :progress_percentage >= 100 THEN 'completed' ELSE status END,
-            updated_at = NOW()
-        WHERE user_id = :user_id AND course_id = :course_id
-    """
+    enrollment_query = select(Enrollment).where(
+        Enrollment.user_id == user_id,
+        Enrollment.course_id == course_id
+    )
+    enrollment_result = await session.exec(enrollment_query)
+    enrollment = enrollment_result.first()
     
-    await database.execute(update_query, values={
-        "progress_percentage": progress_percentage,
-        "user_id": user_id,
-        "course_id": course_id
-    })
-    
-    # If course completed, award bonus tokens and issue certificate
-    if progress_percentage >= 100:
-        # Check if already awarded completion bonus
-        existing_bonus_query = """
-            SELECT id FROM token_transactions 
-            WHERE user_id = :user_id AND reference_type = 'course_completed' 
-            AND reference_id = :course_id
-        """
-        existing_bonus = await database.fetch_one(existing_bonus_query, values={
-            "user_id": user_id,
-            "course_id": course_id
-        })
+    if enrollment:
+        prev_progress = enrollment.progress_percentage
+        enrollment.progress_percentage = progress_percentage
+        enrollment.last_accessed_at = datetime.utcnow()
+        enrollment.updated_at = datetime.utcnow()
         
-        if not existing_bonus:
-            # Award course completion bonus
-            await award_tokens(
-                user_id=user_id,
-                amount=50.0,
-                description="Course completion bonus",
-                reference_type="course_completed",
-                reference_id=course_id
+        if progress_percentage >= 100:
+            enrollment.status = EnrollmentStatus.completed
+            if not enrollment.completed_at:
+                enrollment.completed_at = datetime.utcnow()
+        
+        session.add(enrollment)
+        await session.commit()
+    
+        # If course completed, award bonus tokens and issue certificate
+        if progress_percentage >= 100 and prev_progress < 100:
+            # Check if already awarded completion bonus
+            bonus_query = select(TokenTransaction).where(
+                TokenTransaction.user_id == user_id,
+                TokenTransaction.reference_type == "course_completed",
+                TokenTransaction.reference_id == course_id
             )
-            
-            # Issue certificate (this would trigger blockchain minting in production)
-            await issue_certificate(user_id, course_id)
+            bonus_result = await session.exec(bonus_query)
+            if not bonus_result.first():
+                # Award course completion bonus
+                await award_tokens(
+                    user_id=user_id,
+                    amount=50.0,
+                    description="Course completion bonus",
+                    session=session,
+                    reference_type="course_completed",
+                    reference_id=course_id
+                )
+                
+                # Issue certificate
+                await issue_certificate(user_id, course_id, session)
 
-async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID):
+async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession):
     """
     Check if user has completed all required assessments for a lesson.
     Returns dict with completion status for quizzes, assignments, and overall.
     """
+    from models.lesson import Quiz, QuizAttempt, Assignment, AssignmentSubmission
+    
+    # Get quiz for the lesson
+    quiz_query = select(Quiz).where(Quiz.lesson_id == lesson_id, Quiz.is_published == True)
+    quiz_result = await session.exec(quiz_query)
+    quiz = quiz_result.first()
+    
+    # Get assignment for the lesson
+    assignment_query = select(Assignment).where(Assignment.lesson_id == lesson_id, Assignment.is_published == True)
+    assignment_result = await session.exec(assignment_query)
+    assignment = assignment_result.first()
 
-    # Get lesson assessment requirements - check for existence of related records
-    assessment_query = """
-        SELECT
-               q.id as quiz_id, q.passing_score as quiz_passing_score,
-               a.id as assignment_id
-        FROM lessons l
-        LEFT JOIN quizzes q ON q.lesson_id = l.id AND q.is_published = true
-        LEFT JOIN assignments a ON a.lesson_id = l.id AND a.is_published = true
-        WHERE l.id = :lesson_id
-    """
-    lesson = await database.fetch_one(assessment_query, values={"lesson_id": lesson_id})
-
-    if not lesson:
-        return {
-            'has_quiz': False,
-            'has_assignment': False,
-            'quiz_complete': True,  # No quiz required
-            'assignment_complete': True,  # No assignment required
-            'overall_complete': True,
-            'has_started': False
-        }
-
-    # Lesson has assessments if related records exist
-    has_quiz = lesson.quiz_id is not None
-    has_assignment = lesson.assignment_id is not None
+    has_quiz = quiz is not None
+    has_assignment = assignment is not None
     has_started = False
-
+    
     # Check quiz completion
     quiz_complete = True
     if has_quiz:
-        quiz_attempt_query = """
-            SELECT qa.score, qa.passed, q.passing_score
-            FROM quiz_attempts qa
-            JOIN quizzes q ON qa.quiz_id = q.id
-            WHERE qa.user_id = :user_id AND qa.quiz_id = :quiz_id
-            ORDER BY qa.completed_at DESC
-            LIMIT 1
-        """
-        latest_attempt = await database.fetch_one(quiz_attempt_query, values={
-            "user_id": user_id,
-            "quiz_id": lesson.quiz_id
-        })
-
+        quiz_attempt_query = select(QuizAttempt).where(
+            QuizAttempt.user_id == user_id,
+            QuizAttempt.quiz_id == quiz.id
+        ).order_by(QuizAttempt.completed_at.desc()).limit(1)
+        
+        latest_attempt_result = await session.exec(quiz_attempt_query)
+        latest_attempt = latest_attempt_result.first()
+        
         if latest_attempt:
             has_started = True
-            quiz_complete = latest_attempt.passed or latest_attempt.score >= lesson.quiz_passing_score
+            quiz_complete = latest_attempt.passed or (latest_attempt.score is not None and latest_attempt.score >= quiz.passing_score)
         else:
-            quiz_complete = False  # Quiz exists but not attempted
+            quiz_complete = False
 
     # Check assignment completion
     assignment_complete = True
     if has_assignment:
-        assignment_submission_query = """
-            SELECT sub.grade, sub.status, a.max_points
-            FROM assignment_submissions sub
-            JOIN assignments a ON sub.assignment_id = a.id
-            WHERE sub.user_id = :user_id AND sub.assignment_id = :assignment_id
-            ORDER BY sub.submitted_at DESC
-            LIMIT 1
-        """
-        latest_submission = await database.fetch_one(assignment_submission_query, values={
-            "user_id": user_id,
-            "assignment_id": lesson.assignment_id
-        })
-
+        assignment_submission_query = select(AssignmentSubmission).where(
+            AssignmentSubmission.user_id == user_id,
+            AssignmentSubmission.assignment_id == assignment.id
+        ).order_by(AssignmentSubmission.submitted_at.desc()).limit(1)
+        
+        latest_submission_result = await session.exec(assignment_submission_query)
+        latest_submission = latest_submission_result.first()
+        
         if latest_submission:
             has_started = True
             # Assignment is complete if submitted and graded (or if grading not required)
             assignment_complete = latest_submission.status == 'graded' or latest_submission.grade is not None
         else:
-            assignment_complete = False  # Assignment exists but not submitted
+            assignment_complete = False
 
     # Overall completion: all required assessments must be complete
     overall_complete = True
@@ -550,59 +509,51 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
         'has_started': has_started
     }
 
-async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID):
+async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession):
     """Issue NFT certificate for course completion"""
+    from models.course import Course
+    from models.enrollment import Enrollment, Certificate
 
     # Get course info
-    course_query = "SELECT title FROM courses WHERE id = :course_id"
-    course = await database.fetch_one(course_query, values={"course_id": course_id})
+    course_query = select(Course).where(Course.id == course_id)
+    course_result = await session.exec(course_query)
+    course = course_result.first()
 
     if not course:
         return
 
     # Check if certificate already exists
-    existing_cert_query = """
-        SELECT id FROM certificates
-        WHERE user_id = :user_id AND course_id = :course_id
-    """
-    existing_cert = await database.fetch_one(existing_cert_query, values={
-        "user_id": user_id,
-        "course_id": course_id
-    })
-
-    if existing_cert:
+    existing_cert_query = select(Certificate).where(
+        Certificate.user_id == user_id,
+        Certificate.course_id == course_id
+    )
+    existing_cert_result = await session.exec(existing_cert_query)
+    
+    if existing_cert_result.first():
         return
 
     # Create certificate record
-    cert_id = uuid.uuid4()
-
-    insert_query = """
-        INSERT INTO certificates (
-            id, user_id, course_id, title, description, status,
-            blockchain_network, issued_at
-        )
-        VALUES (
-            :id, :user_id, :course_id, :title, :description, 'pending',
-            'polygon', NOW()
-        )
-    """
-
-    await database.execute(insert_query, values={
-        "id": cert_id,
-        "user_id": user_id,
-        "course_id": course_id,
-        "title": f"Certificate of Completion - {course.title}",
-        "description": f"This certificate verifies that the holder has successfully completed the course: {course.title}"
-    })
+    new_cert = Certificate(
+        user_id=user_id,
+        course_id=course_id,
+        title=f"Certificate of Completion - {course.title}",
+        description=f"This certificate verifies that the holder has successfully completed the course: {course.title}",
+        status="pending",
+        blockchain_network="polygon",
+        issued_at=datetime.utcnow()
+    )
+    session.add(new_cert)
 
     # Update enrollment with certificate issued timestamp
-    update_enrollment_query = """
-        UPDATE course_enrollments
-        SET certificate_issued_at = NOW()
-        WHERE user_id = :user_id AND course_id = :course_id
-    """
-
-    await database.execute(update_enrollment_query, values={
-        "user_id": user_id,
-        "course_id": course_id
-    })
+    enrollment_query = select(Enrollment).where(
+        Enrollment.user_id == user_id,
+        Enrollment.course_id == course_id
+    )
+    enrollment_result = await session.exec(enrollment_query)
+    enrollment = enrollment_result.first()
+    
+    if enrollment:
+        enrollment.certificate_issued_at = datetime.utcnow()
+        session.add(enrollment)
+    
+    await session.commit()

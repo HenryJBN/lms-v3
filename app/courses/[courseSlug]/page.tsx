@@ -42,6 +42,14 @@ type Module = {
   lessons: Lesson[]
 }
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 export default function CoursePage() {
   const params = useParams()
   const router = useRouter()
@@ -53,6 +61,10 @@ export default function CoursePage() {
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
   const [isEnrolling, setIsEnrolling] = useState(false)
   const [isEnrolled, setIsEnrolled] = useState(false)
+  
+  // Cohort state
+  const [cohorts, setCohorts] = useState<any[]>([])
+  const [selectedCohort, setSelectedCohort] = useState<string | undefined>(undefined)
 
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
@@ -65,6 +77,18 @@ export default function CoursePage() {
         console.log(`One course Data ${response}`)
 
         setCourse(response)
+        
+        // Fetch Cohorts for this course
+        if (response?.id) {
+           try {
+             const courseCohorts = await courseService.getCourseCohorts(String(response.id))
+             setCohorts(courseCohorts)
+             // Auto-select first active cohort? Or let user choose.
+             // if (courseCohorts.length > 0) setSelectedCohort(courseCohorts[0].id)
+           } catch (err) {
+             console.error("Failed to fetch cohorts", err)
+           }
+        }
 
         // Check if user is enrolled in this course
         if (isAuthenticated && response?.id) {
@@ -122,10 +146,22 @@ export default function CoursePage() {
       })
       return
     }
+    
+    // Require cohort selection if cohorts exist?
+    // strategy: Optional for now, or mandatory if cohorts exist.
+    // Let's make it mandatory if cohorts exist, otherwise user might miss it.
+    if (cohorts.length > 0 && !selectedCohort) {
+        toast({
+            title: "Select a Cohort",
+            description: "Please select a cohort intake to proceed.",
+            variant: "destructive"
+        })
+        return
+    }
 
     try {
       setIsEnrolling(true)
-      await enrollmentsService.enrollInCourse(String(course.id))
+      await enrollmentsService.enrollInCourse(String(course.id), selectedCohort)
 
       toast({
         title: "Enrollment Successful",
@@ -182,15 +218,34 @@ export default function CoursePage() {
                     </Button>
                   </Link>
                 ) : (
-                  <Button
-                    size="lg"
-                    className="rounded-full"
-                    variant="default"
-                    onClick={handleEnroll}
-                    disabled={isEnrolling}
-                  >
-                    {isEnrolling ? "Enrolling..." : "Enroll Now"}
-                  </Button>
+                  <div className="flex flex-col gap-4 items-center">
+                      {cohorts.length > 0 && (
+                          <div className="w-64 bg-white rounded-md">
+                              <Select onValueChange={setSelectedCohort} value={selectedCohort}>
+                                <SelectTrigger className="w-full text-black">
+                                    <SelectValue placeholder="Select Intake / Cohort" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cohorts.map((c) => (
+                                        <SelectItem key={c.id} value={c.id}>
+                                            {c.name} ({new Date(c.start_date).toLocaleDateString()})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                          </div>
+                      )}
+                      
+                      <Button
+                        size="lg"
+                        className="rounded-full"
+                        variant="default"
+                        onClick={handleEnroll}
+                        disabled={isEnrolling}
+                      >
+                        {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                      </Button>
+                  </div>
                 )
               ) : (
                 <div className="text-center space-y-2">

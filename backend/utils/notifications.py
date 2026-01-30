@@ -1,90 +1,80 @@
 import uuid
-import json
-from typing import Optional, Dict, Any, List
 from datetime import datetime
-
-from database.connection import database
+from typing import Optional, Dict, Any, List
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from models.communication import Notification, NotificationSettings
+from database.session import engine
 
 async def create_notification(
     user_id: uuid.UUID,
     title: str,
     message: str,
+    session: AsyncSession,
     notification_type: str = "system",
     priority: str = "medium",
     data: Optional[Dict[str, Any]] = None,
     action_url: Optional[str] = None
 ) -> dict:
     """Create a new notification for a user"""
-    
     try:
-        notification_id = uuid.uuid4()
-        
-        query = """
-            INSERT INTO notifications (
-                id, user_id, type, title, message, priority, data, action_url
-            )
-            VALUES (
-                :id, :user_id, :type, :title, :message, :priority, :data, :action_url
-            )
-            RETURNING *
-        """
-        
-        notification = await database.fetch_one(query, values={
-            "id": notification_id,
-            "user_id": user_id,
-            "type": notification_type,
-            "title": title,
-            "message": message,
-            "priority": priority,
-            "data": data,
-            "action_url": action_url
-        })
+        new_notification = Notification(
+            user_id=user_id,
+            title=title,
+            message=message,
+            type=notification_type,
+            priority=priority,
+            data=data,
+            link=action_url
+        )
+        session.add(new_notification)
+        await session.commit()
+        await session.refresh(new_notification)
         
         # Send push notification if user has it enabled
-        await send_push_notification(user_id, title, message, data)
+        await send_push_notification(user_id, title, message, session, data)
         
         return {
             "success": True,
-            "notification_id": notification_id,
-            "notification": dict(notification)
+            "notification_id": new_notification.id,
+            "notification": new_notification.model_dump()
         }
-        
     except Exception as e:
+        await session.rollback()
         print(f"Failed to create notification: {e}")
         return {
             "success": False,
             "error": str(e)
         }
 
-async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, course_id: uuid.UUID):
+async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, course_id: uuid.UUID, session: AsyncSession):
     """Send notification when user enrolls in a course"""
-    
     await create_notification(
         user_id=user_id,
         title="Course Enrollment Confirmed",
         message=f"You have successfully enrolled in '{course_title}'. Start learning now!",
+        session=session,
         notification_type="course",
         priority="medium",
         data={"course_id": str(course_id), "course_title": course_title},
         action_url=f"/learn/{course_id}"
     )
 
-async def send_lesson_completion_notification(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID):
+async def send_lesson_completion_notification(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID, session: AsyncSession):
     """Send notification when user completes a lesson"""
-    
     await create_notification(
         user_id=user_id,
         title="Lesson Completed! 🎉",
         message=f"Great job completing '{lesson_title}'! You earned 10 L-Tokens.",
+        session=session,
         notification_type="course",
         priority="low",
         data={"lesson_title": lesson_title, "course_id": str(course_id), "tokens_earned": 10},
         action_url=f"/learn/{course_id}"
     )
 
-async def send_certificate_notification(user_id: uuid.UUID, course_title: str, status: str):
+async def send_certificate_notification(user_id: uuid.UUID, course_title: str, status: str, session: AsyncSession):
     """Send notification about certificate status"""
-    
     if status == "issued":
         title = "Certificate Issued! 🏆"
         message = f"Congratulations! Your certificate for '{course_title}' has been issued."
@@ -104,6 +94,7 @@ async def send_certificate_notification(user_id: uuid.UUID, course_title: str, s
         user_id=user_id,
         title=title,
         message=message,
+        session=session,
         notification_type="certificate",
         priority="high",
         data={"course_title": course_title, "certificate_status": status},
@@ -141,86 +132,55 @@ async def send_course_update_notification(user_ids: List[uuid.UUID], course_titl
             action_url=f"/courses/{course_id}"
         )
 
-async def send_push_notification(user_id: uuid.UUID, title: str, message: str, data: Optional[Dict[str, Any]] = None):
+async def send_push_notification(user_id: uuid.UUID, title: str, message: str, session: AsyncSession, data: Optional[Dict[str, Any]] = None):
     """Send push notification to user's devices"""
-    
     try:
         # Check if user has push notifications enabled
-        settings_query = """
-            SELECT push_notifications FROM notification_settings 
-            WHERE user_id = :user_id
-        """
-        settings = await database.fetch_one(settings_query, values={"user_id": user_id})
+        query = select(NotificationSettings).where(NotificationSettings.user_id == user_id)
+        result = await session.exec(query)
+        settings = result.first()
         
-        if not settings or not settings.push_notifications:
+        # If no settings, assume enabled (legacy behavior had default true)
+        if settings and not settings.push_enabled:
             return
         
         # Get user's push tokens
-        tokens_query = """
-            SELECT device_token FROM user_devices 
-            WHERE user_id = :user_id AND device_token IS NOT NULL
-        """
-        device_tokens = await database.fetch_all(tokens_query, values={"user_id": user_id})
+        from models.user import UserDevice
+        tokens_query = select(UserDevice.device_token).where(
+            UserDevice.user_id == user_id, 
+            UserDevice.device_token != None
+        )
+        result = await session.exec(tokens_query)
+        device_tokens = result.all()
         
         if not device_tokens:
             return
-        
-        # Here you would integrate with your push notification service
-        # For example, Firebase Cloud Messaging (FCM) or OneSignal
-        
-        # Example FCM integration (commented out):
-        """
-        import firebase_admin
-        from firebase_admin import messaging
-        
-        for token_record in device_tokens:
-            message = messaging.Message(
-                notification=messaging.Notification(
-                    title=title,
-                    body=message,
-                ),
-                data=data or {},
-                token=token_record.device_token,
-            )
             
-            try:
-                response = messaging.send(message)
-                print(f'Successfully sent message: {response}')
-            except Exception as e:
-                print(f'Error sending push notification: {e}')
-        """
-        
         print(f"Push notification sent to {len(device_tokens)} devices for user {user_id}")
-        
     except Exception as e:
         print(f"Failed to send push notification: {e}")
 
-async def send_email_notification(user_id: uuid.UUID, subject: str, template: str, context: Dict[str, Any]):
+async def send_email_notification(user_id: uuid.UUID, subject: str, template: str, context: Dict[str, Any], session: AsyncSession):
     """Send email notification to user"""
-    
     try:
         # Check if user has email notifications enabled
-        settings_query = """
-            SELECT email_notifications FROM notification_settings 
-            WHERE user_id = :user_id
-        """
-        settings = await database.fetch_one(settings_query, values={"user_id": user_id})
+        query = select(NotificationSettings).where(NotificationSettings.user_id == user_id)
+        result = await session.exec(query)
+        settings = result.first()
         
-        if not settings or not settings.email_notifications:
+        if settings and not settings.email_enabled:
             return
         
         # Get user email
-        user_query = "SELECT email, first_name FROM users WHERE id = :user_id"
-        user = await database.fetch_one(user_query, values={"user_id": user_id})
+        from models.user import User
+        user_query = select(User).where(User.id == user_id)
+        result = await session.exec(user_query)
+        user = result.first()
         
         if not user:
             return
-        
-        # Here you would integrate with your email service
-        # For example, SendGrid, AWS SES, or Mailgun
-        
+            
         print(f"Email notification sent to {user.email}: {subject}")
-        
     except Exception as e:
         print(f"Failed to send email notification: {e}")
 

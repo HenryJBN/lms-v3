@@ -7,13 +7,17 @@ import secrets
 import string
 import json
 
-from database.connection import database
+from database.session import get_session, AsyncSession
+from models.user import User
+from models.system import AdminAuditLog
 from middleware.auth import get_password_hash
+from sqlmodel import select, func
 
 async def import_admin_data(
     file: UploadFile = File(...),
     import_type: str = Form(...),
-    current_user = None
+    current_user = None,
+    session: AsyncSession = None
 ):
     """Import admin data from CSV file"""
 
@@ -38,7 +42,7 @@ async def import_admin_data(
         csv_reader = csv.DictReader(io.StringIO(csv_content))
 
         if import_type == "users":
-            return await import_users(csv_reader, current_user)
+            return await import_users(session, csv_reader, current_user)
 
     except Exception as e:
         raise HTTPException(
@@ -46,7 +50,7 @@ async def import_admin_data(
             detail=f"Failed to import data: {str(e)}"
         )
 
-async def import_users(csv_reader, current_user):
+async def import_users(session: AsyncSession, csv_reader, current_user):
     """Import users from CSV data"""
     imported_count = 0
     errors = []
@@ -66,10 +70,8 @@ async def import_users(csv_reader, current_user):
                 continue
 
             # Check if user already exists
-            existing_user = await database.fetch_one(
-                "SELECT id FROM users WHERE email = :email",
-                values={"email": email}
-            )
+            query = select(User.id).where(User.email == email)
+            existing_user = (await session.exec(query)).first()
             if existing_user:
                 errors.append(f"Row {row_number}: User with email {email} already exists")
                 continue
@@ -86,10 +88,8 @@ async def import_users(csv_reader, current_user):
             base_username = username
             attempt = 0
             while True:
-                existing_username = await database.fetch_one(
-                    "SELECT id FROM users WHERE username = :username",
-                    values={"username": username}
-                )
+                query = select(User.id).where(User.username == username)
+                existing_username = (await session.exec(query)).first()
                 if not existing_username:
                     break
                 attempt += 1
@@ -111,24 +111,19 @@ async def import_users(csv_reader, current_user):
             phone = row.get('Phone', '').strip() or None
             bio = row.get('Bio', '').strip() or None
 
-            query = """
-                INSERT INTO users (id, email, username, password_hash, first_name, last_name, role, phone, bio)
-                VALUES (:id, :email, :username, :password_hash, :first_name, :last_name, :role, :phone, :bio)
-            """
-
-            values = {
-                "id": user_id,
-                "email": email,
-                "username": username,
-                "password_hash": hashed_password,
-                "first_name": first_name,
-                "last_name": last_name,
-                "role": role,
-                "phone": phone,
-                "bio": bio,
-            }
-
-            await database.execute(query, values=values)
+            new_user = User(
+                id=user_id,
+                site_id=current_user.site_id,
+                email=email,
+                username=username,
+                hashed_password=hashed_password,
+                first_name=first_name,
+                last_name=last_name,
+                role=role,
+                phone=phone,
+                bio=bio
+            )
+            session.add(new_user)
             imported_count += 1
 
         except Exception as e:
@@ -136,18 +131,15 @@ async def import_users(csv_reader, current_user):
             continue
 
     # Log import action
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, description, metadata)
-        VALUES (:admin_id, :action, :target_type, :description, CAST(:metadata AS JSONB))
-    """
-
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": "users_imported",
-        "target_type": "users",
-        "description": f"Imported {imported_count} users from CSV",
-        "metadata": json.dumps({"imported_count": imported_count, "errors_count": len(errors), "errors": errors[:10]})  # Limit errors in log
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="users_imported",
+        target_type="users",
+        description=f"Imported {imported_count} users from CSV",
+        action_metadata=json.dumps({"imported_count": imported_count, "errors_count": len(errors), "errors": errors[:10]})
+    )
+    session.add(audit_log)
+    await session.commit()
 
     return {
         "import_type": "users",

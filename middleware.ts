@@ -2,6 +2,13 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers)
+  const host = request.headers.get("host")
+  
+  if (host) {
+    requestHeaders.set("x-tenant-domain", host)
+  }
+
   // Check if the request is for admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     // Skip middleware for login and forgot-password pages
@@ -9,7 +16,11 @@ export function middleware(request: NextRequest) {
       request.nextUrl.pathname === "/admin/login" ||
       request.nextUrl.pathname === "/admin/forgot-password"
     ) {
-      return NextResponse.next()
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
     }
 
     // Check for admin authentication token
@@ -24,9 +35,13 @@ export function middleware(request: NextRequest) {
     // For demo purposes, we'll assume any token is valid
   }
 
-  return NextResponse.next()
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export const config = {
-  matcher: "/admin/:path*",
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   myEnrollments: "/api/enrollments/my-enrollments",
 
   // Progress endpoints
+  progress: "/api/progress",
   lessonProgress: "/api/progress/lesson",
 
   // Certificate endpoints

@@ -369,6 +369,18 @@ class CourseService {
       throw error
     }
   }
+
+  /**
+   * ✅ Fetch course cohorts
+   */
+  async getCourseCohorts(courseId: string): Promise<any[]> {
+    try {
+      return await apiClient.get(`${API_ENDPOINTS.courses}/${courseId}/cohorts`)
+    } catch (error) {
+      console.error("❌ Failed to get course cohorts:", error)
+      throw error
+    }
+  }
 }
 
 export const courseService = new CourseService()

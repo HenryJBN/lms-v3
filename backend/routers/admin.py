@@ -4,11 +4,18 @@ import uuid
 from datetime import datetime, timedelta, UTC
 import io
 
-from database.connection import database
-from models.schemas import (
-    AdminDashboardStats, AdminUserResponse, AdminCourseResponse, BasicUser,
-    PaginationParams, PaginatedResponse, AdminAuditLog, UserResponse
-)
+from database.session import get_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, func, or_, and_, desc
+from models.user import User, UserProfile
+from models.course import Course, Category
+from models.enrollment import Enrollment, Certificate
+from models.finance import RevenueRecord
+from models.system import AdminAuditLog
+from schemas.system import AdminDashboardStats
+from schemas.user import BasicUser, UserResponse, AdminUserResponse
+from schemas.course import AdminCourseResponse
+from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_password_hash, get_user_by_email, require_admin, get_current_active_user
 from utils.analytics import (
     AnalyticsCalculator, UserAnalytics, CourseAnalytics, 
@@ -26,195 +33,170 @@ router = APIRouter()
 async def update_user_by_admin(
     user_id: uuid.UUID,
     payload: Dict[str, Any],
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Update user fields by admin. Allows updating first_name, last_name, email, and role."""
     # Fetch existing user
-    existing = await database.fetch_one("SELECT * FROM users WHERE id = :id", values={"id": user_id})
-    if not existing:
+    query = select(User).where(User.id == user_id)
+    result = await session.exec(query)
+    user = result.first()
+    
+    if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     allowed_fields = {"first_name", "last_name", "email", "role"}
-    update_fields = []
-    values: Dict[str, Any] = {"id": user_id}
+    updated_data = {}
 
     for key, value in payload.items():
         if key in allowed_fields and value is not None:
             if key == "email":
                 # Ensure email uniqueness
-                dup = await database.fetch_one(
-                    "SELECT id FROM users WHERE email = :email AND id != :id",
-                    values={"email": value, "id": user_id}
-                )
-                if dup:
+                dup_query = select(User.id).where(User.email == value, User.id != user_id)
+                dup_res = await session.exec(dup_query)
+                if dup_res.first():
                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
-            update_fields.append(f"{key} = :{key}")
-            values[key] = value
+            setattr(user, key, value)
+            updated_data[key] = value
 
-    if not update_fields:
-        # nothing to update, return existing
-        return UserResponse(**existing)
+    if updated_data:
+        user.updated_at = datetime.utcnow()
+        session.add(user)
+        
+        # Audit log
+        audit_log = AdminAuditLog(
+            admin_user_id=current_user.id,
+            action="user_updated",
+            target_type="user",
+            target_id=user_id,
+            description="Admin updated user profile",
+            action_metadata=json.dumps(updated_data)
+        )
+        session.add(audit_log)
+        
+        await session.commit()
+        await session.refresh(user)
 
-    query = f"""
-        UPDATE users
-        SET {', '.join(update_fields)}, updated_at = NOW()
-        WHERE id = :id
-        RETURNING *
-    """
-
-    updated = await database.fetch_one(query, values=values)
-
-    # Audit log (parameterized and cast metadata to JSONB)
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, :target_type, :target_id, :description, CAST(:metadata AS JSONB))
-    """
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": "user_updated",
-        "target_type": "user",
-        "target_id": user_id,
-        "description": "Admin updated user profile",
-        "metadata": json.dumps({k: payload[k] for k in payload if k in allowed_fields})
-    })
-
-    return UserResponse(**updated)
+    return user
 
 @router.get("/dashboard", response_model=AdminDashboardStats)
-async def get_admin_dashboard(current_user = Depends(require_admin)):
+async def get_admin_dashboard(
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
+):
     """Get admin dashboard statistics"""
+    from sqlalchemy import case
+
+    # Basic stats
+    user_count_query = select(func.count(User.id)).where(User.status == 'active')
+    student_count_query = select(func.count(User.id)).where(User.role == 'student', User.status == 'active')
+    instructor_count_query = select(func.count(User.id)).where(User.role == 'instructor', User.status == 'active')
+    course_count_query = select(func.count(Course.id)).where(Course.status == 'published')
+    enrollment_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'active')
+    completion_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'completed')
+    certificate_count_query = select(func.count(Certificate.id)).where(Certificate.status == 'issued')
+    revenue_sum_query = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(RevenueRecord.status == 'completed')
     
-    # Get basic stats
-    stats_query = """
-        SELECT 
-            (SELECT COUNT(*) FROM users WHERE status = 'active') as total_users,
-            (SELECT COUNT(*) FROM users WHERE role = 'student' AND status = 'active') as total_students,
-            (SELECT COUNT(*) FROM users WHERE role = 'instructor' AND status = 'active') as total_instructors,
-            (SELECT COUNT(*) FROM courses WHERE status = 'published') as total_courses,
-            (SELECT COUNT(*) FROM course_enrollments WHERE status = 'active') as total_enrollments,
-            (SELECT COUNT(*) FROM course_enrollments WHERE status = 'completed') as total_completions,
-            (SELECT COUNT(*) FROM certificates WHERE status = 'issued') as total_certificates,
-            (SELECT COALESCE(SUM(amount), 0) FROM revenue_records WHERE status = 'completed') as total_revenue
-    """
+    total_users = (await session.exec(user_count_query)).one()
+    total_students = (await session.exec(student_count_query)).one()
+    total_instructors = (await session.exec(instructor_count_query)).one()
+    total_courses = (await session.exec(course_count_query)).one()
+    total_enrollments = (await session.exec(enrollment_count_query)).one()
+    total_completions = (await session.exec(completion_count_query)).one()
+    total_certificates = (await session.exec(certificate_count_query)).one()
+    total_revenue = (await session.exec(revenue_sum_query)).one()
     
-    stats = await database.fetch_one(stats_query)
+    # Recent activity (last 30 days)
+    now = datetime.utcnow()
+    thirty_days_ago = now - timedelta(days=30)
     
-    # Get recent activity (last 30 days)
-    recent_activity_query = """
-        SELECT 
-            (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '30 days') as new_users_30d,
-            (SELECT COUNT(*) FROM courses WHERE created_at >= NOW() - INTERVAL '30 days') as new_courses_30d,
-            (SELECT COUNT(*) FROM course_enrollments WHERE enrolled_at >= NOW() - INTERVAL '30 days') as new_enrollments_30d,
-            (SELECT COUNT(*) FROM certificates WHERE issued_at >= NOW() - INTERVAL '30 days') as new_certificates_30d
-    """
+    new_users_30d = (await session.exec(select(func.count(User.id)).where(User.created_at >= thirty_days_ago))).one()
+    new_courses_30d = (await session.exec(select(func.count(Course.id)).where(Course.created_at >= thirty_days_ago))).one()
+    new_enrollments_30d = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= thirty_days_ago))).one()
+    new_certificates_30d = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= thirty_days_ago))).one()
     
-    recent_activity = await database.fetch_one(recent_activity_query)
+    # Top courses
+    top_courses_query = select(Course.id, Course.title, Course.enrollment_count, Course.thumbnail_url).where(
+        Course.status == 'published'
+    ).order_by(desc(Course.enrollment_count)).limit(5)
     
-    # Get top courses by enrollment
-    top_courses_query = """
-        SELECT c.id, c.title, c.enrollment_count, c.thumbnail_url
-        FROM courses c
-        WHERE c.status = 'published'
-        ORDER BY c.enrollment_count DESC
-        LIMIT 5
-    """
+    top_courses_res = await session.exec(top_courses_query)
+    top_courses_list = [dict(zip(["id", "title", "enrollment_count", "thumbnail_url"], row)) for row in top_courses_res.all()]
     
-    top_courses = await database.fetch_all(top_courses_query)
+    # Recent registrations
+    recent_users_query = select(User.id, User.first_name, User.last_name, User.email, User.role, User.created_at).where(
+        User.status == 'active'
+    ).order_by(desc(User.created_at)).limit(10)
     
-    # Get recent user registrations
-    recent_users_query = """
-        SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.created_at
-        FROM users u
-        WHERE u.status = 'active'
-        ORDER BY u.created_at DESC
-        LIMIT 10
-    """
-    
-    recent_users = await database.fetch_all(recent_users_query)
+    recent_users_res = await session.exec(recent_users_query)
+    recent_users_list = [dict(zip(["id", "first_name", "last_name", "email", "role", "created_at"], row)) for row in recent_users_res.all()]
     
     return AdminDashboardStats(
-        total_users=stats.total_users,
-        total_students=stats.total_students,
-        total_instructors=stats.total_instructors,
-        total_courses=stats.total_courses,
-        total_enrollments=stats.total_enrollments,
-        total_completions=stats.total_completions,
-        total_certificates=stats.total_certificates,
-        total_revenue=float(stats.total_revenue),
-        new_users_30d=recent_activity.new_users_30d,
-        new_courses_30d=recent_activity.new_courses_30d,
-        new_enrollments_30d=recent_activity.new_enrollments_30d,
-        new_certificates_30d=recent_activity.new_certificates_30d,
-        top_courses=[dict(course) for course in top_courses],
-        recent_users=[dict(user) for user in recent_users]
+        total_users=total_users,
+        total_students=total_students,
+        total_instructors=total_instructors,
+        total_courses=total_courses,
+        total_enrollments=total_enrollments,
+        total_completions=total_completions,
+        total_certificates=total_certificates,
+        total_revenue=float(total_revenue),
+        new_users_30d=new_users_30d,
+        new_courses_30d=new_courses_30d,
+        new_enrollments_30d=new_enrollments_30d,
+        new_certificates_30d=new_certificates_30d,
+        top_courses=top_courses_list,
+        recent_users=recent_users_list
     )
 
 @router.post("/users", response_model=UserResponse)
 async def create_user(
     user_data: BasicUser,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Create a new user by admin.
-    - Use first_name (lowercased) as username
-    - Generate a secure random temporary password
-    - Store its hash
-    - Send email with the temporary password via Celery
-    """
-
+    """Create a new user by admin."""
     # Check if user already exists
     existing_user = await get_user_by_email(user_data.email)
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    # Derive username from first_name
+    # Derive username
     username = user_data.first_name.strip().lower()
-
-    # Ensure username uniqueness; if taken, append random suffix until unique
     base_username = username
     attempt = 0
     while True:
-        query = "SELECT id FROM users WHERE username = :username"
-        existing_username = await database.fetch_one(query, values={"username": username})
-        if not existing_username:
+        query = select(User).where(User.username == username)
+        existing = (await session.exec(query)).first()
+        if not existing:
             break
         attempt += 1
         suffix = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(3))
         username = f"{base_username}{suffix}"
         if attempt > 5:
-            # fallback with uuid suffix to avoid infinite loop
             username = f"{base_username}{uuid.uuid4().hex[:6]}"
             break
 
-    # Generate a secure random temporary password
+    # Password generation
     alphabet = string.ascii_letters + string.digits + string.punctuation
     temp_password = ''.join(secrets.choice(alphabet) for _ in range(16))
-
-    # Hash password and create user
     hashed_password = get_password_hash(temp_password)
-    user_id = uuid.uuid4()
 
-    query = """
-        INSERT INTO users (id, email, username, password_hash, first_name, last_name, role)
-        VALUES (:id, :email, :username, :password_hash, :first_name, :last_name, :role)
-        RETURNING *
-    """
+    new_user = User(
+        id=uuid.uuid4(),
+        site_id=current_user.site_id,
+        email=user_data.email,
+        username=username,
+        hashed_password=hashed_password,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        role=user_data.role
+    )
 
-    values = {
-        "id": user_id,
-        "email": user_data.email,
-        "username": username,
-        "password_hash": hashed_password,
-        "first_name": user_data.first_name,
-        "last_name": user_data.last_name,
-        "role": user_data.role,
-    }
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
 
-    new_user = await database.fetch_one(query, values=values)
-
-    # Send email asynchronously via Celery with the temporary password
+    # Email notification
     try:
         send_admin_created_user_email_task.delay(
             email=user_data.email,
@@ -223,10 +205,9 @@ async def create_user(
             password=temp_password
         )
     except Exception:
-        # Do not fail user creation if email queueing fails
         pass
 
-    return UserResponse(**new_user)
+    return new_user
 
 @router.get("/users", response_model=PaginatedResponse)
 async def get_admin_users(
@@ -234,51 +215,69 @@ async def get_admin_users(
     role: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Get all users with admin details"""
+    offset = (pagination.page - 1) * pagination.size
     
-    # Build query with filters
-    where_conditions = []
-    values = {"size": pagination.size, "offset": (pagination.page - 1) * pagination.size}
+    # Base query for users with aggregations
+    # Subqueries for counts to avoid complex joins issues with pagination
+    enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id).scalar_subquery()
+    cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id).scalar_subquery()
+    token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id).limit(1).scalar_subquery()
+    completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed').scalar_subquery()
+
+    query = select(
+        User,
+        enrollment_count_sub.label("total_enrollments"),
+        cert_count_sub.label("total_certificates"),
+        token_balance_sub.label("token_balance"),
+        completion_count_sub.label("completed_courses")
+    )
     
     if role:
-        where_conditions.append("u.role = :role")
-        values["role"] = role
-    
+        query = query.where(User.role == role)
     if status:
-        where_conditions.append("u.status = :status")
-        values["status"] = status
-    
+        query = query.where(User.status == status)
     if search:
-        where_conditions.append("""
-            (u.first_name ILIKE :search OR u.last_name ILIKE :search OR 
-             u.email ILIKE :search OR u.username ILIKE :search)
-        """)
-        values["search"] = f"%{search}%"
+        query = query.where(or_(
+            User.first_name.ilike(f"%{search}%"),
+            User.last_name.ilike(f"%{search}%"),
+            User.email.ilike(f"%{search}%"),
+            User.username.ilike(f"%{search}%")
+        ))
+        
+    # Count
+    count_query = select(func.count(User.id))
+    if role: count_query = count_query.where(User.role == role)
+    if status: count_query = count_query.where(User.status == status)
+    if search: count_query = count_query.where(or_(
+        User.first_name.ilike(f"%{search}%"),
+        User.last_name.ilike(f"%{search}%"),
+        User.email.ilike(f"%{search}%"),
+        User.username.ilike(f"%{search}%")
+    ))
     
-    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    total = (await session.exec(count_query)).one()
     
-    # Get total count
-    count_query = f"SELECT COUNT(*) as total FROM users u {where_clause}"
-    total_result = await database.fetch_one(count_query, values=values)
-    total = total_result.total
+    # Pagination & Ordering
+    query = query.order_by(desc(User.created_at)).offset(offset).limit(pagination.size)
+    results = await session.exec(query)
     
-    # Get users with additional admin info
-    query = f"""
-        SELECT u.*, 
-               (SELECT COUNT(*) FROM course_enrollments WHERE user_id = u.id) as total_enrollments,
-               (SELECT COUNT(*) FROM certificates WHERE user_id = u.id) as total_certificates,
-               (SELECT balance FROM l_tokens WHERE user_id = u.id) as token_balance
-        FROM users u {where_clause}
-        ORDER BY u.created_at DESC
-        LIMIT :size OFFSET :offset
-    """
-    
-    users = await database.fetch_all(query, values=values)
-    
+    transformed = []
+    for user, en_count, cert_count, tokens, comp_count in results.all():
+        u_dict = user.model_dump()
+        u_dict.update({
+            "total_enrollments": en_count,
+            "total_certificates": cert_count,
+            "token_balance": tokens,
+            "completed_courses": comp_count
+        })
+        transformed.append(u_dict)
+        
     return PaginatedResponse(
-        items=[AdminUserResponse(**user) for user in users],
+        items=transformed,
         total=total,
         page=pagination.page,
         size=pagination.size,
@@ -291,61 +290,64 @@ async def get_admin_courses(
     status: Optional[str] = Query(None),
     instructor_id: Optional[uuid.UUID] = Query(None),
     search: Optional[str] = Query(None),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Get all courses with admin details"""
+    offset = (pagination.page - 1) * pagination.size
     
-    # Build query with filters
-    where_conditions = []
-    values = {
-        "size": pagination.size,
-        "offset": (pagination.page - 1) * pagination.size
-    }
+    # Subqueries for counts
+    from models.lesson import Lesson
+    lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id).scalar_subquery()
+    revenue_sum_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
+        RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed'
+    ).scalar_subquery()
+
+    # Join with instructor and category for details
+    from models.user import User as Instructor
+    query = select(
+        Course, 
+        Instructor.first_name.label("instructor_first_name"),
+        Instructor.last_name.label("instructor_last_name"),
+        Category.name.label("category_name"),
+        lesson_count_sub.label("total_lessons"),
+        revenue_sum_sub.label("total_revenue")
+    ).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id)
     
     if status:
-        where_conditions.append("c.status = :status")
-        values["status"] = status
-    
+        query = query.where(Course.status == status)
     if instructor_id:
-        where_conditions.append("c.instructor_id = :instructor_id")
-        values["instructor_id"] = instructor_id
-    
+        query = query.where(Course.instructor_id == instructor_id)
     if search:
-        where_conditions.append("""
-            (c.title ILIKE :search OR c.description ILIKE :search)
-        """)
-        values["search"] = f"%{search}%"
+        query = query.where(or_(Course.title.ilike(f"%{search}%"), Course.description.ilike(f"%{search}%")))
+        
+    # Count
+    count_query = select(func.count(Course.id))
+    if status: count_query = count_query.where(Course.status == status)
+    if instructor_id: count_query = count_query.where(Course.instructor_id == instructor_id)
+    if search: count_query = count_query.where(or_(Course.title.ilike(f"%{search}%"), Course.description.ilike(f"%{search}%")))
     
-    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    total = (await session.exec(count_query)).one()
     
-    # ---- Only pass the parameters used in the count query ----
-    count_values = {
-        k: v for k, v in values.items()
-        if k in ["status", "instructor_id", "search"]
-    }
+    # Pagination & Ordering
+    query = query.order_by(desc(Course.created_at)).offset(offset).limit(pagination.size)
+    results = await session.exec(query)
     
-    count_query = f"SELECT COUNT(*) as total FROM courses c {where_clause}"
-    total_result = await database.fetch_one(count_query, values=count_values)
-    total = total_result.total
-    
-    # Get courses with additional admin info
-    query = f"""
-        SELECT c.*, u.first_name as instructor_first_name, u.last_name as instructor_last_name,
-               cat.name as category_name,
-               (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as total_lessons,
-               (SELECT COALESCE(SUM(amount), 0) FROM revenue_records WHERE course_id = c.id AND status = 'completed') as total_revenue
-        FROM courses c
-        LEFT JOIN users u ON c.instructor_id = u.id
-        LEFT JOIN categories cat ON c.category_id = cat.id
-        {where_clause}
-        ORDER BY c.created_at DESC
-        LIMIT :size OFFSET :offset
-    """
-    
-    courses = await database.fetch_all(query, values=values)
-    
+    transformed = []
+    for row in results.all():
+        course = row[0]
+        c_dict = course.model_dump()
+        c_dict.update({
+            "instructor_first_name": row[1],
+            "instructor_last_name": row[2],
+            "category_name": row[3],
+            "total_lessons": row[4],
+            "total_revenue": float(row[5])
+        })
+        transformed.append(c_dict)
+        
     return PaginatedResponse(
-        items=[AdminCourseResponse(**course) for course in courses],
+        items=transformed,
         total=total,
         page=pagination.page,
         size=pagination.size,
@@ -356,46 +358,40 @@ async def get_admin_courses(
 async def deactivate_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Deactivate a user account (sets status to 'inactive').
-    - Prevent self-deactivation
-    - Record audit log
-    """
-    # Fetch target user
-    user_query = "SELECT * FROM users WHERE id = :user_id"
-    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    """Deactivate a user account (sets status to 'inactive')."""
+    query = select(User).where(User.id == user_id)
+    res = await session.exec(query)
+    user = res.first()
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    # Prevent self-deactivation
     if str(current_user.id) == str(user_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot deactivate your own account")
 
     if user.status == "inactive":
-        # Idempotent response
         return {"message": "User is already inactive"}
 
-    update_query = """
-        UPDATE users SET status = 'inactive', updated_at = NOW()
-        WHERE id = :user_id
-        RETURNING *
-    """
-    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+    old_status = user.status
+    user.status = "inactive"
+    user.updated_at = datetime.utcnow()
+    session.add(user)
 
     # Audit log
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
-    """
     reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": "user_suspended",
-        "target_id": user_id,
-        "description": "Deactivated user account",
-        "metadata": json.dumps({"old_status": user.status, "new_status": "inactive", "reason": reason})
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="user_suspended",
+        target_type="user",
+        target_id=user_id,
+        description="Deactivated user account",
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "inactive", "reason": reason})
+    )
+    session.add(audit_log)
+    await session.commit()
 
     return {"message": "User deactivated"}
 
@@ -403,46 +399,40 @@ async def deactivate_user(
 async def soft_delete_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
-    """Soft delete a user account (sets status to 'deleted').
-    - Prevent self-deletion
-    - Record audit log
-    """
-    # Fetch target user
-    user_query = "SELECT * FROM users WHERE id = :user_id"
-    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    """Soft delete a user account (sets status to 'deleted')."""
+    query = select(User).where(User.id == user_id)
+    res = await session.exec(query)
+    user = res.first()
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    # Prevent self-deletion
     if str(current_user.id) == str(user_id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot delete your own account")
 
     if user.status == "deleted":
-        # Idempotent response
         return {"message": "User is already deleted"}
 
-    update_query = """
-        UPDATE users SET status = 'deleted', updated_at = NOW()
-        WHERE id = :user_id
-        RETURNING *
-    """
-    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+    old_status = user.status
+    user.status = "deleted"
+    user.updated_at = datetime.utcnow()
+    session.add(user)
 
     # Audit log
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
-    """
     reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": "user_deleted",
-        "target_id": user_id,
-        "description": "Soft deleted user account",
-        "metadata": json.dumps({"old_status": user.status, "new_status": "deleted", "reason": reason})
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="user_deleted",
+        target_type="user",
+        target_id=user_id,
+        description="Soft deleted user account",
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "deleted", "reason": reason})
+    )
+    session.add(audit_log)
+    await session.commit()
 
     return {"message": "User soft deleted"}
 
@@ -451,36 +441,37 @@ async def soft_delete_user(
 async def reactivate_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Reactivate a user account (sets status to 'active')."""
-    user_query = "SELECT * FROM users WHERE id = :user_id"
-    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    query = select(User).where(User.id == user_id)
+    res = await session.exec(query)
+    user = res.first()
+    
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     if user.status == "active":
         return {"message": "User is already active"}
 
-    update_query = """
-        UPDATE users SET status = 'active', updated_at = NOW()
-        WHERE id = :user_id
-        RETURNING *
-    """
-    updated_user = await database.fetch_one(update_query, values={"user_id": user_id})
+    old_status = user.status
+    user.status = "active"
+    user.updated_at = datetime.utcnow()
+    session.add(user)
 
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, 'user', :target_id, :description, CAST(:metadata AS JSONB))
-    """
+    # Audit log
     reason = (payload or {}).get("reason") if isinstance(payload, dict) else None
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": "user_activated",
-        "target_id": user_id,
-        "description": "Reactivated user account",
-        "metadata": json.dumps({"old_status": user.status, "new_status": "active", "reason": reason})
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="user_activated",
+        target_type="user",
+        target_id=user_id,
+        description="Reactivated user account",
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "active", "reason": reason})
+    )
+    session.add(audit_log)
+    await session.commit()
 
     return {"message": "User reactivated"}
 
@@ -490,51 +481,36 @@ async def update_user_status(
     user_id: uuid.UUID,
     status: str,
     reason: Optional[str] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Update user status"""
-    
     if status not in ["active", "inactive", "suspended"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid status"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
     
-    # Check if user exists
-    user_query = "SELECT * FROM users WHERE id = :user_id"
-    user = await database.fetch_one(user_query, values={"user_id": user_id})
+    query = select(User).where(User.id == user_id)
+    res = await session.exec(query)
+    user = res.first()
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
-    # Update user status
-    update_query = """
-        UPDATE users SET status = :status, updated_at = NOW()
-        WHERE id = :user_id
-        RETURNING *
-    """
-    
-    updated_user = await database.fetch_one(update_query, values={
-        "status": status,
-        "user_id": user_id
-    })
+    old_status = user.status
+    user.status = status
+    user.updated_at = datetime.utcnow()
+    session.add(user)
     
     # Log admin action
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, 'user', :target_id, :description, :metadata)
-    """
-    
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": f"user_status_changed",
-        "target_id": user_id,
-        "description": f"Changed user status from {user.status} to {status}",
-        "metadata": {"old_status": user.status, "new_status": status, "reason": reason}
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="user_status_changed",
+        target_type="user",
+        target_id=user_id,
+        description=f"Changed user status from {old_status} to {status}",
+        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason})
+    )
+    session.add(audit_log)
+    await session.commit()
     
     return {"message": f"User status updated to {status}"}
 
@@ -543,51 +519,36 @@ async def update_course_status(
     course_id: uuid.UUID,
     status: str,
     reason: Optional[str] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Update course status"""
-    
     if status not in ["draft", "published", "archived", "suspended"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid status"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
     
-    # Check if course exists
-    course_query = "SELECT * FROM courses WHERE id = :course_id"
-    course = await database.fetch_one(course_query, values={"course_id": course_id})
+    query = select(Course).where(Course.id == course_id)
+    res = await session.exec(query)
+    course = res.first()
     
     if not course:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Course not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     
-    # Update course status
-    update_query = """
-        UPDATE courses SET status = :status, updated_at = NOW()
-        WHERE id = :course_id
-        RETURNING *
-    """
-    
-    updated_course = await database.fetch_one(update_query, values={
-        "status": status,
-        "course_id": course_id
-    })
+    old_status = course.status
+    course.status = status
+    course.updated_at = datetime.utcnow()
+    session.add(course)
     
     # Log admin action
-    log_query = """
-        INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description, metadata)
-        VALUES (:admin_id, :action, 'course', :target_id, :description, :metadata)
-    """
-    
-    await database.execute(log_query, values={
-        "admin_id": current_user.id,
-        "action": f"course_status_changed",
-        "target_id": course_id,
-        "description": f"Changed course status from {course.status} to {status}",
-        "metadata": {"old_status": course.status, "new_status": status, "reason": reason}
-    })
+    audit_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="course_status_changed",
+        target_type="course",
+        target_id=course_id,
+        description=f"Changed course status from {old_status} to {status}",
+        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason})
+    )
+    session.add(audit_log)
+    await session.commit()
     
     return {"message": f"Course status updated to {status}"}
 
@@ -597,47 +558,48 @@ async def get_audit_log(
     admin_user_id: Optional[uuid.UUID] = Query(None),
     action: Optional[str] = Query(None),
     target_type: Optional[str] = Query(None),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Get admin audit log"""
+    offset = (pagination.page - 1) * pagination.size
     
-    # Build query with filters
-    where_conditions = []
-    values = {"size": pagination.size, "offset": (pagination.page - 1) * pagination.size}
+    query = select(
+        AdminAuditLog, 
+        User.first_name.label("admin_first_name"), 
+        User.last_name.label("admin_last_name")
+    ).join(User, AdminAuditLog.admin_user_id == User.id)
     
     if admin_user_id:
-        where_conditions.append("aal.admin_user_id = :admin_user_id")
-        values["admin_user_id"] = admin_user_id
-    
+        query = query.where(AdminAuditLog.admin_user_id == admin_user_id)
     if action:
-        where_conditions.append("aal.action = :action")
-        values["action"] = action
-    
+        query = query.where(AdminAuditLog.action == action)
     if target_type:
-        where_conditions.append("aal.target_type = :target_type")
-        values["target_type"] = target_type
+        query = query.where(AdminAuditLog.target_type == target_type)
+        
+    # Count
+    count_query = select(func.count(AdminAuditLog.id))
+    if admin_user_id: count_query = count_query.where(AdminAuditLog.admin_user_id == admin_user_id)
+    if action: count_query = count_query.where(AdminAuditLog.action == action)
+    if target_type: count_query = count_query.where(AdminAuditLog.target_type == target_type)
     
-    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    total = (await session.exec(count_query)).one()
     
-    # Get total count
-    count_query = f"SELECT COUNT(*) as total FROM admin_audit_log aal {where_clause}"
-    total_result = await database.fetch_one(count_query, values=values)
-    total = total_result.total
+    # Pagination & Ordering
+    query = query.order_by(desc(AdminAuditLog.created_at)).offset(offset).limit(pagination.size)
+    results = await session.exec(query)
     
-    # Get audit log entries
-    query = f"""
-        SELECT aal.*, u.first_name as admin_first_name, u.last_name as admin_last_name
-        FROM admin_audit_log aal
-        JOIN users u ON aal.admin_user_id = u.id
-        {where_clause}
-        ORDER BY aal.created_at DESC
-        LIMIT :size OFFSET :offset
-    """
-    
-    logs = await database.fetch_all(query, values=values)
-    
+    transformed = []
+    for log, f_name, l_name in results.all():
+        l_dict = log.model_dump()
+        l_dict.update({
+            "admin_first_name": f_name,
+            "admin_last_name": l_name
+        })
+        transformed.append(l_dict)
+        
     return PaginatedResponse(
-        items=[AdminAuditLog(**log) for log in logs],
+        items=transformed,
         total=total,
         page=pagination.page,
         size=pagination.size,
@@ -650,78 +612,56 @@ async def generate_admin_report(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     filters: Optional[Dict[str, Any]] = None,
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Generate admin reports"""
-    
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:
         start_date = end_date - timedelta(days=30)
     
     try:
+        # NOTE: Many of these sub-calls still use legacy database.fetch
+        # We'll need to migrate utils/analytics.py later
         if report_type == "platform_overview":
-            report_data = await get_platform_kpis(start_date, end_date)
-        
+            report_data = await get_platform_kpis(session, start_date, end_date)
         elif report_type == "user_engagement":
-            # Get user engagement data
-            user_query = """
-                SELECT u.id, u.first_name, u.last_name, u.email, u.created_at
-                FROM users u 
-                WHERE u.status = 'active' AND u.role = 'student'
-                ORDER BY u.created_at DESC
-                LIMIT 100
-            """
-            users = await database.fetch_all(user_query)
+            query = select(User).where(User.status == 'active', User.role == 'student').order_by(desc(User.created_at)).limit(100)
+            users = (await session.exec(query)).all()
             
             engagement_data = []
             for user in users:
-                engagement = await UserAnalytics.get_user_engagement_score(user.id)
+                engagement = await UserAnalytics.get_user_engagement_score(session, user.id)
                 engagement_data.append({
                     "user_id": user.id,
                     "name": f"{user.first_name} {user.last_name}",
                     "email": user.email,
                     **engagement
                 })
-            
             report_data = {"user_engagement": engagement_data}
-        
         elif report_type == "course_performance":
-            # Get top performing courses
-            top_courses = await get_top_performing_content("courses", "enrollments", 20, start_date, end_date)
-            
+            top_courses = await get_top_performing_content(session, "courses", "enrollments", 20, start_date, end_date)
             course_health = []
             for course in top_courses:
-                health = await CourseAnalytics.calculate_course_health_score(course["id"])
-                course_health.append({
-                    "course_id": course["id"],
-                    "title": course["title"],
-                    **health
-                })
-            
+                health = await CourseAnalytics.calculate_course_health_score(session, course["id"])
+                course_health.append({"course_id": course["id"], "title": course["title"], **health})
             report_data = {"course_performance": course_health}
-        
         elif report_type == "revenue_analysis":
-            revenue_data = await RevenueAnalytics.calculate_revenue_metrics(start_date, end_date)
-            report_data = {"revenue_analysis": revenue_data}
-        
+            report_data = {"revenue_analysis": await RevenueAnalytics.calculate_revenue_metrics(session, start_date, end_date)}
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid report type"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid report type")
         
         # Log report generation
-        log_query = """
-            INSERT INTO admin_audit_log (admin_user_id, action, target_type, description, metadata)
-            VALUES (:admin_id, 'report_generated', 'system', :description, :metadata)
-        """
-        
-        await database.execute(log_query, values={
-            "admin_id": current_user.id,
-            "description": f"Generated {report_type} report",
-            "metadata": {"report_type": report_type, "start_date": start_date, "end_date": end_date}
-        })
+        audit_log = AdminAuditLog(
+            admin_user_id=current_user.id,
+            action="report_generated",
+            target_type="system",
+            description=f"Generated {report_type} report",
+            action_metadata=json.dumps({"report_type": report_type, "start_date": str(start_date), "end_date": str(end_date)})
+        )
+        session.add(audit_log)
+        await session.commit()
         
         return {
             "report_type": report_type,
@@ -729,202 +669,135 @@ async def generate_admin_report(
             "date_range": {"start_date": start_date, "end_date": end_date},
             "data": report_data
         }
-        
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate report: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to generate report: {str(e)}")
 
 @router.post("/export")
 async def export_admin_data(
     export_type: str = Body(...),
     format: str = Body("json"),
     filters: Optional[Dict[str, Any]] = Body(None),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
 ):
     """Export admin data"""
-
-    # Debug logging
-    print(f"Export request by user: {current_user.id} ({current_user.email}) with role: {current_user.role}")
-    print(f"Export params: type={export_type}, format={format}, filters={filters}")
-    
     if format not in ["json", "csv"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid export format. Supported: json, csv"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid export format. Supported: json, csv")
     
     try:
-        export_data = {}
-        
+        export_data = []
         if export_type == "users":
-            # Export user data
-            where_conditions = []
-            values = {}
+            enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id).scalar_subquery()
+            cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id).scalar_subquery()
+            token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id).limit(1).scalar_subquery()
+            completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed').scalar_subquery()
 
-            if filters:
-                if filters.get("role"):
-                    where_conditions.append("u.role = :role")
-                    values["role"] = filters["role"]
-                if filters.get("status"):
-                    where_conditions.append("u.status = :status")
-                    values["status"] = filters["status"]
-                if filters.get("search"):
-                    where_conditions.append("""
-                        (u.first_name ILIKE :search OR u.last_name ILIKE :search OR
-                         u.email ILIKE :search OR u.username ILIKE :search)
-                    """)
-                    values["search"] = f"%{filters['search']}%"
-
-            where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
-
-            query = f"""
-                SELECT u.id, u.first_name, u.last_name, u.email, u.username, u.role, u.status,
-                       u.created_at, u.last_login_at, u.phone, u.bio,
-                       (SELECT COUNT(*) FROM course_enrollments WHERE user_id = u.id) as total_enrollments,
-                       (SELECT COUNT(*) FROM certificates WHERE user_id = u.id) as total_certificates,
-                       (SELECT COUNT(*) FROM course_enrollments WHERE user_id = u.id AND status = 'completed') as completed_courses,
-                       (SELECT balance FROM l_tokens WHERE user_id = u.id) as token_balance
-                FROM users u {where_clause}
-                ORDER BY u.created_at DESC
-            """
-
-            users = await database.fetch_all(query, values=values)
-
-            if format == "csv":
-                # Return CSV file
-                import csv
-                from fastapi.responses import StreamingResponse
-
-                users_data = [dict(user) for user in users]
-                
-                # Create CSV content
-                output = io.StringIO()
-                writer = csv.writer(output)
-                
-                # Write headers
-                headers = ["ID", "First Name", "Last Name", "Email", "Username", "Role", "Status", 
-                          "Join Date", "Last Login", "Phone", "Bio", "Total Enrollments", 
-                          "Completed Courses", "Total Certificates", "Token Balance"]
-                writer.writerow(headers)
-                
-                # Write data rows
-                for user in users_data:
-                    row = [
-                        user.get("id", ""),
-                        user.get("first_name", ""),
-                        user.get("last_name", ""),
-                        user.get("email", ""),
-                        user.get("username", ""),
-                        user.get("role", ""),
-                        user.get("status", ""),
-                        user.get("created_at", "").isoformat() if user.get("created_at") else "",
-                        user.get("last_login_at", "").isoformat() if user.get("last_login_at") else "",
-                        user.get("phone", ""),
-                        user.get("bio", ""),
-                        user.get("total_enrollments", 0),
-                        user.get("completed_courses", 0),
-                        user.get("total_certificates", 0),
-                        user.get("token_balance", 0)
-                    ]
-                    writer.writerow(row)
-                
-                # Create buffer
-                buffer = io.BytesIO(output.getvalue().encode('utf-8'))
-                filename = f"users_export_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
-                return StreamingResponse(
-                    buffer,
-                    media_type="text/csv",
-                    headers={"Content-Disposition": f"attachment; filename={filename}"}
-                )
-            else:
-                # Return JSON
-                return {
-                    "export_type": export_type,
-                    "format": format,
-                    "exported_at": datetime.utcnow(),
-                    "record_count": len(users),
-                    "data": {"users": [dict(user) for user in users]}
-                }
-        
-        elif export_type == "courses":
-            # Export course data
-            query = """
-                SELECT c.id, c.title, c.description, c.status, c.price, c.enrollment_count,
-                       u.first_name as instructor_first_name, u.last_name as instructor_last_name,
-                       c.created_at, c.updated_at
-                FROM courses c
-                LEFT JOIN users u ON c.instructor_id = u.id
-                ORDER BY c.created_at DESC
-            """
+            query = select(
+                User,
+                enrollment_count_sub.label("total_enrollments"),
+                cert_count_sub.label("total_certificates"),
+                token_balance_sub.label("token_balance"),
+                completion_count_sub.label("completed_courses")
+            )
             
-            courses = await database.fetch_all(query)
-            export_data = {"courses": [dict(course) for course in courses]}
+            if filters:
+                if filters.get("role"): query = query.where(User.role == filters["role"])
+                if filters.get("status"): query = query.where(User.status == filters["status"])
+                if filters.get("search"):
+                    s = filters["search"]
+                    query = query.where(or_(User.first_name.ilike(f"%{s}%"), User.last_name.ilike(f"%{s}%"), User.email.ilike(f"%{s}%")))
+
+            results = await session.exec(query.order_by(desc(User.created_at)))
+            for user, en_count, cert_count, tokens, comp_count in results.all():
+                u_dict = user.model_dump()
+                u_dict.update({
+                    "total_enrollments": en_count,
+                    "total_certificates": cert_count,
+                    "token_balance": tokens,
+                    "completed_courses": comp_count
+                })
+                export_data.append(u_dict)
+
+        elif export_type == "courses":
+            from models.lesson import Lesson
+            lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id).scalar_subquery()
+            revenue_sum_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
+                RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed'
+            ).scalar_subquery()
+
+            from models.user import User as Instructor
+            query = select(Course, Instructor.first_name, Instructor.last_name, Category.name, lesson_count_sub, revenue_sum_sub).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id)
+            
+            if filters:
+                if filters.get("status"): query = query.where(Course.status == filters["status"])
+                if filters.get("instructor_id"): query = query.where(Course.instructor_id == filters["instructor_id"])
+
+            results = await session.exec(query.order_by(desc(Course.created_at)))
+            for course, i_fname, i_lname, cat_name, l_count, rev_sum in results.all():
+                c_dict = course.model_dump()
+                c_dict.update({
+                    "instructor_name": f"{i_fname or ''} {i_lname or ''}".strip(),
+                    "category_name": cat_name,
+                    "total_lessons": l_count,
+                    "total_revenue": float(rev_sum)
+                })
+                export_data.append(c_dict)
         
         elif export_type == "enrollments":
-            # Export enrollment data
-            query = """
-                SELECT ce.id, ce.user_id, ce.course_id, ce.status, ce.progress_percentage,
-                       ce.enrolled_at, ce.completed_at,
-                       u.first_name, u.last_name, u.email,
-                       c.title as course_title
-                FROM course_enrollments ce
-                JOIN users u ON ce.user_id = u.id
-                JOIN courses c ON ce.course_id = c.id
-                ORDER BY ce.enrolled_at DESC
-            """
-            
-            enrollments = await database.fetch_all(query)
-            export_data = {"enrollments": [dict(enrollment) for enrollment in enrollments]}
-        
+            query = select(Enrollment, User.first_name, User.last_name, User.email, Course.title).join(User, Enrollment.user_id == User.id).join(Course, Enrollment.course_id == Course.id).order_by(desc(Enrollment.enrolled_at))
+            results = await session.exec(query)
+            for enroll, u_fname, u_lname, u_email, c_title in results.all():
+                e_dict = enroll.model_dump()
+                e_dict.update({"user_first_name": u_fname, "user_last_name": u_lname, "user_email": u_email, "course_title": c_title})
+                export_data.append(e_dict)
+
         elif export_type == "revenue":
-            # Export revenue data
-            query = """
-                SELECT rr.id, rr.user_id, rr.course_id, rr.amount, rr.currency, rr.status,
-                       rr.payment_method, rr.created_at,
-                       u.first_name, u.last_name, u.email,
-                       c.title as course_title
-                FROM revenue_records rr
-                JOIN users u ON rr.user_id = u.id
-                LEFT JOIN courses c ON rr.course_id = c.id
-                ORDER BY rr.created_at DESC
-            """
-            
-            revenue = await database.fetch_all(query)
-            export_data = {"revenue": [dict(record) for record in revenue]}
-        
+            query = select(RevenueRecord, User.first_name, User.last_name, User.email, Course.title).join(User, RevenueRecord.user_id == User.id).outerjoin(Course, RevenueRecord.course_id == Course.id).order_by(desc(RevenueRecord.created_at))
+            results = await session.exec(query)
+            for rev, u_fname, u_lname, u_email, c_title in results.all():
+                r_dict = rev.model_dump()
+                r_dict.update({"user_first_name": u_fname, "user_last_name": u_lname, "user_email": u_email, "course_title": c_title})
+                export_data.append(r_dict)
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid export type"
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid export type")
+
+        # Log export action
+        audit_log = AdminAuditLog(
+            admin_user_id=current_user.id,
+            action="data_exported",
+            target_type="system",
+            description=f"Exported {export_type} data as {format}",
+            action_metadata=json.dumps({"export_type": export_type, "format": format})
+        )
+        session.add(audit_log)
+        await session.commit()
+
+        if format == "csv":
+            import csv
+            output = io.StringIO()
+            if export_data:
+                writer = csv.DictWriter(output, fieldnames=export_data[0].keys())
+                writer.writeheader()
+                writer.writerows(export_data)
+            
+            output.seek(0)
+            from fastapi.responses import StreamingResponse
+            filename = f"{export_type}_export_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
+            return StreamingResponse(
+                iter([output.getvalue()]),
+                media_type="text/csv",
+                headers={"Content-Disposition": f"attachment; filename={filename}"}
             )
-        
-        # Log data export
-        log_query = """
-            INSERT INTO admin_audit_log (admin_user_id, action, target_type, description, metadata)
-            VALUES (:admin_id, 'data_exported', 'system', :description, :metadata)
-        """
-        
-        await database.execute(log_query, values={
-            "admin_id": current_user.id,
-            "description": f"Exported {export_type} data as {format}",
-            "metadata": {"export_type": export_type, "format": format}
-        })
         
         return {
             "export_type": export_type,
             "format": format,
             "exported_at": datetime.utcnow(),
-            "record_count": len(list(export_data.values())[0]) if export_data else 0,
+            "record_count": len(export_data),
             "data": export_data
         }
-        
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to export data: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Export failed: {str(e)}")
 
 @router.post("/import")
 async def import_admin_data_endpoint(
@@ -936,44 +809,37 @@ async def import_admin_data_endpoint(
     return await import_admin_data(file, import_type, current_user)
 
 @router.get("/system-health")
-async def get_system_health(current_user = Depends(require_admin)):
+async def get_system_health(
+    current_user = Depends(require_admin),
+    session: AsyncSession = Depends(get_session)
+):
     """Get system health status"""
-    
+    from sqlalchemy import text
     try:
         # Check database connection
+        await session.execute(text("SELECT 1"))
         db_status = "healthy"
-        try:
-            await database.fetch_one("SELECT 1")
-        except Exception:
-            db_status = "unhealthy"
         
-        # Check recent error rates
-        error_query = """
-            SELECT COUNT(*) as error_count
-            FROM admin_audit_log 
-            WHERE action LIKE '%error%' AND created_at >= NOW() - INTERVAL '1 hour'
-        """
-        error_result = await database.fetch_one(error_query)
+        # Check recent error rates (last hour)
+        hour_ago = datetime.utcnow() - timedelta(hours=1)
+        error_query = select(func.count(AdminAuditLog.id)).where(AdminAuditLog.action.ilike("%error%"), AdminAuditLog.created_at >= hour_ago)
+        error_count = (await session.exec(error_query)).one()
         
-        # Check system performance metrics
-        performance_query = """
-            SELECT 
-                COUNT(*) as total_requests,
-                AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) as avg_response_time
-            FROM admin_audit_log 
-            WHERE created_at >= NOW() - INTERVAL '1 hour'
-        """
-        performance_result = await database.fetch_one(performance_query)
+        # Check system performance metrics (last hour)
+        perf_query = select(
+            func.count(AdminAuditLog.id).label("total_requests"),
+            # Placeholder for response time if not tracked in audit log
+            # In a real app we might have a specific metrics table
+        ).where(AdminAuditLog.created_at >= hour_ago)
+        perf_res = (await session.exec(perf_query)).one()
         
         return {
-            "status": "healthy" if db_status == "healthy" and error_result.error_count < 10 else "degraded",
+            "status": "healthy" if db_status == "healthy" and error_count < 10 else "degraded",
             "database": db_status,
-            "error_count_1h": error_result.error_count,
-            "total_requests_1h": performance_result.total_requests or 0,
-            "avg_response_time": float(performance_result.avg_response_time) if performance_result.avg_response_time else 0,
+            "error_count_1h": error_count,
+            "total_requests_1h": perf_res,
             "timestamp": datetime.utcnow()
         }
-        
     except Exception as e:
         return {
             "status": "unhealthy",

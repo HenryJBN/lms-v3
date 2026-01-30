@@ -65,10 +65,17 @@ class ApiClient {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
 
+    // Determine tenant domain (client-side only)
+    let tenantDomain = ""
+    if (typeof window !== "undefined") {
+      tenantDomain = window.location.host
+    }
+
     const config: RequestInit = {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...(tenantDomain && { "X-Tenant-Domain": tenantDomain }),
         ...(this.token && { Authorization: `Bearer ${this.token}` }),
         ...options.headers,
       },

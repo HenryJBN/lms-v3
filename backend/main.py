@@ -9,10 +9,12 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 
-from database.connection import database, engine, metadata
+from database.session import init_db
+import models  # Register SQLModel tables
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
-    progress, certificates, notifications, admin, analytics, sections, assignments
+    progress, certificates, notifications, admin, analytics, sections, assignments,
+    system_admin, onboarding
 )
 from middleware.auth import get_current_user
 from middleware.logging import setup_logging
@@ -24,11 +26,11 @@ setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    await database.connect()
+    # Startup - Initialize SQLModel tables
+    await init_db()
     yield
     # Shutdown
-    await database.disconnect()
+    pass
 
 app = FastAPI(
     title="DCA LMS API",
@@ -61,6 +63,8 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(sections.router, prefix="/api/sections", tags=["Sections"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
+app.include_router(system_admin.router, prefix="/api/system-admin", tags=["System Administration"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 
 # Mount static files directory for uploaded files
 from utils.file_upload import LOCAL_UPLOAD_PATH
@@ -75,6 +79,8 @@ async def root():
 @app.get("/health")
 async def health_check():
     from utils.redis_client import check_redis_connection
+    from database.session import get_session
+    from sqlmodel import text
 
     health_status = {
         "status": "healthy",
@@ -82,10 +88,14 @@ async def health_check():
         "redis": "unknown"
     }
 
-    # Test database connection
+    # Test database connection using SQLModel
     try:
-        await database.fetch_one("SELECT 1")
-        health_status["database"] = "connected"
+        async for session in get_session():
+            # Simple query to test connection
+            result = await session.exec(text("SELECT 1"))
+            result.first()
+            health_status["database"] = "connected"
+            break
     except Exception as e:
         health_status["database"] = "disconnected"
         health_status["status"] = "unhealthy"
