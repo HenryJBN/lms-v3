@@ -129,13 +129,10 @@ async def login(
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True, 
-        samesite="lax", 
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        path="/api/auth"
+        key="refresh_token", value=refresh_token, 
+        httponly=True, secure=False, samesite="lax", 
+        domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None,
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
     )
 
     return {
@@ -173,7 +170,9 @@ async def refresh_token_endpoint(request: Request, response: Response):
     
     response.set_cookie(
         key="refresh_token", value=new_refresh_token, 
-        httponly=True, secure=True, samesite="lax", max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
+        httponly=True, secure=False, samesite="lax", 
+        domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None,
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
     )
 
     return {
@@ -284,7 +283,7 @@ async def verify_email_code(
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
     response.set_cookie(
-        key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
+        key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None, max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
     )
     
     return {

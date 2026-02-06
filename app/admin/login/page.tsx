@@ -8,13 +8,13 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
+import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react"
+import Cookies from "js-cookie"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
-import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react"
-import Cookies from "js-cookie"
 import {
   LoginSchema,
   TwoFactorSchema,
@@ -22,6 +22,7 @@ import {
   type TwoFactorFormData,
 } from "@/lib/schemas/login"
 import { authService, type TwoFactorAuthResponse } from "@/lib/services/auth"
+import { useAuth } from "@/lib/contexts/auth-context"
 
 export default function AdminLogin() {
   const router = useRouter()
@@ -50,6 +51,8 @@ export default function AdminLogin() {
     },
   })
 
+  const { setAccessToken, refreshUser } = useAuth()
+
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true)
     setError("")
@@ -65,7 +68,15 @@ export default function AdminLogin() {
         setSuccess(twoFAResponse.message)
         setStep("2fa")
       } else {
-        // Direct login success (shouldn't happen for admin)
+        // Direct login success
+        const authResponse = response as any // Cast to access properties safely if needed, or better, rely on type guards
+        if (authResponse.access_token) {
+          setAccessToken(authResponse.access_token)
+          await refreshUser()
+          // Set cookie for middleware
+          Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" })
+        }
+
         setSuccess("Login successful! Redirecting to admin dashboard...")
         setTimeout(() => {
           router.push("/admin")
@@ -83,10 +94,15 @@ export default function AdminLogin() {
     setError("")
 
     try {
-      await authService.verify2FA({
+      const response = await authService.verify2FA({
         session_id: sessionId,
         code: data.code,
       })
+
+      if (response.access_token) {
+        setAccessToken(response.access_token)
+        await refreshUser()
+      }
 
       // Set the admin-token cookie upon successful 2FA
       Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" })
@@ -361,25 +377,6 @@ export default function AdminLogin() {
           </p>
         </div>
 
-        {/* Demo Credentials */}
-        <Card className="border-slate-700 bg-slate-800/30 backdrop-blur">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-2">
-              <h3 className="text-sm font-medium text-white">Demo Credentials</h3>
-              <div className="text-xs text-slate-300 space-y-1">
-                <p>
-                  <strong>Email:</strong> admin@dcalms.com
-                </p>
-                <p>
-                  <strong>Password:</strong> admin123
-                </p>
-                <p>
-                  <strong>2FA Code:</strong> Check your email
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

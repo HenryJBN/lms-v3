@@ -11,7 +11,7 @@ from models.user import User, UserProfile
 from models.gamification import TokenBalance, TokenTransaction
 from models.enums import UserRole, UserStatus
 from schemas.user import UserResponse, UserUpdate, UserCreate, UserProfile as UserProfileSchema, AdminUserResponse
-from schemas.gamification import TokenBalance, TokenTransaction
+from schemas.gamification import TokenBalance as TokenBalanceSchema, TokenTransaction as TokenTransactionSchema
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, require_admin, get_password_hash, get_user_by_email
 from models.system import AdminAuditLog
@@ -101,7 +101,7 @@ async def update_user_profile(
     
     return profile
 
-@router.get("/me/tokens", response_model=TokenBalance)
+@router.get("/me/tokens", response_model=TokenBalanceSchema)
 async def get_token_balance(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
@@ -120,9 +120,13 @@ async def get_token_balance(
         await session.commit()
         await session.refresh(balance)
         
-    return balance
+    return {
+        "balance": balance.balance,
+        "total_earned": 0.0, # TODO: Calculate from transactions
+        "total_spent": 0.0   # TODO: Calculate from transactions
+    }
 
-@router.get("/me/tokens/transactions", response_model=List[TokenTransaction])
+@router.get("/me/tokens/transactions", response_model=List[TokenTransactionSchema])
 async def get_token_transactions(
     current_user: User = Depends(get_current_active_user),
     page: int = Query(1, ge=1),
@@ -138,7 +142,22 @@ async def get_token_transactions(
     result = await session.exec(query)
     transactions = result.all()
     
-    return transactions
+    # Transform to match schema
+    return [
+        {
+            "id": t.id,
+            "type": t.transaction_type,
+            "amount": t.amount,
+            "balance_after": 0.0, # Not tracked in transaction model
+            "description": t.description,
+            "reference_type": t.reference_type,
+            "reference_id": t.reference_id,
+            "created_at": t.created_at,
+            "metadata": {},
+            "transaction_hash": None
+        }
+        for t in transactions
+    ]
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(
