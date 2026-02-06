@@ -76,27 +76,31 @@ async def register_new_tenant(
     try:
         import os
         base_domain = os.getenv("BASE_DOMAIN", "dcalms.com")
+        
+        site_id = uuid.uuid4()
+        admin_id = uuid.uuid4()
+        
+        # 2. Create Site
         new_site = Site(
-            id=uuid.uuid4(),
+            id=site_id,
             name=tenant_in.school_name,
             subdomain=subdomain,
-            domain=f"{subdomain}.{base_domain}", 
-            is_active=True,
-            created_at=datetime.utcnow()
+            owner_id=admin_id  # Link to the admin we are about to create
         )
         session.add(new_site)
         
         # 3. Create Admin User for this site
         new_admin = User(
-            id=uuid.uuid4(),
-            site_id=new_site.id,
+            id=admin_id,
+            site_id=site_id,
             email=tenant_in.admin_email,
-            hashed_password=get_password_hash(tenant_in.admin_password),
+            username=tenant_in.admin_email, # Use email as username for now
+            password_hash=get_password_hash(tenant_in.admin_password),
             first_name=tenant_in.admin_first_name,
             last_name=tenant_in.admin_last_name,
             role=UserRole.admin,
             status=UserStatus.active,
-            is_verified=True, # Auto-verify trial admins?
+            email_verified=True, 
             created_at=datetime.utcnow()
         )
         session.add(new_admin)
@@ -106,15 +110,19 @@ async def register_new_tenant(
         
         protocol = "http" if base_domain == "dcalms.test" else "https"
         port_suffix = ":3000" if base_domain == "dcalms.test" else ""
+        
+        # Determine the full domain for the redirect
+        site_domain = f"{subdomain}.{base_domain}"
+        
         return {
             "success": True,
             "message": "Tenant registered successfully",
             "site": {
                 "name": new_site.name,
                 "subdomain": new_site.subdomain,
-                "domain": new_site.domain
+                "domain": site_domain
             },
-            "login_url": f"{protocol}://{new_site.domain}{port_suffix}/login"
+            "login_url": f"{protocol}://{site_domain}{port_suffix}/login"
         }
         
     except Exception as e:

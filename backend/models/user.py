@@ -5,6 +5,8 @@ from sqlmodel import SQLModel, Field
 from models.enums import UserRole, UserStatus
 from models.base import MultiTenantMixin
 
+from sqlalchemy import Enum as SAEnum
+
 class User(MultiTenantMixin, table=True):
     __tablename__ = "users"
     
@@ -12,12 +14,12 @@ class User(MultiTenantMixin, table=True):
     
     email: str = Field(index=True)
     username: str = Field(index=True)
-    hashed_password: str
+    password_hash: str
     
     first_name: str
     last_name: str
-    role: UserRole = Field(default=UserRole.student)
-    status: UserStatus = Field(default=UserStatus.active)
+    role: UserRole = Field(default=UserRole.student, sa_type=SAEnum(UserRole, name="user_role"))
+    status: UserStatus = Field(default=UserStatus.active, sa_type=SAEnum(UserStatus, name="user_status"))
     
     avatar_url: Optional[str] = None
     bio: Optional[str] = None

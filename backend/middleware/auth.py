@@ -74,7 +74,7 @@ async def authenticate_user(email: str, password: str, session: AsyncSession, si
     user = await get_user_by_email(email, session, site_id)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 

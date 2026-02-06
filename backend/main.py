@@ -43,18 +43,18 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
-        "http://localhost:3001", 
-        "http://127.0.0.1:3000", 
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
         "http://dcalms.test:3000",
         "https://dcalms.com",
         "https://www.dcalms.com"
     ],
-    allow_origin_regex=r"http://.*\.localhost:3000$|http://.*\.dcalms\.test:3000$|https://.*\.dcalms\.com$",
+    allow_origin_regex=r"^https?://(.*\.)?localhost(:\d+)?$|^https?://(.*\.)?dcalms\.test(:\d+)?$|^https?://(.*\.)?dcalms\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Type"],
+    expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Type", "X-Tenant-Domain"],
 )
 
 # Include routers
@@ -133,5 +133,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=int(os.getenv("PORT", 8000)),
-        reload=os.getenv("ENVIRONMENT") == "development"
+        reload=os.getenv("APP_ENV") == "development"
     )

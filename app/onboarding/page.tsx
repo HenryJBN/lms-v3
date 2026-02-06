@@ -107,8 +107,12 @@ export default function OnboardingPage() {
       toast.success("School registered successfully! Redirecting to your new dashboard...")
       
       // Redirect to the new subdomain
+      const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.com"
+      const protocol = window.location.protocol
+      const port = window.location.port ? `:${window.location.port}` : ""
+      
       setTimeout(() => {
-        window.location.href = `http://${values.subdomain}.dcalms.com:3000/login`
+        window.location.href = `${protocol}//${values.subdomain}.${baseDomain}${port}/admin/login`
       }, 2000)
     } catch (error: any) {
       console.error("Registration failed:", error)
