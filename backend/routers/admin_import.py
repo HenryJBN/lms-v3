@@ -17,7 +17,8 @@ async def import_admin_data(
     file: UploadFile = File(...),
     import_type: str = Form(...),
     current_user = None,
-    session: AsyncSession = None
+    session: AsyncSession = None,
+    site_id: uuid.UUID = None
 ):
     """Import admin data from CSV file"""
 
@@ -42,7 +43,7 @@ async def import_admin_data(
         csv_reader = csv.DictReader(io.StringIO(csv_content))
 
         if import_type == "users":
-            return await import_users(session, csv_reader, current_user)
+            return await import_users(session, csv_reader, current_user, site_id)
 
     except Exception as e:
         raise HTTPException(
@@ -50,7 +51,7 @@ async def import_admin_data(
             detail=f"Failed to import data: {str(e)}"
         )
 
-async def import_users(session: AsyncSession, csv_reader, current_user):
+async def import_users(session: AsyncSession, csv_reader, current_user, site_id: uuid.UUID):
     """Import users from CSV data"""
     imported_count = 0
     errors = []
@@ -69,11 +70,11 @@ async def import_users(session: AsyncSession, csv_reader, current_user):
                 errors.append(f"Row {row_number}: Email and First Name are required")
                 continue
 
-            # Check if user already exists
-            query = select(User.id).where(User.email == email)
+            # Check if user already exists in this site
+            query = select(User.id).where(User.email == email, User.site_id == site_id)
             existing_user = (await session.exec(query)).first()
             if existing_user:
-                errors.append(f"Row {row_number}: User with email {email} already exists")
+                errors.append(f"Row {row_number}: User with email {email} already exists in this site")
                 continue
 
             # Validate role
@@ -88,7 +89,7 @@ async def import_users(session: AsyncSession, csv_reader, current_user):
             base_username = username
             attempt = 0
             while True:
-                query = select(User.id).where(User.username == username)
+                query = select(User.id).where(User.username == username, User.site_id == site_id)
                 existing_username = (await session.exec(query)).first()
                 if not existing_username:
                     break
@@ -113,7 +114,7 @@ async def import_users(session: AsyncSession, csv_reader, current_user):
 
             new_user = User(
                 id=user_id,
-                site_id=current_user.site_id,
+                site_id=site_id,
                 email=email,
                 username=username,
                 hashed_password=hashed_password,
@@ -136,7 +137,8 @@ async def import_users(session: AsyncSession, csv_reader, current_user):
         action="users_imported",
         target_type="users",
         description=f"Imported {imported_count} users from CSV",
-        action_metadata=json.dumps({"imported_count": imported_count, "errors_count": len(errors), "errors": errors[:10]})
+        action_metadata=json.dumps({"imported_count": imported_count, "errors_count": len(errors), "errors": errors[:10]}),
+        site_id=site_id
     )
     session.add(audit_log)
     await session.commit()

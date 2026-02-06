@@ -68,6 +68,16 @@ export const API_ENDPOINTS = {
   // Categories endpoints
   categories: "/api/categories",
   
+  // System Admin endpoints
+  systemAdmin: "/api/system-admin",
+  systemAdminSites: "/api/system-admin/sites",
+  systemAdminGlobalStats: "/api/system-admin/stats/global",
+
+  // Onboarding endpoints
+  onboarding: "/api/onboarding",
+  checkSubdomain: "/api/onboarding/check-subdomain",
+  registerTenant: "/api/onboarding/register-tenant",
+  
   // Extra specific endpoints often used in dashboard
   inProgressCourses: "/api/enrollments/my-courses?status=active",
   completedCourses: "/api/enrollments/my-courses?status=completed",

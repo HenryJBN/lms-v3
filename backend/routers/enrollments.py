@@ -98,6 +98,7 @@ async def enroll_in_course(
         course_id=course.id,
         cohort_id=enrollment_in.cohort_id,
         status=EnrollmentStatus.active,
+        site_id=current_site.id,
         enrolled_at=datetime.utcnow()
     )
     session.add(new_enrollment)
@@ -137,7 +138,7 @@ async def enroll_in_course(
     # We need to fetch course info to populate response fields if EnrollmentResponse expects them
     # EnrollmentResponse has: title, thumbnail_url, etc.
     return EnrollmentResponse(
-        **new_enrollment.dict(),
+        **new_enrollment.model_dump(),
         title=course.title,
         thumbnail_url=course.thumbnail_url,
         description=course.description,
@@ -151,18 +152,25 @@ async def get_my_enrollments(
     pagination: PaginationParams = Depends(),
     status: Optional[str] = Query(None),
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Join Enrollment -> Course -> Instructor
     query = select(Enrollment, Course, User).join(Course, Enrollment.course_id == Course.id).join(User, Course.instructor_id == User.id)
-    query = query.where(Enrollment.user_id == current_user.id)
+    query = query.where(
+        Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id
+    )
     
     if status:
         # Cast string to Enum if needed, or rely on SQLModel comparison
         query = query.where(Enrollment.status == status)
         
     # Count
-    count_query = select(func.count(Enrollment.id)).where(Enrollment.user_id == current_user.id)
+    count_query = select(func.count(Enrollment.id)).where(
+        Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id
+    )
     if status:
         count_query = count_query.where(Enrollment.status == status)
     
@@ -199,11 +207,13 @@ async def get_my_enrollments(
 async def get_enrollment(
     enrollment_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     query = select(Enrollment, Course).join(Course).where(
         Enrollment.id == enrollment_id,
-        Enrollment.user_id == current_user.id
+        Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id
     )
     result = await session.exec(query)
     row = result.first()
@@ -222,10 +232,19 @@ async def get_enrollment(
 async def drop_course(
     enrollment_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
-    enrollment = await session.get(Enrollment, enrollment_id)
-    if not enrollment or enrollment.user_id != current_user.id or enrollment.status != EnrollmentStatus.active:
+    query = select(Enrollment).where(
+        Enrollment.id == enrollment_id,
+        Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.active
+    )
+    result = await session.exec(query)
+    enrollment = result.first()
+    
+    if not enrollment:
         raise HTTPException(status_code=404, detail="Active enrollment not found")
         
     enrollment.status = EnrollmentStatus.dropped
@@ -246,11 +265,13 @@ async def drop_course(
 async def get_enrollment_progress(
     course_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course_id,
+        Enrollment.site_id == current_site.id,
         (Enrollment.status == EnrollmentStatus.active) | (Enrollment.status == EnrollmentStatus.completed)
     )
     result = await session.exec(query)
@@ -279,7 +300,8 @@ async def get_enrollment_progress_by_slug(
     # Get enrollment
     query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
-        Enrollment.course_id == course.id
+        Enrollment.course_id == course.id,
+        Enrollment.site_id == current_site.id
     )
     result = await session.exec(query)
     enrollment = result.first()
@@ -307,11 +329,16 @@ async def get_course_students(
     # Join Enrollment and User
     query = select(Enrollment, User).join(User, Enrollment.user_id == User.id).where(
         Enrollment.course_id == course_id,
+        Enrollment.site_id == current_site.id,
         Enrollment.status == EnrollmentStatus.active
     )
     
     # Count
-    count_result = await session.exec(select(func.count(Enrollment.id)).where(Enrollment.course_id == course_id, Enrollment.status == EnrollmentStatus.active))
+    count_result = await session.exec(select(func.count(Enrollment.id)).where(
+        Enrollment.course_id == course_id,
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.active
+    ))
     total = count_result.one()
     
     # Page

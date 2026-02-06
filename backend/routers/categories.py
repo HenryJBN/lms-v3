@@ -4,9 +4,12 @@ import uuid
 from datetime import datetime
 
 from database.session import get_session, AsyncSession
+from dependencies import get_current_site
+from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.course import Category, Course
 from models.enrollment import Enrollment
+from models.enums import UserRole
 from schemas.course import CategoryCreate, CategoryUpdate, CategoryResponse
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, require_admin
@@ -16,10 +19,13 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.get("", response_model=List[CategoryResponse])
-async def get_categories(session: AsyncSession = Depends(get_session)):
+async def get_categories(
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get all categories"""
     try:
-        query = select(Category).order_by(Category.sort_order, Category.name)
+        query = select(Category).where(Category.site_id == current_site.id).order_by(Category.sort_order, Category.name)
         result = await session.exec(query)
         return result.all()
     except Exception as e:
@@ -30,7 +36,10 @@ async def get_categories(session: AsyncSession = Depends(get_session)):
         )
 
 @router.get("/top-level", response_model=List[CategoryResponse])
-async def get_top_level_categories(session: AsyncSession = Depends(get_session)):
+async def get_top_level_categories(
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get all top-level categories (no parent)"""
     try:
         query = select(
@@ -38,7 +47,8 @@ async def get_top_level_categories(session: AsyncSession = Depends(get_session))
             func.count(Course.id).label("course_count")
         ).outerjoin(Course).where(
             Category.parent_id == None, 
-            Category.is_active == True
+            Category.is_active == True,
+            Category.site_id == current_site.id
         ).group_by(Category.id).order_by(Category.sort_order, Category.name)
         
         result = await session.exec(query)
@@ -56,13 +66,19 @@ async def get_top_level_categories(session: AsyncSession = Depends(get_session))
         )
 
 @router.get("/tree")
-async def get_category_tree(session: AsyncSession = Depends(get_session)):
+async def get_category_tree(
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get category tree (hierarchical structure)"""
     try:
         query = select(
             Category, 
             func.count(Course.id).label("course_count")
-        ).outerjoin(Course).where(Category.is_active == True).group_by(Category.id).order_by(Category.sort_order, Category.name)
+        ).outerjoin(Course).where(
+            Category.is_active == True,
+            Category.site_id == current_site.id
+        ).group_by(Category.id).order_by(Category.sort_order, Category.name)
         
         result = await session.exec(query)
         
@@ -91,7 +107,11 @@ async def get_category_tree(session: AsyncSession = Depends(get_session)):
         )
 
 @router.get("/popular")
-async def get_popular_categories(session: AsyncSession = Depends(get_session), limit: int = Query(10, ge=1, le=50)):
+async def get_popular_categories(
+    session: AsyncSession = Depends(get_session), 
+    current_site: Site = Depends(get_current_site),
+    limit: int = Query(10, ge=1, le=50)
+):
     """Get popular categories by enrollment count"""
     try:
         query = select(
@@ -100,7 +120,10 @@ async def get_popular_categories(session: AsyncSession = Depends(get_session), l
             func.count(Course.id.distinct()).label("course_count")
         ).outerjoin(Course, Course.category_id == Category.id).outerjoin(
             Enrollment, Enrollment.course_id == Course.id
-        ).where(Category.is_active == True).group_by(Category.id).order_by(desc("enrollment_count")).limit(limit)
+        ).where(
+            Category.is_active == True,
+            Category.site_id == current_site.id
+        ).group_by(Category.id).order_by(desc("enrollment_count")).limit(limit)
         
         result = await session.exec(query)
         categories = []
@@ -119,7 +142,11 @@ async def get_popular_categories(session: AsyncSession = Depends(get_session), l
         )
 
 @router.get("/search")
-async def search_categories(session: AsyncSession = Depends(get_session), q: str = Query(..., min_length=1)):
+async def search_categories(
+    session: AsyncSession = Depends(get_session), 
+    current_site: Site = Depends(get_current_site),
+    q: str = Query(..., min_length=1)
+):
     """Search categories by name or description"""
     try:
         query = select(
@@ -127,6 +154,7 @@ async def search_categories(session: AsyncSession = Depends(get_session), q: str
             func.count(Course.id.distinct()).label("course_count")
         ).outerjoin(Course).where(
             Category.is_active == True,
+            Category.site_id == current_site.id,
             or_(Category.name.ilike(f"%{q}%"), Category.description.ilike(f"%|{q}%"))
         ).group_by(Category.id).order_by(Category.name).limit(20)
         
@@ -143,13 +171,20 @@ async def search_categories(session: AsyncSession = Depends(get_session), q: str
         )
 
 @router.get("/{category_id}", response_model=CategoryResponse)
-async def get_category(category_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+async def get_category(
+    category_id: uuid.UUID, 
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get a single category by ID"""
     try:
         query = select(
             Category, 
             func.count(Course.id.distinct()).label("course_count")
-        ).outerjoin(Course).where(Category.id == category_id).group_by(Category.id)
+        ).outerjoin(Course).where(
+            Category.id == category_id,
+            Category.site_id == current_site.id
+        ).group_by(Category.id)
         
         result = await session.exec(query)
         row = result.first()
@@ -172,13 +207,20 @@ async def get_category(category_id: uuid.UUID, session: AsyncSession = Depends(g
         )
 
 @router.get("/slug/{slug}", response_model=CategoryResponse)
-async def get_category_by_slug(slug: str, session: AsyncSession = Depends(get_session)):
+async def get_category_by_slug(
+    slug: str, 
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get category by slug"""
     try:
         query = select(
             Category, 
             func.count(Course.id.distinct()).label("course_count")
-        ).outerjoin(Course).where(Category.slug == slug).group_by(Category.id)
+        ).outerjoin(Course).where(
+            Category.slug == slug,
+            Category.site_id == current_site.id
+        ).group_by(Category.id)
         
         result = await session.exec(query)
         row = result.first()
@@ -201,7 +243,11 @@ async def get_category_by_slug(slug: str, session: AsyncSession = Depends(get_se
         )
 
 @router.get("/{category_id}/subcategories", response_model=List[CategoryResponse])
-async def get_subcategories(category_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+async def get_subcategories(
+    category_id: uuid.UUID, 
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get subcategories of a category"""
     try:
         query = select(
@@ -209,7 +255,8 @@ async def get_subcategories(category_id: uuid.UUID, session: AsyncSession = Depe
             func.count(Course.id.distinct()).label("course_count")
         ).outerjoin(Course).where(
             Category.parent_id == category_id, 
-            Category.is_active == True
+            Category.is_active == True,
+            Category.site_id == current_site.id
         ).group_by(Category.id).order_by(Category.sort_order, Category.name)
         
         result = await session.exec(query)
@@ -229,14 +276,19 @@ async def get_category_courses(
     category_id: uuid.UUID,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get courses in a category"""
     try:
         offset = (page - 1) * size
         
         # Get category
-        category = await session.get(Category, category_id)
+        query = select(Category).where(
+            Category.id == category_id,
+            Category.site_id == current_site.id
+        )
+        category = (await session.exec(query)).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -246,7 +298,8 @@ async def get_category_courses(
         # Get total count
         count_query = select(func.count(Course.id)).where(
             Course.category_id == category_id, 
-            Course.status == 'published'
+            Course.status == 'published',
+            Course.site_id == current_site.id
         )
         total = (await session.exec(count_query)).one()
         
@@ -258,7 +311,8 @@ async def get_category_courses(
             User.last_name.label("instructor_last_name")
         ).join(User, User.id == Course.instructor_id).where(
             Course.category_id == category_id, 
-            Course.status == 'published'
+            Course.status == 'published',
+            Course.site_id == current_site.id
         ).order_by(desc(Course.created_at)).limit(size).offset(offset)
         
         result = await session.exec(courses_query)
@@ -287,7 +341,11 @@ async def get_category_courses(
         )
 
 @router.get("/{category_id}/stats")
-async def get_category_stats(category_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+async def get_category_stats(
+    category_id: uuid.UUID, 
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get category statistics"""
     try:
         # Sum of revenue is more complex, but we can do it with a subquery
@@ -298,7 +356,8 @@ async def get_category_stats(category_id: uuid.UUID, session: AsyncSession = Dep
             func.coalesce(func.avg(Course.rating_average), 0).label("average_rating")
         ).outerjoin(Enrollment, Enrollment.course_id == Course.id).where(
             Course.category_id == category_id, 
-            Course.status == 'published'
+            Course.status == 'published',
+            Course.site_id == current_site.id
         )
         
         result = await session.exec(query)
@@ -320,14 +379,22 @@ async def get_category_stats(category_id: uuid.UUID, session: AsyncSession = Dep
         )
 
 @router.get("/{category_id}/breadcrumbs")
-async def get_category_breadcrumbs(category_id: uuid.UUID, session: AsyncSession = Depends(get_session)):
+async def get_category_breadcrumbs(
+    category_id: uuid.UUID, 
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
     """Get category breadcrumb trail"""
     try:
         breadcrumbs = []
         current_id = category_id
         
         while current_id:
-            category = await session.get(Category, current_id)
+            query = select(Category).where(
+                Category.id == current_id,
+                Category.site_id == current_site.id
+            )
+            category = (await session.exec(query)).first()
             if not category:
                 break
             breadcrumbs.insert(0, category)
@@ -344,12 +411,14 @@ async def get_category_breadcrumbs(category_id: uuid.UUID, session: AsyncSession
 async def create_category(
     category_data: CategoryCreate,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Create a new category (admin only)"""
     try:
         new_category = Category(
             **category_data.model_dump(),
+            site_id=current_site.id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -370,11 +439,16 @@ async def update_category(
     category_id: uuid.UUID,
     category_data: CategoryUpdate,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Update a category (admin only)"""
     try:
-        category = await session.get(Category, category_id)
+        query = select(Category).where(
+            Category.id == category_id,
+            Category.site_id == current_site.id
+        )
+        category = (await session.exec(query)).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -404,11 +478,16 @@ async def update_category(
 async def delete_category(
     category_id: uuid.UUID,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Delete a category (admin only)"""
     try:
-        category = await session.get(Category, category_id)
+        query = select(Category).where(
+            Category.id == category_id,
+            Category.site_id == current_site.id
+        )
+        category = (await session.exec(query)).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -453,12 +532,17 @@ async def delete_category(
 async def reorder_categories(
     category_ids: List[uuid.UUID],
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Reorder categories (admin only)"""
     try:
         for index, category_id in enumerate(category_ids):
-            category = await session.get(Category, category_id)
+            query = select(Category).where(
+                Category.id == category_id,
+                Category.site_id == current_site.id
+            )
+            category = (await session.exec(query)).first()
             if category:
                 category.sort_order = index
                 category.updated_at = datetime.utcnow()
@@ -478,11 +562,16 @@ async def reorder_categories(
 async def toggle_category_status(
     category_id: uuid.UUID,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Toggle category active status (admin only)"""
     try:
-        category = await session.get(Category, category_id)
+        query = select(Category).where(
+            Category.id == category_id,
+            Category.site_id == current_site.id
+        )
+        category = (await session.exec(query)).first()
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

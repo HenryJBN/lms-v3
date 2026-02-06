@@ -74,12 +74,13 @@ async def register_new_tenant(
         raise HTTPException(status_code=400, detail="Email already registered")
 
     try:
-        # 2. Create Site
+        import os
+        base_domain = os.getenv("BASE_DOMAIN", "dcalms.com")
         new_site = Site(
             id=uuid.uuid4(),
             name=tenant_in.school_name,
             subdomain=subdomain,
-            domain=f"{subdomain}.dcalms.com", # Default domain pattern
+            domain=f"{subdomain}.{base_domain}", 
             is_active=True,
             created_at=datetime.utcnow()
         )
@@ -103,6 +104,8 @@ async def register_new_tenant(
         await session.commit()
         await session.refresh(new_site)
         
+        protocol = "http" if base_domain == "dcalms.test" else "https"
+        port_suffix = ":3000" if base_domain == "dcalms.test" else ""
         return {
             "success": True,
             "message": "Tenant registered successfully",
@@ -111,7 +114,7 @@ async def register_new_tenant(
                 "subdomain": new_site.subdomain,
                 "domain": new_site.domain
             },
-            "login_url": f"https://{new_site.domain}/login"
+            "login_url": f"{protocol}://{new_site.domain}{port_suffix}/login"
         }
         
     except Exception as e:

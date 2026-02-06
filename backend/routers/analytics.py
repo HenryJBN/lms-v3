@@ -5,12 +5,16 @@ from datetime import datetime, timedelta
 from sqlmodel import select, func, and_, or_, desc
 
 from database.session import get_session, AsyncSession
+from dependencies import get_current_site
+from models.site import Site
 from models.enrollment import Enrollment, LessonProgress, Certificate
-from models.course import Course
+from models.course import Course, CourseReview
 from models.lesson import Lesson
 from models.gamification import TokenBalance
+from models.user import User
 from schemas.system import AnalyticsResponse, CourseAnalytics, UserAnalytics, RevenueAnalytics
 from schemas.common import PaginationParams, PaginatedResponse
+from models.enums import UserRole, UserStatus
 from middleware.auth import get_current_active_user, require_instructor_or_admin, require_admin
 
 router = APIRouter()
@@ -18,29 +22,44 @@ router = APIRouter()
 @router.get("/me")
 async def get_student_analytics(
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Return consolidated analytics for the current student dashboard"""
     user_id = current_user.id
     
     # 1. Basic Stats
     # Courses completed
-    completed_query = select(func.count(Enrollment.id)).where(Enrollment.user_id == user_id, Enrollment.status == 'completed')
+    completed_query = select(func.count(Enrollment.id)).where(
+        Enrollment.user_id == user_id, 
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == 'completed'
+    )
     completed_result = await session.exec(completed_query)
     courses_completed = completed_result.one()
     
     # Courses in progress
-    active_query = select(func.count(Enrollment.id)).where(Enrollment.user_id == user_id, Enrollment.status == 'active')
+    active_query = select(func.count(Enrollment.id)).where(
+        Enrollment.user_id == user_id, 
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == 'active'
+    )
     active_result = await session.exec(active_query)
     courses_in_progress = active_result.one()
     
     # Certificates earned
-    cert_query = select(func.count(Certificate.id)).where(Certificate.user_id == user_id)
+    cert_query = select(func.count(Certificate.id)).where(
+        Certificate.user_id == user_id,
+        Certificate.site_id == current_site.id
+    )
     cert_result = await session.exec(cert_query)
     certificates_earned = cert_result.one()
     
     # Tokens balance
-    token_query = select(TokenBalance.balance).where(TokenBalance.user_id == user_id)
+    token_query = select(TokenBalance.balance).where(
+        TokenBalance.user_id == user_id,
+        TokenBalance.site_id == current_site.id
+    )
     token_result = await session.exec(token_query)
     tokens_balance = token_result.first() or 0.0
     
@@ -56,7 +75,8 @@ async def get_student_analytics(
     ).join(
         Course, LessonProgress.course_id == Course.id
     ).where(
-        LessonProgress.user_id == user_id
+        LessonProgress.user_id == user_id,
+        LessonProgress.site_id == current_site.id
     ).order_by(desc(LessonProgress.updated_at)).limit(5)
     
     activity_result = await session.exec(activity_query)
@@ -74,6 +94,7 @@ async def get_student_analytics(
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     weekly_query = select(func.date(LessonProgress.updated_at).label("date"), func.count(LessonProgress.id).label("count")).where(
         LessonProgress.user_id == user_id, 
+        LessonProgress.site_id == current_site.id,
         LessonProgress.status == 'completed', 
         LessonProgress.updated_at >= seven_days_ago
     ).group_by(func.date(LessonProgress.updated_at)).order_by("date")
@@ -92,6 +113,7 @@ async def get_student_analytics(
         Course, Enrollment.course_id == Course.id
     ).where(
         Enrollment.user_id == user_id, 
+        Enrollment.site_id == current_site.id,
         Enrollment.status == 'active'
     ).order_by(desc(Enrollment.last_accessed_at)).limit(4)
     
@@ -114,7 +136,8 @@ async def get_student_analytics(
     ).join(
         Course, LessonProgress.course_id == Course.id
     ).where(
-        LessonProgress.user_id == user_id
+        LessonProgress.user_id == user_id,
+        LessonProgress.site_id == current_site.id
     ).order_by(desc(LessonProgress.updated_at)).limit(1)
     
     last_lesson_result = await session.exec(last_lesson_query)
@@ -140,7 +163,8 @@ async def get_student_analytics(
 @router.get("/users")
 async def get_user_analytics(
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Return aggregated user analytics for admin dashboards"""
     from models.user import User
@@ -159,11 +183,11 @@ async def get_user_analytics(
     
     query = select(
         func.count(User.id).label("total_users"),
-        func.sum(case((User.status == 'active', 1), else_=0)).label("active_users"),
-        func.sum(case((User.role == 'student', 1), else_=0)).label("total_students"),
-        func.sum(case((User.role == 'instructor', 1), else_=0)).label("total_instructors"),
-        func.sum(case((User.role == 'admin', 1), else_=0)).label("total_admins")
-    )
+        func.sum(case((User.status == UserStatus.active, 1), else_=0)).label("active_users"),
+        func.sum(case((User.role == UserRole.student, 1), else_=0)).label("total_students"),
+        func.sum(case((User.role == UserRole.instructor, 1), else_=0)).label("total_instructors"),
+        func.sum(case((User.role == UserRole.admin, 1), else_=0)).label("total_admins")
+    ).where(User.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -181,7 +205,8 @@ async def get_analytics_overview(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get overall platform analytics"""
     from models.user import User
@@ -198,9 +223,9 @@ async def get_analytics_overview(
         func.count(User.id).label("total_users"),
         func.sum(case((User.created_at >= start_date, 1), else_=0)).label("new_users"),
         func.sum(case((User.last_login_at >= start_date, 1), else_=0)).label("active_users"),
-        func.sum(case((User.role == 'student', 1), else_=0)).label("total_students"),
-        func.sum(case((User.role == 'instructor', 1), else_=0)).label("total_instructors")
-    ).where(User.status == 'active', User.created_at <= end_date)
+        func.sum(case((User.role == UserRole.student, 1), else_=0)).label("total_students"),
+        func.sum(case((User.role == UserRole.instructor, 1), else_=0)).label("total_instructors")
+    ).where(User.status == UserStatus.active, User.created_at <= end_date, User.site_id == current_site.id)
     
     user_res = await session.exec(user_query)
     user_stats = user_res.first()
@@ -212,7 +237,7 @@ async def get_analytics_overview(
         func.sum(case((Course.status == 'published', 1), else_=0)).label("published_courses"),
         func.coalesce(func.sum(Course.enrollment_count), 0).label("total_enrollments"),
         func.coalesce(func.avg(Course.enrollment_count), 0).label("avg_enrollments_per_course")
-    ).where(Course.created_at <= end_date)
+    ).where(Course.created_at <= end_date, Course.site_id == current_site.id)
     
     course_res = await session.exec(course_query)
     course_stats = course_res.first()
@@ -223,7 +248,7 @@ async def get_analytics_overview(
         func.sum(case((Enrollment.enrolled_at >= start_date, 1), else_=0)).label("new_enrollments"),
         func.sum(case((Enrollment.status == 'completed', 1), else_=0)).label("completed_enrollments"),
         func.sum(case((Enrollment.status == 'active', 1), else_=0)).label("active_enrollments")
-    ).where(Enrollment.enrolled_at <= end_date)
+    ).where(Enrollment.enrolled_at <= end_date, Enrollment.site_id == current_site.id)
     
     enroll_res = await session.exec(enrollment_query)
     enroll_stats = enroll_res.first()
@@ -242,7 +267,7 @@ async def get_analytics_overview(
         func.count(Certificate.id).label("total_certificates"),
         func.sum(case((Certificate.issued_at >= start_date, 1), else_=0)).label("new_certificates"),
         func.sum(case((Certificate.status == 'minted', 1), else_=0)).label("minted_certificates")
-    ).where(Certificate.issued_at <= end_date)
+    ).where(Certificate.issued_at <= end_date, Certificate.site_id == current_site.id)
     
     cert_res = await session.exec(cert_query)
     cert_stats = cert_res.first()
@@ -283,13 +308,14 @@ async def get_course_analytics(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get analytics for a specific course"""
     from sqlalchemy import case
     
     # Check if user has access to course
-    query = select(Course).where(Course.id == course_id)
+    query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)
     course = result.first()
     
@@ -297,7 +323,7 @@ async def get_course_analytics(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     
     # Check permissions
-    if current_user.role != "admin" and str(course.instructor_id) != str(current_user.id):
+    if current_user.role != UserRole.admin and str(course.instructor_id) != str(current_user.id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Set default date range
@@ -313,7 +339,7 @@ async def get_course_analytics(
         func.sum(case((Enrollment.status == 'active', 1), else_=0)).label("active_enrollments"),
         func.sum(case((Enrollment.status == 'dropped', 1), else_=0)).label("dropped_enrollments"),
         func.coalesce(func.avg(Enrollment.progress_percentage), 0).label("avg_progress")
-    ).where(Enrollment.course_id == course_id, Enrollment.enrolled_at.between(start_date, end_date))
+    ).where(Enrollment.course_id == course_id, Enrollment.site_id == current_site.id, Enrollment.enrolled_at.between(start_date, end_date))
     
     enroll_res = await session.exec(enroll_query)
     enrollment_stats = enroll_res.first()
@@ -328,7 +354,7 @@ async def get_course_analytics(
     ).outerjoin(
         LessonProgress, and_(Lesson.id == LessonProgress.lesson_id, LessonProgress.created_at.between(start_date, end_date))
     ).where(
-        Lesson.course_id == course_id, Lesson.is_published == True
+        Lesson.course_id == course_id, Lesson.is_published == True, Lesson.site_id == current_site.id
     ).group_by(Lesson.id).order_by(Lesson.sort_order)
     
     lesson_res = await session.exec(lesson_engagement_query)
@@ -351,7 +377,7 @@ async def get_course_analytics(
     ).outerjoin(
         QuizAttempt, and_(Quiz.id == QuizAttempt.quiz_id, QuizAttempt.completed_at.between(start_date, end_date))
     ).where(
-        Quiz.course_id == course_id, Quiz.is_published == True
+        Quiz.course_id == course_id, Quiz.is_published == True, Quiz.site_id == current_site.id
     ).group_by(Quiz.id).order_by(Quiz.created_at)
     
     quiz_res = await session.exec(quiz_performance_query)
@@ -389,18 +415,19 @@ async def get_instructor_analytics(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get analytics for an instructor"""
     from models.user import User
     from sqlalchemy import case
     
     # Check permissions
-    if current_user.role != "admin" and str(current_user.id) != str(instructor_id):
+    if current_user.role != UserRole.admin and str(current_user.id) != str(instructor_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
     # Check if instructor exists
-    query = select(User).where(User.id == instructor_id, User.role == 'instructor')
+    query = select(User).where(User.id == instructor_id, User.role == UserRole.instructor, User.site_id == current_site.id)
     res = await session.exec(query)
     instructor = res.first()
     
@@ -435,7 +462,7 @@ async def get_instructor_analytics(
         func.sum(case((Enrollment.enrolled_at >= start_date, 1), else_=0)).label("new_students")
     ).join(
         Course, Enrollment.course_id == Course.id
-    ).where(Course.instructor_id == instructor_id, Enrollment.enrolled_at <= end_date)
+    ).where(Course.instructor_id == instructor_id, Course.site_id == current_site.id, Enrollment.enrolled_at <= end_date)
     
     student_res = await session.exec(student_query)
     student_stats = student_res.first()
@@ -448,7 +475,7 @@ async def get_instructor_analytics(
     ).outerjoin(
         CourseReview, and_(Course.id == CourseReview.course_id, CourseReview.is_published == True)
     ).where(
-        Course.instructor_id == instructor_id, Course.status == 'published'
+        Course.instructor_id == instructor_id, Course.status == 'published', Course.site_id == current_site.id
     ).group_by(Course.id).order_by(desc(Course.enrollment_count)).limit(5)
     
     top_courses_res = await session.exec(top_courses_query)
@@ -501,7 +528,8 @@ async def get_engagement_analytics(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get user engagement analytics (Partial SQLModel)"""
     from models.user import User
@@ -517,7 +545,8 @@ async def get_engagement_analytics(
         func.count(func.distinct(User.id)).label("active_users")
     ).where(
         User.last_login_at.between(start_date, end_date),
-        User.status == 'active'
+        User.status == UserStatus.active,
+        User.site_id == current_site.id
     ).group_by(func.date(User.last_login_at)).order_by("date")
     
     dau_res = await session.exec(dau_query)
@@ -530,7 +559,8 @@ async def get_engagement_analytics(
         func.count(LessonProgress.id).label("lesson_interactions"),
         func.coalesce(func.avg(LessonProgress.time_spent), 0).label("avg_time_spent")
     ).where(
-        LessonProgress.updated_at.between(start_date, end_date)
+        LessonProgress.updated_at.between(start_date, end_date),
+        LessonProgress.site_id == current_site.id
     ).group_by(func.date(LessonProgress.updated_at)).order_by("date")
     
     course_res = await session.exec(course_query)

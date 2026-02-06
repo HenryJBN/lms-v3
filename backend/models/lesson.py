@@ -3,10 +3,10 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON, Column
 from models.enums import LessonType, QuizQuestionType
+from models.base import MultiTenantMixin
 
-class Lesson(SQLModel, table=True):
+class Lesson(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     section_id: Optional[uuid.UUID] = Field(default=None, foreign_key="section.id", index=True)
     
@@ -32,7 +32,7 @@ class Lesson(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Quiz(SQLModel, table=True):
+class Quiz(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     lesson_id: Optional[uuid.UUID] = Field(default=None, foreign_key="lesson.id", index=True)
@@ -50,7 +50,7 @@ class Quiz(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class QuizQuestion(SQLModel, table=True):
+class QuizQuestion(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     quiz_id: uuid.UUID = Field(foreign_key="quiz.id", index=True)
     
@@ -65,7 +65,7 @@ class QuizQuestion(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class QuizAttempt(SQLModel, table=True):
+class QuizAttempt(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     quiz_id: uuid.UUID = Field(foreign_key="quiz.id", index=True)
@@ -83,7 +83,7 @@ class QuizAttempt(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Assignment(SQLModel, table=True):
+class Assignment(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     lesson_id: Optional[uuid.UUID] = Field(default=None, foreign_key="lesson.id", index=True)
@@ -99,10 +99,11 @@ class Assignment(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class AssignmentSubmission(SQLModel, table=True):
+class AssignmentSubmission(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     assignment_id: uuid.UUID = Field(foreign_key="assignment.id", index=True)
+    course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     
     content: Optional[str] = None
     attachments: Optional[List[Dict[str, Any]]] = Field(default=None, sa_column=Column(JSON))

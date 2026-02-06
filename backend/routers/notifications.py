@@ -8,7 +8,12 @@ from sqlmodel import select, func, and_, or_, desc, col
 from models.communication import Notification, NotificationSettings
 from schemas.communication import NotificationCreate, NotificationUpdate, NotificationResponse
 from schemas.common import PaginationParams, PaginatedResponse
-from models.enums import NotificationType
+from dependencies import get_current_site
+from models.site import Site
+from models.communication import Notification, NotificationSettings
+from schemas.communication import NotificationCreate, NotificationUpdate, NotificationResponse
+from schemas.common import PaginationParams, PaginatedResponse
+from models.enums import NotificationType, UserRole, UserStatus
 from middleware.auth import get_current_active_user, require_admin
 from utils.notifications import send_push_notification, send_email_notification
 
@@ -20,10 +25,14 @@ async def get_notifications(
     is_read: Optional[bool] = Query(None),
     type: Optional[NotificationType] = Query(None),
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get notifications for current user"""
-    query = select(Notification).where(Notification.user_id == current_user.id)
+    query = select(Notification).where(
+        Notification.user_id == current_user.id,
+        Notification.site_id == current_site.id
+    )
     
     if is_read is not None:
         query = query.where(Notification.is_read == is_read)
@@ -50,11 +59,13 @@ async def get_notifications(
 @router.get("/unread-count")
 async def get_unread_count(
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get unread notifications count"""
     query = select(func.count(Notification.id)).where(
         Notification.user_id == current_user.id, 
+        Notification.site_id == current_site.id,
         Notification.is_read == False
     )
     count = (await session.exec(query)).one()
@@ -64,12 +75,14 @@ async def get_unread_count(
 async def mark_notification_read(
     notification_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Mark a notification as read"""
     query = select(Notification).where(
         Notification.id == notification_id, 
-        Notification.user_id == current_user.id
+        Notification.user_id == current_user.id,
+        Notification.site_id == current_site.id
     )
     result = await session.exec(query)
     notification = result.first()
@@ -92,11 +105,13 @@ async def mark_notification_read(
 @router.put("/mark-all-read")
 async def mark_all_notifications_read(
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Mark all unread notifications as read"""
     query = select(Notification).where(
         Notification.user_id == current_user.id, 
+        Notification.site_id == current_site.id,
         Notification.is_read == False
     )
     result = await session.exec(query)
@@ -115,12 +130,14 @@ async def mark_all_notifications_read(
 async def delete_notification(
     notification_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Delete a notification"""
     query = select(Notification).where(
         Notification.id == notification_id, 
-        Notification.user_id == current_user.id
+        Notification.user_id == current_user.id,
+        Notification.site_id == current_site.id
     )
     result = await session.exec(query)
     notification = result.first()
@@ -139,12 +156,14 @@ async def delete_notification(
 async def create_notification(
     notification_in: NotificationCreate,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to create notifications"""
     new_notification = Notification(
         **notification_in.model_dump(),
-        id=uuid.uuid4()
+        id=uuid.uuid4(),
+        site_id=current_site.id
     )
     
     session.add(new_notification)
@@ -170,22 +189,26 @@ async def broadcast_notification(
     user_ids: Optional[List[uuid.UUID]] = None,
     role: Optional[str] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to broadcast notifications to multiple users"""
     from models.user import User
     
     # Determine target users
     if user_ids:
-        target_users = user_ids
+        # Verify users belong to this site
+        users_query = select(User.id).where(User.id.in_(user_ids), User.site_id == current_site.id)
+        result = await session.exec(users_query)
+        target_users = result.all()
     elif role:
-        # Get users by role
-        users_query = select(User.id).where(User.role == role, User.status == 'active')
+        # Get users by role scoped to site
+        users_query = select(User.id).where(User.role == role, User.status == UserStatus.active, User.site_id == current_site.id)
         result = await session.exec(users_query)
         target_users = result.all()
     else:
-        # Get all active users
-        users_query = select(User.id).where(User.status == 'active')
+        # Get all active users in site
+        users_query = select(User.id).where(User.status == UserStatus.active, User.site_id == current_site.id)
         result = await session.exec(users_query)
         target_users = result.all()
     
@@ -201,7 +224,8 @@ async def broadcast_notification(
             title=notification_in.title,
             message=notification_in.message,
             data=notification_in.data,
-            priority=notification_in.priority
+            priority=notification_in.priority,
+            site_id=current_site.id
         )
         session.add(new_notification)
     
@@ -225,10 +249,14 @@ async def broadcast_notification(
 @router.get("/settings")
 async def get_notification_settings(
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get or create notification settings for current user"""
-    query = select(NotificationSettings).where(NotificationSettings.user_id == current_user.id)
+    query = select(NotificationSettings).where(
+        NotificationSettings.user_id == current_user.id,
+        NotificationSettings.site_id == current_site.id
+    )
     result = await session.exec(query)
     settings = result.first()
     
@@ -236,6 +264,7 @@ async def get_notification_settings(
         # Create default settings
         settings = NotificationSettings(
             user_id=current_user.id,
+            site_id=current_site.id,
             email_notifications=True,
             push_notifications=True,
             course_updates=True,
@@ -253,10 +282,14 @@ async def get_notification_settings(
 async def update_notification_settings(
     settings_update: dict,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Update notification settings"""
-    query = select(NotificationSettings).where(NotificationSettings.user_id == current_user.id)
+    query = select(NotificationSettings).where(
+        NotificationSettings.user_id == current_user.id,
+        NotificationSettings.site_id == current_site.id
+    )
     result = await session.exec(query)
     settings = result.first()
     

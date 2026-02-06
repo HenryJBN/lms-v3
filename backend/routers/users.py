@@ -7,12 +7,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from database.session import get_session
 from dependencies import get_current_site
 from models.site import Site
-from models.user import User
+from models.user import User, UserProfile
+from models.gamification import TokenBalance, TokenTransaction
 from models.enums import UserRole, UserStatus
-from schemas.user import UserResponse, UserUpdate, UserCreate, UserProfile, AdminUserResponse
+from schemas.user import UserResponse, UserUpdate, UserCreate, UserProfile as UserProfileSchema, AdminUserResponse
 from schemas.gamification import TokenBalance, TokenTransaction
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, require_admin, get_password_hash, get_user_by_email
+from models.system import AdminAuditLog
 
 router = APIRouter()
 
@@ -34,7 +36,7 @@ async def update_current_user(
     
     # We update fields
     updated = False
-    user_data = user_update.dict(exclude_unset=True)
+    user_data = user_update.model_dump(exclude_unset=True)
     for key, value in user_data.items():
         if value is not None:
              setattr(current_user, key, value)
@@ -50,93 +52,93 @@ async def update_current_user(
     
     return current_user
 
-@router.get("/me/profile", response_model=UserProfile)
+@router.get("/me/profile", response_model=UserProfileSchema)
 async def get_user_profile(
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
-    # Check if profile exists (Raw SQL for now or text)
-    query = text("SELECT * FROM user_profiles WHERE user_id = :user_id")
-    result = await session.exec(query, params={"user_id": current_user.id})
+    query = select(UserProfile).where(
+        UserProfile.user_id == current_user.id,
+        UserProfile.site_id == current_site.id
+    )
+    result = await session.exec(query)
     profile = result.first()
     
     if not profile:
-        # Create empty profile
-        create_query = text("INSERT INTO user_profiles (user_id) VALUES (:user_id)") # RETURNING * not supported in all drivers simply?
-        # Let's simple insert then select
-        await session.exec(create_query, params={"user_id": current_user.id})
+        profile = UserProfile(user_id=current_user.id, site_id=current_site.id)
+        session.add(profile)
         await session.commit()
-        
-        result = await session.exec(query, params={"user_id": current_user.id})
-        profile = result.first()
+        await session.refresh(profile)
     
-    return UserProfile(**dict(profile))
+    return profile
 
-@router.put("/me/profile", response_model=UserProfile)
+@router.put("/me/profile", response_model=UserProfileSchema)
 async def update_user_profile(
-    profile_update: UserProfile,
+    profile_update: UserProfileSchema,
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
-    # Check if profile exists
-    query = text("SELECT * FROM user_profiles WHERE user_id = :user_id")
-    result = await session.exec(query, params={"user_id": current_user.id})
-    existing_profile = result.first()
+    query = select(UserProfile).where(
+        UserProfile.user_id == current_user.id,
+        UserProfile.site_id == current_site.id
+    )
+    result = await session.exec(query)
+    profile = result.first()
     
-    update_data = profile_update.dict(exclude_unset=True)
+    if not profile:
+        profile = UserProfile(user_id=current_user.id, site_id=current_site.id)
     
-    if existing_profile:
-        if update_data:
-             # Construct dynamic UPDATE
-             fields = ", ".join([f"{k} = :{k}" for k in update_data.keys()])
-             update_query = text(f"UPDATE user_profiles SET {fields}, updated_at = NOW() WHERE user_id = :user_id")
-             params = {**update_data, "user_id": current_user.id}
-             await session.exec(update_query, params=params)
-             await session.commit()
-    else:
-         # Create
-         create_fields = ["user_id"] + list(update_data.keys())
-         create_placeholders = [":user_id"] + [f":{k}" for k in update_data.keys()]
-         insert_query = text(f"INSERT INTO user_profiles ({', '.join(create_fields)}) VALUES ({', '.join(create_placeholders)})")
-         params = {**update_data, "user_id": current_user.id}
-         await session.exec(insert_query, params=params)
-         await session.commit()
-         
-    # Fetch updated
-    result = await session.exec(query, params={"user_id": current_user.id})
-    updated_profile = result.first()
-    return UserProfile(**dict(updated_profile))
+    update_data = profile_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(profile, key, value)
+    
+    profile.updated_at = datetime.utcnow()
+    session.add(profile)
+    await session.commit()
+    await session.refresh(profile)
+    
+    return profile
 
 @router.get("/me/tokens", response_model=TokenBalance)
 async def get_token_balance(
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
-    query = text("SELECT * FROM l_tokens WHERE user_id = :user_id")
-    result = await session.exec(query, params={"user_id": current_user.id})
+    query = select(TokenBalance).where(
+        TokenBalance.user_id == current_user.id,
+        TokenBalance.site_id == current_site.id
+    )
+    result = await session.exec(query)
     balance = result.first()
     
     if not balance:
-        await session.exec(text("INSERT INTO l_tokens (user_id, balance, total_earned, total_spent) VALUES (:user_id, 0, 0, 0)"), params={"user_id": current_user.id})
+        balance = TokenBalance(user_id=current_user.id, site_id=current_site.id, balance=0.0)
+        session.add(balance)
         await session.commit()
-        result = await session.exec(query, params={"user_id": current_user.id})
-        balance = result.first()
+        await session.refresh(balance)
         
-    return TokenBalance(**dict(balance))
+    return balance
 
 @router.get("/me/tokens/transactions", response_model=List[TokenTransaction])
 async def get_token_transactions(
     current_user: User = Depends(get_current_active_user),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
-    offset = (page - 1) * size
-    query = text("SELECT * FROM token_transactions WHERE user_id = :user_id ORDER BY created_at DESC LIMIT :size OFFSET :offset")
-    result = await session.exec(query, params={"user_id": current_user.id, "size": size, "offset": offset})
+    query = select(TokenTransaction).where(
+        TokenTransaction.user_id == current_user.id,
+        TokenTransaction.site_id == current_site.id
+    ).order_by(TokenTransaction.created_at.desc()).offset((page - 1) * size).limit(size)
+    
+    result = await session.exec(query)
     transactions = result.all()
     
-    return [TokenTransaction(**dict(t)) for t in transactions]
+    return transactions
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(
@@ -185,49 +187,57 @@ async def get_users(
     total_result = await session.exec(count_query)
     total = total_result.one()
 
+    from models.enrollment import Enrollment
+    from models.gamification import TokenBalance
+    from models.enums import EnrollmentStatus
+    from sqlalchemy import func, case, or_
+
     # Get users with aggregations
-    # Aggregations for AdminUserResponse: total_enrollments, completed_courses, token_balance
-    # This involves complex join which might be hard in pure SQLModel select(...)
-    # We can use text() for the complex query but inject site_id parameter.
-    
     offset = (pagination.page - 1) * pagination.size
     
-    # Construct base where clause
-    where_parts = ["u.site_id = :site_id"]
-    params = {"site_id": current_site.id, "limit": pagination.size, "offset": offset}
-    
+    query = select(
+        User,
+        func.count(Enrollment.id).label("total_enrollments"),
+        func.sum(case((Enrollment.status == EnrollmentStatus.completed, 1), else_=0)).label("completed_courses"),
+        func.coalesce(TokenBalance.balance, 0).label("token_balance")
+    ).outerjoin(
+        Enrollment, User.id == Enrollment.user_id
+    ).outerjoin(
+        TokenBalance, User.id == TokenBalance.user_id
+    ).where(
+        User.site_id == current_site.id
+    )
+
     if role:
-        where_parts.append("u.role = :role")
-        params["role"] = role
+        query = query.where(User.role == role)
     if status:
-        where_parts.append("u.status = :status")
-        params["status"] = status
+        query = query.where(User.status == status)
     if search:
-        where_parts.append("(u.first_name ILIKE :search OR u.last_name ILIKE :search OR u.email ILIKE :search OR u.username ILIKE :search)")
-        params["search"] = f"%{search}%"
-        
-    where_sql = " AND ".join(where_parts)
+        search_fmt = f"%{search}%"
+        query = query.where(
+            or_(
+                col(User.first_name).ilike(search_fmt),
+                col(User.last_name).ilike(search_fmt),
+                col(User.email).ilike(search_fmt),
+                col(User.username).ilike(search_fmt)
+            )
+        )
+
+    query = query.group_by(User.id, TokenBalance.balance).order_by(User.created_at.desc()).limit(pagination.size).offset(offset)
     
-    query_sql = f"""
-        SELECT 
-            u.*, 
-            COALESCE(COUNT(e.id), 0) AS total_enrollments,
-            COALESCE(SUM(CASE WHEN e.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_courses,
-            COALESCE(t.balance, 0) AS token_balance
-        FROM users u
-        LEFT JOIN course_enrollments e ON e.user_id = u.id
-        LEFT JOIN l_tokens t ON t.user_id = u.id
-        WHERE {where_sql}
-        GROUP BY u.id, t.balance
-        ORDER BY u.created_at DESC
-        LIMIT :limit OFFSET :offset
-    """
+    result = await session.exec(query)
+    rows = result.all()
     
-    result = await session.exec(text(query_sql), params=params)
-    users = result.all() # returns Row objects or mappings
+    user_list = []
+    for user, total_enrollments, completed_courses, token_balance in rows:
+        user_data = user.model_dump()
+        user_data["total_enrollments"] = total_enrollments or 0
+        user_data["completed_courses"] = completed_courses or 0
+        user_data["token_balance"] = token_balance or 0.0
+        user_list.append(AdminUserResponse(**user_data))
     
     return PaginatedResponse(
-        items=[AdminUserResponse(**dict(user)) for user in users],
+        items=user_list,
         total=total,
         page=pagination.page,
         size=pagination.size,
@@ -254,14 +264,16 @@ async def update_user_status(
     session.add(user)
     await session.commit()
     
-    # Audit log (raw sql)
-    log_query = text("INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description) VALUES (:uid, :action, 'user', :tid, :desc)")
-    await session.exec(log_query, params={
-        "uid": current_user.id, 
-        "action": f"user_{status_in}", 
-        "tid": user.id, 
-        "desc": f"Changed user status to {status_in}"
-    })
+    # Audit log
+    new_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action=f"user_{status_in}",
+        target_type="user",
+        target_id=user.id,
+        description=f"Changed user status to {status_in}",
+        site_id=current_site.id
+    )
+    session.add(new_log)
     await session.commit()
     
     return {"message": f"User status updated to {status_in}"}
@@ -282,12 +294,16 @@ async def delete_user(
     session.add(user)
     await session.commit()
     
-    # Audit log (raw sql)
-    log_query = text("INSERT INTO admin_audit_log (admin_user_id, action, target_type, target_id, description) VALUES (:uid, 'user_deleted', 'user', :tid, 'User account deactivated')")
-    await session.exec(log_query, params={
-        "uid": current_user.id, 
-        "tid": user.id
-    })
+    # Audit log
+    new_log = AdminAuditLog(
+        admin_user_id=current_user.id,
+        action="user_deleted",
+        target_type="user",
+        target_id=user.id,
+        description="User account deactivated",
+        site_id=current_site.id
+    )
+    session.add(new_log)
     await session.commit()
     
     return {"message": "User deleted successfully"}

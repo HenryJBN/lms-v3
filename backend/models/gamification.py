@@ -2,8 +2,9 @@ from typing import Optional
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field
+from models.base import MultiTenantMixin
 
-class TokenBalance(SQLModel, table=True):
+class TokenBalance(MultiTenantMixin, table=True):
     __tablename__ = "token_balances"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -12,7 +13,7 @@ class TokenBalance(SQLModel, table=True):
     
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class TokenTransaction(SQLModel, table=True):
+class TokenTransaction(MultiTenantMixin, table=True):
     __tablename__ = "token_transactions"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

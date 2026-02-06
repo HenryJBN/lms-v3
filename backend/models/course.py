@@ -3,8 +3,9 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, Relationship
 from models.enums import CourseLevel, CourseStatus
+from models.base import MultiTenantMixin
 
-class Category(SQLModel, table=True):
+class Category(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(index=True)
     slug: str = Field(index=True, unique=True)
@@ -17,9 +18,8 @@ class Category(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Course(SQLModel, table=True):
+class Course(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     instructor_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     category_id: Optional[uuid.UUID] = Field(default=None, foreign_key="category.id", index=True)
     
@@ -46,7 +46,7 @@ class Course(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Section(SQLModel, table=True):
+class Section(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     title: str
@@ -56,7 +56,7 @@ class Section(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class CourseReview(SQLModel, table=True):
+class CourseReview(MultiTenantMixin, table=True):
     __tablename__ = "course_reviews"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

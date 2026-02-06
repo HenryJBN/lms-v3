@@ -8,7 +8,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from database.session import get_session
 from dependencies import get_current_site
 from models.site import Site
-from models.course import Course
+from models.course import Course, Category
 from models.user import User
 # Categories are not migrated to SQLModel in my list yet, assuming they exist as table.
 # Actually I haven't checked Category model. If not migrated, I can treat it as raw or assume it will be migrated.
@@ -137,7 +137,7 @@ async def get_courses(
         
         # We can fetch category name via ID if really needed, but let's assume UI handles missing name or ID lookup.
         item = CourseResponse(
-            **course.dict(),
+            **course.model_dump(),
             instructor_first_name=instructor.first_name,
             instructor_last_name=instructor.last_name,
             category_name=None # Placeholder
@@ -166,7 +166,7 @@ async def get_featured_courses(
     items = []
     for course, instructor in results:
         item = CourseResponse(
-            **course.dict(),
+            **course.model_dump(),
             instructor_first_name=instructor.first_name,
             instructor_last_name=instructor.last_name
         )
@@ -192,7 +192,7 @@ async def get_course(
     course, instructor = row
     course, instructor = row
     return CourseResponse(
-        **course.dict(),
+        **course.model_dump(),
         instructor_first_name=instructor.first_name,
         instructor_last_name=instructor.last_name
     )
@@ -214,7 +214,7 @@ async def get_course_cohorts(
     
     # We might want to fill current_enrollment_count dynamically or assume it's set on the object
     # For now, return as is (ignoring the count field or letting it default to 0 if not computed)
-    return [CohortResponse(**cohort.dict()) for cohort in cohorts]
+    return [CohortResponse(**cohort.model_dump()) for cohort in cohorts]
 
 @router.get("/{course_id}", response_model=CourseResponse)
 async def get_course_by_id(
@@ -234,7 +234,7 @@ async def get_course_by_id(
         
     course, instructor = row
     return CourseResponse(
-        **course.dict(),
+        **course.model_dump(),
         instructor_first_name=instructor.first_name,
         instructor_last_name=instructor.last_name
     )
@@ -248,7 +248,7 @@ async def create_course(
 ):
     # Create object
     new_course = Course(
-        **course_in.dict(),
+        **course_in.model_dump(),
         instructor_id=current_user.id,
         site_id=current_site.id # Bind to current site
     )
@@ -262,7 +262,7 @@ async def create_course(
     
     # Build response (User is current_user)
     return CourseResponse(
-        **new_course.dict(),
+        **new_course.model_dump(),
         instructor_first_name=current_user.first_name,
         instructor_last_name=current_user.last_name
     )
@@ -302,7 +302,7 @@ async def update_course(
     instructor = await session.get(User, course.instructor_id)
     
     return CourseResponse(
-        **course.dict(),
+        **course.model_dump(),
         instructor_first_name=instructor.first_name,
         instructor_last_name=instructor.last_name
     )
@@ -357,7 +357,7 @@ async def publish_course(
     
     instructor = await session.get(User, course.instructor_id)
     return CourseResponse(
-        **course.dict(),
+        **course.model_dump(),
         instructor_first_name=instructor.first_name,
         instructor_last_name=instructor.last_name
     )
@@ -387,7 +387,7 @@ async def unpublish_course(
     
     instructor = await session.get(User, course.instructor_id)
     return CourseResponse(
-        **course.dict(),
+        **course.model_dump(),
         instructor_first_name=instructor.first_name,
         instructor_last_name=instructor.last_name
     )
@@ -417,12 +417,18 @@ async def upload_course_trailer(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/categories/", response_model=List[CategoryResponse])
-async def get_categories(session: AsyncSession = Depends(get_session)):
-    # Using raw SQL for categories as model is not migrated yet
-    query = text("SELECT * FROM categories WHERE is_active = true ORDER BY sort_order, name")
+async def get_categories(
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
+    query = select(Category).where(
+        Category.site_id == current_site.id,
+        Category.is_active == True
+    ).order_by(Category.sort_order, Category.name)
+    
     result = await session.exec(query)
     categories = result.all()
-    return [CategoryResponse(**dict(cat)) for cat in categories]
+    return [CategoryResponse(**cat.model_dump()) for cat in categories]
 
 @router.get("/{course_id}/stats")
 async def get_course_stats(

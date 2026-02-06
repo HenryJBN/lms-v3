@@ -7,10 +7,12 @@ from sqlmodel import select, and_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
+from dependencies import get_current_site
+from models.site import Site
 from models.course import Course
 from models.enrollment import Enrollment, LessonProgress
 from models.lesson import Lesson, QuizAttempt
-from models.enums import CompletionStatus, EnrollmentStatus
+from models.enums import CompletionStatus, EnrollmentStatus, UserRole
 from schemas.enrollment import LessonProgressResponse, LessonProgressUpdate
 from schemas.lesson import QuizAttemptCreate, QuizAttemptResponse
 from middleware.auth import get_current_active_user
@@ -23,10 +25,11 @@ router = APIRouter()
 async def get_course_progress_by_slug(
     course_slug: str,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # First get the course ID from slug
-    query = select(Course).where(Course.slug == course_slug)
+    query = select(Course).where(Course.slug == course_slug, Course.site_id == current_site.id)
     result = await session.exec(query)
     course = result.first()
 
@@ -40,7 +43,8 @@ async def get_course_progress_by_slug(
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course.id,
-        Enrollment.status == "active"
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.active
     )
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
@@ -56,7 +60,8 @@ async def get_course_progress_by_slug(
         Lesson, LessonProgress.lesson_id == Lesson.id
     ).where(
         LessonProgress.user_id == current_user.id,
-        LessonProgress.course_id == course.id
+        LessonProgress.course_id == course.id,
+        LessonProgress.site_id == current_site.id
     ).order_by(Lesson.sort_order)
     
     progress_result = await session.exec(progress_query)
@@ -74,13 +79,15 @@ async def get_course_progress_by_slug(
 async def get_course_progress(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if user is enrolled in the course
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course_id,
-        Enrollment.status == "active"
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.active
     )
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
@@ -96,7 +103,8 @@ async def get_course_progress(
         Lesson, LessonProgress.lesson_id == Lesson.id
     ).where(
         LessonProgress.user_id == current_user.id,
-        LessonProgress.course_id == course_id
+        LessonProgress.course_id == course_id,
+        LessonProgress.site_id == current_site.id
     ).order_by(Lesson.sort_order)
     
     progress_result = await session.exec(progress_query)
@@ -115,15 +123,18 @@ async def update_lesson_progress(
     lesson_id: uuid.UUID,
     progress_update: LessonProgressUpdate,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get lesson info and check enrollment
     lesson_query = select(Lesson, Enrollment.id.label("enrollment_id")).join(
         Enrollment, Lesson.course_id == Enrollment.course_id
     ).where(
         Lesson.id == lesson_id,
+        Lesson.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == "active"
+        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.site_id == current_site.id
     )
     lesson_result = await session.exec(lesson_query)
     row = lesson_result.first()
@@ -137,12 +148,13 @@ async def update_lesson_progress(
     lesson = row[0]
 
     # Check assessment completion status
-    assessment_status = await check_lesson_assessment_completion(current_user.id, lesson_id, session)
+    assessment_status = await check_lesson_assessment_completion(current_user.id, lesson_id, session, site_id=current_site.id)
 
     # Check if progress record exists
     existing_query = select(LessonProgress).where(
         LessonProgress.user_id == current_user.id,
-        LessonProgress.lesson_id == lesson_id
+        LessonProgress.lesson_id == lesson_id,
+        LessonProgress.site_id == current_site.id
     )
     existing_result = await session.exec(existing_query)
     existing_progress = existing_result.first()
@@ -177,7 +189,7 @@ async def update_lesson_progress(
         existing_progress.progress_percentage = int(final_progress_percentage)
         
         # Optional fields from payload
-        for field, value in progress_update.dict(exclude_unset=True).items():
+        for field, value in progress_update.model_dump(exclude_unset=True).items():
             if field and value is not None and field not in ("progress_percentage",):
                 setattr(existing_progress, field, value)
 
@@ -203,6 +215,7 @@ async def update_lesson_progress(
             time_spent=progress_update.time_spent or 0,
             last_position=progress_update.last_position or 0,
             notes=progress_update.notes,
+            site_id=current_site.id,
             started_at=datetime.utcnow() if status_enum != CompletionStatus.not_started else None,
             completed_at=datetime.utcnow() if status_enum == CompletionStatus.completed else None
         )
@@ -226,7 +239,7 @@ async def update_lesson_progress(
         await send_lesson_completion_notification(current_user.id, lesson.title, lesson.course_id, session)
 
         # Update course progress
-        await update_course_progress(current_user.id, lesson.course_id, session)
+        await update_course_progress(current_user.id, lesson.course_id, session, site_id=current_site.id)
 
     # Prepare response from updated_progress
     res_dict = updated_progress.model_dump()
@@ -238,7 +251,8 @@ async def update_lesson_progress(
 async def submit_quiz_attempt(
     attempt: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizQuestion, QuizAttempt
     # Get quiz info and check enrollment
@@ -248,8 +262,10 @@ async def submit_quiz_attempt(
         Enrollment, Quiz.course_id == Enrollment.course_id
     ).where(
         Quiz.id == attempt.quiz_id,
+        Quiz.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == "active"
+        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.site_id == current_site.id
     )
     
     quiz_result = await session.exec(quiz_query)
@@ -307,7 +323,8 @@ async def submit_quiz_attempt(
         completed_at=datetime.utcnow(),
         score=score,
         passed=passed,
-        answers=attempt.answers
+        answers=attempt.answers,
+        site_id=current_site.id
     )
     
     session.add(new_attempt)
@@ -331,7 +348,8 @@ async def submit_quiz_attempt(
 async def get_quiz_attempts(
     quiz_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
     # Check if user has access to this quiz
@@ -339,8 +357,10 @@ async def get_quiz_attempts(
         Enrollment, Quiz.course_id == Enrollment.course_id
     ).where(
         Quiz.id == quiz_id,
+        Quiz.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == "active"
+        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.site_id == current_site.id
     )
     
     quiz_result = await session.exec(quiz_query)
@@ -361,7 +381,7 @@ async def get_quiz_attempts(
     attempts_result = await session.exec(query)
     return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession):
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Update overall course progress based on lesson completions"""
     from models.enrollment import Enrollment, LessonProgress
     from models.lesson import Lesson
@@ -371,7 +391,8 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     # We use a join to ensure we only count published lessons
     total_query = select(func.count(Lesson.id)).where(
         Lesson.course_id == course_id,
-        Lesson.is_published == True
+        Lesson.is_published == True,
+        Lesson.site_id == site_id
     )
     total_result = await session.exec(total_query)
     total_lessons = total_result.one()
@@ -385,6 +406,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
         LessonProgress.user_id == user_id,
         LessonProgress.course_id == course_id,
         LessonProgress.status == CompletionStatus.completed,
+        LessonProgress.site_id == site_id,
         Lesson.is_published == True
     )
     completed_result = await session.exec(completed_query)
@@ -395,7 +417,8 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     # Update enrollment progress
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == user_id,
-        Enrollment.course_id == course_id
+        Enrollment.course_id == course_id,
+        Enrollment.site_id == site_id
     )
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
@@ -435,9 +458,9 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                 )
                 
                 # Issue certificate
-                await issue_certificate(user_id, course_id, session)
+                await issue_certificate(user_id, course_id, session, site_id=site_id)
 
-async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession):
+async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """
     Check if user has completed all required assessments for a lesson.
     Returns dict with completion status for quizzes, assignments, and overall.
@@ -445,12 +468,12 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
     from models.lesson import Quiz, QuizAttempt, Assignment, AssignmentSubmission
     
     # Get quiz for the lesson
-    quiz_query = select(Quiz).where(Quiz.lesson_id == lesson_id, Quiz.is_published == True)
+    quiz_query = select(Quiz).where(Quiz.lesson_id == lesson_id, Quiz.is_published == True, Quiz.site_id == site_id)
     quiz_result = await session.exec(quiz_query)
     quiz = quiz_result.first()
     
     # Get assignment for the lesson
-    assignment_query = select(Assignment).where(Assignment.lesson_id == lesson_id, Assignment.is_published == True)
+    assignment_query = select(Assignment).where(Assignment.lesson_id == lesson_id, Assignment.is_published == True, Assignment.site_id == site_id)
     assignment_result = await session.exec(assignment_query)
     assignment = assignment_result.first()
 
@@ -463,7 +486,8 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
     if has_quiz:
         quiz_attempt_query = select(QuizAttempt).where(
             QuizAttempt.user_id == user_id,
-            QuizAttempt.quiz_id == quiz.id
+            QuizAttempt.quiz_id == quiz.id,
+            QuizAttempt.site_id == site_id
         ).order_by(QuizAttempt.completed_at.desc()).limit(1)
         
         latest_attempt_result = await session.exec(quiz_attempt_query)
@@ -480,7 +504,8 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
     if has_assignment:
         assignment_submission_query = select(AssignmentSubmission).where(
             AssignmentSubmission.user_id == user_id,
-            AssignmentSubmission.assignment_id == assignment.id
+            AssignmentSubmission.assignment_id == assignment.id,
+            AssignmentSubmission.site_id == site_id
         ).order_by(AssignmentSubmission.submitted_at.desc()).limit(1)
         
         latest_submission_result = await session.exec(assignment_submission_query)
@@ -509,13 +534,13 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
         'has_started': has_started
     }
 
-async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession):
+async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Issue NFT certificate for course completion"""
     from models.course import Course
     from models.enrollment import Enrollment, Certificate
 
     # Get course info
-    course_query = select(Course).where(Course.id == course_id)
+    course_query = select(Course).where(Course.id == course_id, Course.site_id == site_id)
     course_result = await session.exec(course_query)
     course = course_result.first()
 
@@ -525,7 +550,8 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
     # Check if certificate already exists
     existing_cert_query = select(Certificate).where(
         Certificate.user_id == user_id,
-        Certificate.course_id == course_id
+        Certificate.course_id == course_id,
+        Certificate.site_id == site_id
     )
     existing_cert_result = await session.exec(existing_cert_query)
     
@@ -540,6 +566,7 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
         description=f"This certificate verifies that the holder has successfully completed the course: {course.title}",
         status="pending",
         blockchain_network="polygon",
+        site_id=site_id,
         issued_at=datetime.utcnow()
     )
     session.add(new_cert)
@@ -547,7 +574,8 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
     # Update enrollment with certificate issued timestamp
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == user_id,
-        Enrollment.course_id == course_id
+        Enrollment.course_id == course_id,
+        Enrollment.site_id == site_id
     )
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()

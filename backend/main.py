@@ -42,7 +42,15 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "https://your-frontend-domain.com"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:3001", 
+        "http://127.0.0.1:3000", 
+        "http://dcalms.test:3000",
+        "https://dcalms.com",
+        "https://www.dcalms.com"
+    ],
+    allow_origin_regex=r"http://.*\.localhost:3000$|http://.*\.dcalms\.test:3000$|https://.*\.dcalms\.com$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

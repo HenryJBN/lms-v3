@@ -12,6 +12,8 @@ from models.course import Course, Category
 from models.enrollment import Enrollment, Certificate
 from models.finance import RevenueRecord
 from models.system import AdminAuditLog
+from models.site import Site
+from dependencies import get_current_site
 from schemas.system import AdminDashboardStats
 from schemas.user import BasicUser, UserResponse, AdminUserResponse
 from schemas.course import AdminCourseResponse
@@ -34,11 +36,12 @@ async def update_user_by_admin(
     user_id: uuid.UUID,
     payload: Dict[str, Any],
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Update user fields by admin. Allows updating first_name, last_name, email, and role."""
     # Fetch existing user
-    query = select(User).where(User.id == user_id)
+    query = select(User).where(User.id == user_id, User.site_id == current_site.id)
     result = await session.exec(query)
     user = result.first()
     
@@ -51,11 +54,11 @@ async def update_user_by_admin(
     for key, value in payload.items():
         if key in allowed_fields and value is not None:
             if key == "email":
-                # Ensure email uniqueness
-                dup_query = select(User.id).where(User.email == value, User.id != user_id)
+                # Ensure email uniqueness within site
+                dup_query = select(User.id).where(User.email == value, User.id != user_id, User.site_id == current_site.id)
                 dup_res = await session.exec(dup_query)
                 if dup_res.first():
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use in this site")
             setattr(user, key, value)
             updated_data[key] = value
 
@@ -70,7 +73,8 @@ async def update_user_by_admin(
             target_type="user",
             target_id=user_id,
             description="Admin updated user profile",
-            action_metadata=json.dumps(updated_data)
+            action_metadata=json.dumps(updated_data),
+            site_id=current_site.id
         )
         session.add(audit_log)
         
@@ -82,20 +86,21 @@ async def update_user_by_admin(
 @router.get("/dashboard", response_model=AdminDashboardStats)
 async def get_admin_dashboard(
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get admin dashboard statistics"""
     from sqlalchemy import case
 
     # Basic stats
-    user_count_query = select(func.count(User.id)).where(User.status == 'active')
-    student_count_query = select(func.count(User.id)).where(User.role == 'student', User.status == 'active')
-    instructor_count_query = select(func.count(User.id)).where(User.role == 'instructor', User.status == 'active')
-    course_count_query = select(func.count(Course.id)).where(Course.status == 'published')
-    enrollment_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'active')
-    completion_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'completed')
-    certificate_count_query = select(func.count(Certificate.id)).where(Certificate.status == 'issued')
-    revenue_sum_query = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(RevenueRecord.status == 'completed')
+    user_count_query = select(func.count(User.id)).where(User.status == 'active', User.site_id == current_site.id)
+    student_count_query = select(func.count(User.id)).where(User.role == 'student', User.status == 'active', User.site_id == current_site.id)
+    instructor_count_query = select(func.count(User.id)).where(User.role == 'instructor', User.status == 'active', User.site_id == current_site.id)
+    course_count_query = select(func.count(Course.id)).where(Course.status == 'published', Course.site_id == current_site.id)
+    enrollment_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'active', Enrollment.site_id == current_site.id)
+    completion_count_query = select(func.count(Enrollment.id)).where(Enrollment.status == 'completed', Enrollment.site_id == current_site.id)
+    certificate_count_query = select(func.count(Certificate.id)).where(Certificate.status == 'issued', Certificate.site_id == current_site.id)
+    revenue_sum_query = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(RevenueRecord.status == 'completed', RevenueRecord.site_id == current_site.id)
     
     total_users = (await session.exec(user_count_query)).one()
     total_students = (await session.exec(student_count_query)).one()
@@ -110,14 +115,15 @@ async def get_admin_dashboard(
     now = datetime.utcnow()
     thirty_days_ago = now - timedelta(days=30)
     
-    new_users_30d = (await session.exec(select(func.count(User.id)).where(User.created_at >= thirty_days_ago))).one()
-    new_courses_30d = (await session.exec(select(func.count(Course.id)).where(Course.created_at >= thirty_days_ago))).one()
-    new_enrollments_30d = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= thirty_days_ago))).one()
-    new_certificates_30d = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= thirty_days_ago))).one()
+    new_users_30d = (await session.exec(select(func.count(User.id)).where(User.created_at >= thirty_days_ago, User.site_id == current_site.id))).one()
+    new_courses_30d = (await session.exec(select(func.count(Course.id)).where(Course.created_at >= thirty_days_ago, Course.site_id == current_site.id))).one()
+    new_enrollments_30d = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= thirty_days_ago, Enrollment.site_id == current_site.id))).one()
+    new_certificates_30d = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= thirty_days_ago, Certificate.site_id == current_site.id))).one()
     
     # Top courses
     top_courses_query = select(Course.id, Course.title, Course.enrollment_count, Course.thumbnail_url).where(
-        Course.status == 'published'
+        Course.status == 'published',
+        Course.site_id == current_site.id
     ).order_by(desc(Course.enrollment_count)).limit(5)
     
     top_courses_res = await session.exec(top_courses_query)
@@ -125,7 +131,8 @@ async def get_admin_dashboard(
     
     # Recent registrations
     recent_users_query = select(User.id, User.first_name, User.last_name, User.email, User.role, User.created_at).where(
-        User.status == 'active'
+        User.status == 'active',
+        User.site_id == current_site.id
     ).order_by(desc(User.created_at)).limit(10)
     
     recent_users_res = await session.exec(recent_users_query)
@@ -152,7 +159,8 @@ async def get_admin_dashboard(
 async def create_user(
     user_data: BasicUser,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Create a new user by admin."""
     # Check if user already exists
@@ -165,7 +173,7 @@ async def create_user(
     base_username = username
     attempt = 0
     while True:
-        query = select(User).where(User.username == username)
+        query = select(User).where(User.username == username, User.site_id == current_site.id)
         existing = (await session.exec(query)).first()
         if not existing:
             break
@@ -183,7 +191,7 @@ async def create_user(
 
     new_user = User(
         id=uuid.uuid4(),
-        site_id=current_user.site_id,
+        site_id=current_site.id,
         email=user_data.email,
         username=username,
         hashed_password=hashed_password,
@@ -216,17 +224,18 @@ async def get_admin_users(
     status: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get all users with admin details"""
     offset = (pagination.page - 1) * pagination.size
     
     # Base query for users with aggregations
     # Subqueries for counts to avoid complex joins issues with pagination
-    enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id).scalar_subquery()
-    cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id).scalar_subquery()
-    token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id).limit(1).scalar_subquery()
-    completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed').scalar_subquery()
+    enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.site_id == current_site.id).scalar_subquery()
+    cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id, Certificate.site_id == current_site.id).scalar_subquery()
+    token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id, TokenBalance.site_id == current_site.id).limit(1).scalar_subquery()
+    completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed', Enrollment.site_id == current_site.id).scalar_subquery()
 
     query = select(
         User,
@@ -236,6 +245,8 @@ async def get_admin_users(
         completion_count_sub.label("completed_courses")
     )
     
+    query = query.where(User.site_id == current_site.id)
+
     if role:
         query = query.where(User.role == role)
     if status:
@@ -249,7 +260,7 @@ async def get_admin_users(
         ))
         
     # Count
-    count_query = select(func.count(User.id))
+    count_query = select(func.count(User.id)).where(User.site_id == current_site.id)
     if role: count_query = count_query.where(User.role == role)
     if status: count_query = count_query.where(User.status == status)
     if search: count_query = count_query.where(or_(
@@ -291,16 +302,17 @@ async def get_admin_courses(
     instructor_id: Optional[uuid.UUID] = Query(None),
     search: Optional[str] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get all courses with admin details"""
     offset = (pagination.page - 1) * pagination.size
     
     # Subqueries for counts
     from models.lesson import Lesson
-    lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id).scalar_subquery()
+    lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id, Lesson.site_id == current_site.id).scalar_subquery()
     revenue_sum_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
-        RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed'
+        RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed', RevenueRecord.site_id == current_site.id
     ).scalar_subquery()
 
     # Join with instructor and category for details
@@ -312,7 +324,7 @@ async def get_admin_courses(
         Category.name.label("category_name"),
         lesson_count_sub.label("total_lessons"),
         revenue_sum_sub.label("total_revenue")
-    ).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id)
+    ).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id).where(Course.site_id == current_site.id)
     
     if status:
         query = query.where(Course.status == status)
@@ -322,7 +334,7 @@ async def get_admin_courses(
         query = query.where(or_(Course.title.ilike(f"%{search}%"), Course.description.ilike(f"%{search}%")))
         
     # Count
-    count_query = select(func.count(Course.id))
+    count_query = select(func.count(Course.id)).where(Course.site_id == current_site.id)
     if status: count_query = count_query.where(Course.status == status)
     if instructor_id: count_query = count_query.where(Course.instructor_id == instructor_id)
     if search: count_query = count_query.where(or_(Course.title.ilike(f"%{search}%"), Course.description.ilike(f"%{search}%")))
@@ -359,10 +371,11 @@ async def deactivate_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Deactivate a user account (sets status to 'inactive')."""
-    query = select(User).where(User.id == user_id)
+    query = select(User).where(User.id == user_id, User.site_id == current_site.id)
     res = await session.exec(query)
     user = res.first()
     
@@ -388,7 +401,8 @@ async def deactivate_user(
         target_type="user",
         target_id=user_id,
         description="Deactivated user account",
-        action_metadata=json.dumps({"old_status": old_status, "new_status": "inactive", "reason": reason})
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "inactive", "reason": reason}),
+        site_id=current_site.id
     )
     session.add(audit_log)
     await session.commit()
@@ -400,10 +414,11 @@ async def soft_delete_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Soft delete a user account (sets status to 'deleted')."""
-    query = select(User).where(User.id == user_id)
+    query = select(User).where(User.id == user_id, User.site_id == current_site.id)
     res = await session.exec(query)
     user = res.first()
     
@@ -429,7 +444,8 @@ async def soft_delete_user(
         target_type="user",
         target_id=user_id,
         description="Soft deleted user account",
-        action_metadata=json.dumps({"old_status": old_status, "new_status": "deleted", "reason": reason})
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "deleted", "reason": reason}),
+        site_id=current_site.id
     )
     session.add(audit_log)
     await session.commit()
@@ -442,10 +458,11 @@ async def reactivate_user(
     user_id: uuid.UUID,
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Reactivate a user account (sets status to 'active')."""
-    query = select(User).where(User.id == user_id)
+    query = select(User).where(User.id == user_id, User.site_id == current_site.id)
     res = await session.exec(query)
     user = res.first()
     
@@ -468,7 +485,8 @@ async def reactivate_user(
         target_type="user",
         target_id=user_id,
         description="Reactivated user account",
-        action_metadata=json.dumps({"old_status": old_status, "new_status": "active", "reason": reason})
+        action_metadata=json.dumps({"old_status": old_status, "new_status": "active", "reason": reason}),
+        site_id=current_site.id
     )
     session.add(audit_log)
     await session.commit()
@@ -482,13 +500,14 @@ async def update_user_status(
     status: str,
     reason: Optional[str] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Update user status"""
     if status not in ["active", "inactive", "suspended"]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
     
-    query = select(User).where(User.id == user_id)
+    query = select(User).where(User.id == user_id, User.site_id == current_site.id)
     res = await session.exec(query)
     user = res.first()
     
@@ -507,7 +526,8 @@ async def update_user_status(
         target_type="user",
         target_id=user_id,
         description=f"Changed user status from {old_status} to {status}",
-        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason})
+        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason}),
+        site_id=current_site.id
     )
     session.add(audit_log)
     await session.commit()
@@ -520,13 +540,14 @@ async def update_course_status(
     status: str,
     reason: Optional[str] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Update course status"""
     if status not in ["draft", "published", "archived", "suspended"]:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status")
     
-    query = select(Course).where(Course.id == course_id)
+    query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     res = await session.exec(query)
     course = res.first()
     
@@ -545,7 +566,8 @@ async def update_course_status(
         target_type="course",
         target_id=course_id,
         description=f"Changed course status from {old_status} to {status}",
-        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason})
+        action_metadata=json.dumps({"old_status": old_status, "new_status": status, "reason": reason}),
+        site_id=current_site.id
     )
     session.add(audit_log)
     await session.commit()
@@ -559,7 +581,8 @@ async def get_audit_log(
     action: Optional[str] = Query(None),
     target_type: Optional[str] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get admin audit log"""
     offset = (pagination.page - 1) * pagination.size
@@ -568,7 +591,7 @@ async def get_audit_log(
         AdminAuditLog, 
         User.first_name.label("admin_first_name"), 
         User.last_name.label("admin_last_name")
-    ).join(User, AdminAuditLog.admin_user_id == User.id)
+    ).join(User, AdminAuditLog.admin_user_id == User.id).where(AdminAuditLog.site_id == current_site.id)
     
     if admin_user_id:
         query = query.where(AdminAuditLog.admin_user_id == admin_user_id)
@@ -578,7 +601,7 @@ async def get_audit_log(
         query = query.where(AdminAuditLog.target_type == target_type)
         
     # Count
-    count_query = select(func.count(AdminAuditLog.id))
+    count_query = select(func.count(AdminAuditLog.id)).where(AdminAuditLog.site_id == current_site.id)
     if admin_user_id: count_query = count_query.where(AdminAuditLog.admin_user_id == admin_user_id)
     if action: count_query = count_query.where(AdminAuditLog.action == action)
     if target_type: count_query = count_query.where(AdminAuditLog.target_type == target_type)
@@ -613,7 +636,8 @@ async def generate_admin_report(
     end_date: Optional[datetime] = None,
     filters: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Generate admin reports"""
     if not end_date:
@@ -625,9 +649,9 @@ async def generate_admin_report(
         # NOTE: Many of these sub-calls still use legacy database.fetch
         # We'll need to migrate utils/analytics.py later
         if report_type == "platform_overview":
-            report_data = await get_platform_kpis(session, start_date, end_date)
+            report_data = await get_platform_kpis(session, start_date, end_date, site_id=current_site.id)
         elif report_type == "user_engagement":
-            query = select(User).where(User.status == 'active', User.role == 'student').order_by(desc(User.created_at)).limit(100)
+            query = select(User).where(User.status == 'active', User.role == 'student', User.site_id == current_site.id).order_by(desc(User.created_at)).limit(100)
             users = (await session.exec(query)).all()
             
             engagement_data = []
@@ -641,14 +665,14 @@ async def generate_admin_report(
                 })
             report_data = {"user_engagement": engagement_data}
         elif report_type == "course_performance":
-            top_courses = await get_top_performing_content(session, "courses", "enrollments", 20, start_date, end_date)
+            top_courses = await get_top_performing_content(session, "courses", "enrollments", 20, start_date, end_date, site_id=current_site.id)
             course_health = []
             for course in top_courses:
                 health = await CourseAnalytics.calculate_course_health_score(session, course["id"])
                 course_health.append({"course_id": course["id"], "title": course["title"], **health})
             report_data = {"course_performance": course_health}
         elif report_type == "revenue_analysis":
-            report_data = {"revenue_analysis": await RevenueAnalytics.calculate_revenue_metrics(session, start_date, end_date)}
+            report_data = {"revenue_analysis": await RevenueAnalytics.calculate_revenue_metrics(session, start_date, end_date, site_id=current_site.id)}
         else:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid report type")
         
@@ -658,7 +682,8 @@ async def generate_admin_report(
             action="report_generated",
             target_type="system",
             description=f"Generated {report_type} report",
-            action_metadata=json.dumps({"report_type": report_type, "start_date": str(start_date), "end_date": str(end_date)})
+            action_metadata=json.dumps({"report_type": report_type, "start_date": str(start_date), "end_date": str(end_date)}),
+            site_id=current_site.id
         )
         session.add(audit_log)
         await session.commit()
@@ -678,7 +703,8 @@ async def export_admin_data(
     format: str = Body("json"),
     filters: Optional[Dict[str, Any]] = Body(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Export admin data"""
     if format not in ["json", "csv"]:
@@ -687,10 +713,10 @@ async def export_admin_data(
     try:
         export_data = []
         if export_type == "users":
-            enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id).scalar_subquery()
-            cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id).scalar_subquery()
-            token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id).limit(1).scalar_subquery()
-            completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed').scalar_subquery()
+            enrollment_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.site_id == current_site.id).scalar_subquery()
+            cert_count_sub = select(func.count(Certificate.id)).where(Certificate.user_id == User.id, Certificate.site_id == current_site.id).scalar_subquery()
+            token_balance_sub = select(TokenBalance.balance).where(TokenBalance.user_id == User.id, TokenBalance.site_id == current_site.id).limit(1).scalar_subquery()
+            completion_count_sub = select(func.count(Enrollment.id)).where(Enrollment.user_id == User.id, Enrollment.status == 'completed', Enrollment.site_id == current_site.id).scalar_subquery()
 
             query = select(
                 User,
@@ -700,6 +726,8 @@ async def export_admin_data(
                 completion_count_sub.label("completed_courses")
             )
             
+            query = query.where(User.site_id == current_site.id)
+
             if filters:
                 if filters.get("role"): query = query.where(User.role == filters["role"])
                 if filters.get("status"): query = query.where(User.status == filters["status"])
@@ -720,13 +748,13 @@ async def export_admin_data(
 
         elif export_type == "courses":
             from models.lesson import Lesson
-            lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id).scalar_subquery()
+            lesson_count_sub = select(func.count(Lesson.id)).where(Lesson.course_id == Course.id, Lesson.site_id == current_site.id).scalar_subquery()
             revenue_sum_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
-                RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed'
+                RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed', RevenueRecord.site_id == current_site.id
             ).scalar_subquery()
 
             from models.user import User as Instructor
-            query = select(Course, Instructor.first_name, Instructor.last_name, Category.name, lesson_count_sub, revenue_sum_sub).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id)
+            query = select(Course, Instructor.first_name, Instructor.last_name, Category.name, lesson_count_sub, revenue_sum_sub).outerjoin(Instructor, Course.instructor_id == Instructor.id).outerjoin(Category, Course.category_id == Category.id).where(Course.site_id == current_site.id)
             
             if filters:
                 if filters.get("status"): query = query.where(Course.status == filters["status"])
@@ -744,7 +772,7 @@ async def export_admin_data(
                 export_data.append(c_dict)
         
         elif export_type == "enrollments":
-            query = select(Enrollment, User.first_name, User.last_name, User.email, Course.title).join(User, Enrollment.user_id == User.id).join(Course, Enrollment.course_id == Course.id).order_by(desc(Enrollment.enrolled_at))
+            query = select(Enrollment, User.first_name, User.last_name, User.email, Course.title).join(User, Enrollment.user_id == User.id).join(Course, Enrollment.course_id == Course.id).where(Enrollment.site_id == current_site.id).order_by(desc(Enrollment.enrolled_at))
             results = await session.exec(query)
             for enroll, u_fname, u_lname, u_email, c_title in results.all():
                 e_dict = enroll.model_dump()
@@ -752,7 +780,7 @@ async def export_admin_data(
                 export_data.append(e_dict)
 
         elif export_type == "revenue":
-            query = select(RevenueRecord, User.first_name, User.last_name, User.email, Course.title).join(User, RevenueRecord.user_id == User.id).outerjoin(Course, RevenueRecord.course_id == Course.id).order_by(desc(RevenueRecord.created_at))
+            query = select(RevenueRecord, User.first_name, User.last_name, User.email, Course.title).join(User, RevenueRecord.user_id == User.id).outerjoin(Course, RevenueRecord.course_id == Course.id).where(RevenueRecord.site_id == current_site.id).order_by(desc(RevenueRecord.created_at))
             results = await session.exec(query)
             for rev, u_fname, u_lname, u_email, c_title in results.all():
                 r_dict = rev.model_dump()
@@ -767,7 +795,8 @@ async def export_admin_data(
             action="data_exported",
             target_type="system",
             description=f"Exported {export_type} data as {format}",
-            action_metadata=json.dumps({"export_type": export_type, "format": format})
+            action_metadata=json.dumps({"export_type": export_type, "format": format}),
+            site_id=current_site.id
         )
         session.add(audit_log)
         await session.commit()
@@ -803,10 +832,11 @@ async def export_admin_data(
 async def import_admin_data_endpoint(
     file: UploadFile = File(...),
     import_type: str = Form(...),
-    current_user = Depends(require_admin)
+    current_user = Depends(require_admin),
+    current_site: Site = Depends(get_current_site)
 ):
     """Import admin data from CSV file"""
-    return await import_admin_data(file, import_type, current_user)
+    return await import_admin_data(file, import_type, current_user, site_id=current_site.id)
 
 @router.get("/system-health")
 async def get_system_health(
@@ -817,12 +847,12 @@ async def get_system_health(
     from sqlalchemy import text
     try:
         # Check database connection
-        await session.execute(text("SELECT 1"))
+        await session.exec(text("SELECT 1"))
         db_status = "healthy"
         
         # Check recent error rates (last hour)
         hour_ago = datetime.utcnow() - timedelta(hours=1)
-        error_query = select(func.count(AdminAuditLog.id)).where(AdminAuditLog.action.ilike("%error%"), AdminAuditLog.created_at >= hour_ago)
+        error_query = select(func.count(AdminAuditLog.id)).where(AdminAuditLog.action.ilike("%error%"), AdminAuditLog.created_at >= hour_ago, AdminAuditLog.site_id == current_site.id)
         error_count = (await session.exec(error_query)).one()
         
         # Check system performance metrics (last hour)
@@ -830,7 +860,7 @@ async def get_system_health(
             func.count(AdminAuditLog.id).label("total_requests"),
             # Placeholder for response time if not tracked in audit log
             # In a real app we might have a specific metrics table
-        ).where(AdminAuditLog.created_at >= hour_ago)
+        ).where(AdminAuditLog.created_at >= hour_ago, AdminAuditLog.site_id == current_site.id)
         perf_res = (await session.exec(perf_query)).one()
         
         return {

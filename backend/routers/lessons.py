@@ -7,6 +7,8 @@ from sqlmodel import select, func, or_, and_, desc, asc
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
+from dependencies import get_current_site
+from models.site import Site
 from models.lesson import Lesson, Quiz, Assignment
 from models.course import Course, Section
 from models.user import User
@@ -36,7 +38,8 @@ async def get_all_lessons(
     sort_by: str = Query("created_at", regex="^(created_at|updated_at|title|sort_order)$"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get all lessons for admin management with filtering and pagination"""
     offset = (page - 1) * size
@@ -58,7 +61,7 @@ async def get_all_lessons(
         User, Course.instructor_id == User.id
     ).outerjoin(
         Section, Lesson.section_id == Section.id
-    )
+    ).where(Lesson.site_id == current_site.id)
 
     # Filtering
     if course_id:
@@ -142,12 +145,13 @@ async def get_all_lessons(
 async def get_course_lessons_by_slug(
     course_slug: str,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # First get the course and check enrollment
     query = select(Course, Enrollment.id.label("enrollment_id")).outerjoin(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status.in_(["active", "completed"]))
-    ).where(Course.slug == course_slug)
+    ).where(Course.slug == course_slug, Course.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -196,12 +200,13 @@ async def get_course_lessons_by_slug(
 async def get_course_lessons(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if user has access to course
     query = select(Course, Enrollment.id.label("enrollment_id")).outerjoin(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status.in_(["active", "completed"]))
-    ).where(Course.id == course_id)
+    ).where(Course.id == course_id, Course.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -250,7 +255,8 @@ async def get_course_lessons(
 async def get_lesson(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Base query for lesson with course and section info
     query = select(Lesson, Course.instructor_id, Enrollment.id.label("enrollment_id"), LessonProgress.status.label("progress_status"), LessonProgress.progress_percentage).outerjoin(
@@ -259,7 +265,7 @@ async def get_lesson(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status.in_(["active", "completed"]))
     ).outerjoin(
         LessonProgress, and_(Lesson.id == LessonProgress.lesson_id, LessonProgress.user_id == current_user.id)
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -292,12 +298,15 @@ async def get_lesson(
 
 @router.post("/", response_model=LessonResponse)
 async def create_lesson(
-    lesson: LessonCreate,
-    current_user = Depends(require_instructor_or_admin)
+    lesson_in: LessonCreate,
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if user owns the course or is admin
-    course_query = "SELECT instructor_id FROM courses WHERE id = :course_id"
-    course = await database.fetch_one(course_query, values={"course_id": lesson.course_id})
+    query = select(Course).where(Course.id == lesson_in.course_id, Course.site_id == current_site.id)
+    result = await session.exec(query)
+    course = result.first()
     
     if not course:
         raise HTTPException(
@@ -305,127 +314,84 @@ async def create_lesson(
             detail="Course not found"
         )
     
-    if current_user.role != "admin" and str(course.instructor_id) != str(current_user.id):
+    if current_user.role != UserRole.admin and str(course.instructor_id) != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to create lessons for this course"
         )
     
     # Get next sort order
-    sort_query = """
-        SELECT COALESCE(MAX(sort_order), 0) + 1 as next_order
-        FROM lessons WHERE course_id = :course_id
-    """
-    sort_result = await database.fetch_one(sort_query, values={"course_id": lesson.course_id})
+    sort_query = select(func.max(Lesson.sort_order)).where(Lesson.course_id == lesson_in.course_id)
+    sort_result = await session.exec(sort_query)
+    max_order = sort_result.one() or 0
     
-    lesson_id = uuid.uuid4()
-    
-    query = """
-        INSERT INTO lessons (
-            id, course_id, section_id, title, slug, description, content, type,
-            video_url, video_duration, sort_order,
-            is_preview, is_published, prerequisites, resources
-        )
-        VALUES (
-            :id, :course_id, :section_id, :title, :slug, :description, :content, :type,
-            :video_url, :video_duration, :sort_order,
-            :is_preview, :is_published, :prerequisites, :resources
-        )
-        RETURNING *
-    """
-    
-    # Get lesson data and exclude fields that don't exist in database
-    lesson_data = lesson.dict()
-    lesson_data.pop('estimated_duration', None)  # Remove fields not in database
-    lesson_data.pop('attachments', None)
-
-    values = {
-        "id": lesson_id,
-        "sort_order": sort_result.next_order,
-        **lesson_data
-    }
+    new_lesson = Lesson(
+        **lesson_in.dict(),
+        sort_order=max_order + 1,
+        site_id=current_site.id
+    )
     
     try:
-        new_lesson = await database.fetch_one(query, values=values)
+        session.add(new_lesson)
+        await session.commit()
+        await session.refresh(new_lesson)
 
         # Update course duration
-        await update_course_duration(lesson.course_id)
+        await update_course_duration(lesson_in.course_id, session)
 
-        return LessonResponse(**new_lesson)
+        return new_lesson
     except Exception as e:
-        # Handle unique constraint violation for slug
         if "unique constraint" in str(e).lower() and "slug" in str(e).lower():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A lesson with a similar title already exists in this course. Please use a different title."
+                detail="A lesson with a similar title already exists in this course."
             )
-        # Re-raise other exceptions
         raise
 
 @router.put("/{lesson_id}", response_model=LessonResponse)
 async def update_lesson(
     lesson_id: uuid.UUID,
     lesson_update: LessonUpdate,
-    current_user = Depends(require_instructor_or_admin)
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
-    check_query = """
-        SELECT l.*, c.instructor_id
-        FROM lessons l
-        JOIN courses c ON l.course_id = c.id
-        WHERE l.id = :lesson_id
-    """
-    existing_lesson = await database.fetch_one(check_query, values={"lesson_id": lesson_id})
+    query = select(Lesson, Course.instructor_id).join(
+        Course, Lesson.course_id == Course.id
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
-    if not existing_lesson:
+    result = await session.exec(query)
+    row = result.first()
+    
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Lesson not found"
         )
     
-    if current_user.role != "admin" and str(existing_lesson.instructor_id) != str(current_user.id):
+    lesson, instructor_id = row
+    
+    if current_user.role != UserRole.admin and str(instructor_id) != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this lesson"
         )
     
-    # Build update query
-    update_fields = []
-    values = {"lesson_id": lesson_id}
+    update_data = lesson_update.dict(exclude_unset=True)
 
-    # Get all fields from the update, including those set to None
-    update_dict = lesson_update.dict(exclude_unset=True)
-
-    # Map estimated_duration to video_duration for database compatibility
-    if 'estimated_duration' in update_dict:
-        update_dict['video_duration'] = update_dict.pop('estimated_duration')
+    for key, value in update_data.items():
+        setattr(lesson, key, value)
+        
+    lesson.updated_at = datetime.utcnow()
+    session.add(lesson)
+    await session.commit()
+    await session.refresh(lesson)
     
-    # Handle section_id special case
-    if 'section_id' in update_dict and update_dict['section_id'] == "none":
-        update_dict['section_id'] = None
-
-    for field, value in update_dict.items():
-        update_fields.append(f"{field} = :{field}")
-        # Convert None to None for SQL NULL
-        values[field] = value
-
-    if not update_fields:
-        return LessonResponse(**existing_lesson)
-
-    query = f"""
-        UPDATE lessons
-        SET {', '.join(update_fields)}, updated_at = NOW()
-        WHERE id = :lesson_id
-        RETURNING *
-    """
+    # Update course duration
+    await update_course_duration(lesson.course_id, session)
     
-    updated_lesson = await database.fetch_one(query, values=values)
-    
-    # Update course duration if duration changed
-    if 'estimated_duration' in lesson_update.dict(exclude_unset=True) or 'video_duration' in update_dict:
-        await update_course_duration(existing_lesson.course_id)
-    
-    return LessonResponse(**updated_lesson)
+    return lesson
 
 @router.delete("/{lesson_id}")
 async def delete_lesson(
@@ -487,12 +453,13 @@ async def upload_lesson_video(
     lesson_id: uuid.UUID,
     file: UploadFile = File(...),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
         Course, Lesson.course_id == Course.id
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -552,12 +519,13 @@ async def upload_lesson_audio(
     lesson_id: uuid.UUID,
     file: UploadFile = File(...),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
         Course, Lesson.course_id == Course.id
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -617,12 +585,13 @@ async def upload_lesson_images(
     lesson_id: uuid.UUID,
     files: List[UploadFile] = File(...),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
         Course, Lesson.course_id == Course.id
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -668,12 +637,13 @@ async def create_lesson_quiz(
     lesson_id: uuid.UUID,
     quiz_data: QuizCreate,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
         Course, Lesson.course_id == Course.id
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -709,12 +679,13 @@ async def create_lesson_assignment(
     lesson_id: uuid.UUID,
     assignment_data: AssignmentCreate,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
         Course, Lesson.course_id == Course.id
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -755,7 +726,8 @@ async def create_lesson_assignment(
 async def get_lesson_assignments(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Assignment, AssignmentSubmission
 
@@ -764,7 +736,7 @@ async def get_lesson_assignments(
         Course, Lesson.course_id == Course.id
     ).outerjoin(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status == "active")
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -813,7 +785,8 @@ async def get_lesson_assignments(
 async def get_lesson_quizzes(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
 
@@ -822,7 +795,7 @@ async def get_lesson_quizzes(
         Course, Lesson.course_id == Course.id
     ).outerjoin(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status == "active")
-    ).where(Lesson.id == lesson_id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -905,7 +878,8 @@ async def get_quiz_questions(
     lesson_id: uuid.UUID,
     quiz_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import QuizQuestion
 
@@ -916,7 +890,7 @@ async def get_quiz_questions(
         Course, Lesson.course_id == Course.id
     ).outerjoin(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status == "active")
-    ).where(Quiz.id == quiz_id, Lesson.id == lesson_id)
+    ).where(Quiz.id == quiz_id, Lesson.id == lesson_id, Quiz.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -940,7 +914,8 @@ async def create_quiz_attempt(
     quiz_id: uuid.UUID,
     attempt_data: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
     
@@ -949,7 +924,7 @@ async def create_quiz_attempt(
         Course, Quiz.course_id == Course.id
     ).join(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status == "active")
-    ).where(Quiz.id == quiz_id)
+    ).where(Quiz.id == quiz_id, Quiz.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -987,14 +962,15 @@ async def submit_quiz_attempt(
     attempt_id: uuid.UUID,
     attempt_update: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt, QuizQuestion, QuizAttemptAnswer
     
     # Get attempt and verify ownership
     query = select(QuizAttempt, Quiz.passing_score).join(
         Quiz, QuizAttempt.quiz_id == Quiz.id
-    ).where(QuizAttempt.id == attempt_id, QuizAttempt.user_id == current_user.id)
+    ).where(QuizAttempt.id == attempt_id, QuizAttempt.user_id == current_user.id, QuizAttempt.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()

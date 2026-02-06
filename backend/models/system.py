@@ -2,8 +2,9 @@ from typing import Optional
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field
+from models.base import MultiTenantMixin
 
-class AdminAuditLog(SQLModel, table=True):
+class AdminAuditLog(MultiTenantMixin, SQLModel, table=True):
     __tablename__ = "admin_audit_log"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

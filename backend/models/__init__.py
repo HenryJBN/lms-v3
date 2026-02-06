@@ -1,3 +1,4 @@
+from .site import Site
 from .course import Course, Category, Section, CourseReview
 from .cohort import Cohort
 from .enrollment import Enrollment, LessonProgress, Certificate
@@ -6,6 +7,8 @@ from .gamification import TokenBalance, TokenTransaction
 from .communication import Notification, NotificationSettings
 from .finance import RevenueRecord
 from .system import AdminAuditLog
+from .user import User, UserProfile
+from .auth_tokens import PasswordResetToken, EmailVerificationToken
 
 from .enums import (
     UserRole, UserStatus, 
@@ -16,7 +19,6 @@ from .enums import (
     QuizQuestionType
 )
 
-from .user import User, UserProfile
 
 __all__ = [
     "Site",
@@ -28,6 +30,7 @@ __all__ = [
     "TokenBalance", "TokenTransaction",
     "Notification", "NotificationSettings",
     "RevenueRecord", "AdminAuditLog",
+    "PasswordResetToken", "EmailVerificationToken",
     "UserRole", "UserStatus",
     "CourseStatus", "CourseLevel",
     "EnrollmentStatus", "LessonType",

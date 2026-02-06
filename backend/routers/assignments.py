@@ -4,9 +4,12 @@ import uuid
 import os
 
 from database.session import get_session, AsyncSession
+from dependencies import get_current_site
+from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.course import Course
 from models.lesson import Lesson, Assignment, AssignmentSubmission
+from models.enums import UserRole
 from schemas.lesson import (
     AssignmentCreate, AssignmentUpdate, AssignmentResponse,
     AssignmentSubmissionCreate, AssignmentSubmissionUpdate, AssignmentSubmissionResponse
@@ -28,7 +31,8 @@ async def get_all_assignments(
     sort_by: str = Query("created_at", regex="^(created_at|updated_at|title|due_date)$"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get all assignments for admin management with filtering and pagination"""
     offset = (page - 1) * size
@@ -40,7 +44,7 @@ async def get_all_assignments(
         Lesson.title.label("lesson_title")
     ).join(Course, Assignment.course_id == Course.id).outerjoin(
         Lesson, Assignment.lesson_id == Lesson.id
-    )
+    ).where(Assignment.site_id == current_site.id)
 
     # Filtering
     if course_id:
@@ -74,17 +78,12 @@ async def get_all_assignments(
     items = []
     for assignment, c_title, l_title in result:
         # Get submission stats
-        stats_query = select(
-            func.count(AssignmentSubmission.id),
-            func.count(case((AssignmentSubmission.grade != None, 1)))
-        ).where(AssignmentSubmission.assignment_id == assignment.id)
-        
         # SQLModel doesn't have native case yet in some versions, use SQLAlchemy
         from sqlalchemy import case
         stats_query = select(
             func.count(AssignmentSubmission.id).label("total"),
             func.count(case((AssignmentSubmission.grade != None, 1))).label("graded")
-        ).where(AssignmentSubmission.assignment_id == assignment.id)
+        ).where(AssignmentSubmission.assignment_id == assignment.id, AssignmentSubmission.site_id == current_site.id)
         
         stats = (await session.exec(stats_query)).first()
         
@@ -111,11 +110,12 @@ async def get_all_assignments(
 async def get_course_assignments(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check course and enrollment/instructor/admin access
     from models.enrollment import Enrollment
-    query = select(Course).where(Course.id == course_id)
+    query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     course = (await session.exec(query)).first()
     
     if not course:
@@ -128,6 +128,7 @@ async def get_course_assignments(
     enrollment_query = select(Enrollment).where(
         Enrollment.course_id == course_id, 
         Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id,
         Enrollment.status == 'active'
     )
     is_enrolled = (await session.exec(enrollment_query)).first() is not None
@@ -135,7 +136,7 @@ async def get_course_assignments(
     has_access = (
         is_enrolled or
         course.instructor_id == current_user.id or
-        current_user.role == "admin"
+        current_user.role == UserRole.admin
     )
 
     if not has_access:
@@ -148,7 +149,8 @@ async def get_course_assignments(
     # We'll fetch assignments and then map submissions in memory for simplicity/performance with SQLModel
     assignments_query = select(Assignment).where(
         Assignment.course_id == course_id, 
-        Assignment.is_published == True
+        Assignment.is_published == True,
+        Assignment.site_id == current_site.id
     ).order_by(Assignment.due_date, Assignment.created_at)
     
     assignments = (await session.exec(assignments_query)).all()
@@ -157,7 +159,8 @@ async def get_course_assignments(
     for assignment in assignments:
         submission_query = select(AssignmentSubmission).where(
             AssignmentSubmission.assignment_id == assignment.id,
-            AssignmentSubmission.user_id == current_user.id
+            AssignmentSubmission.user_id == current_user.id,
+            AssignmentSubmission.site_id == current_site.id
         )
         submission = (await session.exec(submission_query)).first()
         
@@ -173,11 +176,12 @@ async def get_course_assignments(
 async def get_assignment(
     assignment_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get assignment and check access
     from models.enrollment import Enrollment
-    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id)
+    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
     result = await session.exec(query)
     row = result.first()
     
@@ -193,6 +197,7 @@ async def get_assignment(
     enrollment_query = select(Enrollment).where(
         Enrollment.course_id == course.id, 
         Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id,
         Enrollment.status == 'active'
     )
     is_enrolled = (await session.exec(enrollment_query)).first() is not None
@@ -200,7 +205,7 @@ async def get_assignment(
     has_access = (
         is_enrolled or
         course.instructor_id == current_user.id or
-        current_user.role == "admin"
+        current_user.role == UserRole.admin
     )
 
     if not has_access:
@@ -215,17 +220,20 @@ async def get_assignment(
 async def create_assignment(
     assignment_in: AssignmentCreate,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if user owns the course or is admin
-    course = await session.get(Course, assignment_in.course_id)
+    query = select(Course).where(Course.id == assignment_in.course_id, Course.site_id == current_site.id)
+    result = await session.exec(query)
+    course = result.first()
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found"
         )
 
-    if current_user.role != "admin" and course.instructor_id != current_user.id:
+    if current_user.role != UserRole.admin and course.instructor_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to create assignments for this course"
@@ -246,7 +254,8 @@ async def create_assignment(
 
     new_assignment = Assignment(
         **assignment_in.model_dump(),
-        id=uuid.uuid4()
+        id=uuid.uuid4(),
+        site_id=current_site.id
     )
 
     try:
@@ -267,10 +276,11 @@ async def update_assignment(
     assignment_id: uuid.UUID,
     assignment_update: AssignmentUpdate,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get assignment and check permission
-    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id)
+    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
     result = await session.exec(query)
     row = result.first()
     
@@ -302,10 +312,11 @@ async def update_assignment(
 async def delete_assignment(
     assignment_id: uuid.UUID,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get assignment and check permission
-    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id)
+    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
     result = await session.exec(query)
     row = result.first()
     
@@ -317,7 +328,7 @@ async def delete_assignment(
     
     assignment, course = row
 
-    if current_user.role != "admin" and course.instructor_id != current_user.id:
+    if current_user.role != UserRole.admin and course.instructor_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this assignment"
@@ -333,11 +344,12 @@ async def submit_assignment(
     assignment_id: uuid.UUID,
     submission_in: AssignmentSubmissionCreate,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Check if assignment exists and user has access
     from models.enrollment import Enrollment
-    query = select(Assignment).where(Assignment.id == assignment_id)
+    query = select(Assignment).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
     assignment = (await session.exec(query)).first()
     
     if not assignment:
@@ -349,6 +361,7 @@ async def submit_assignment(
     enrollment_query = select(Enrollment).where(
         Enrollment.course_id == assignment.course_id, 
         Enrollment.user_id == current_user.id,
+        Enrollment.site_id == current_site.id,
         Enrollment.status == 'active'
     )
     is_enrolled = (await session.exec(enrollment_query)).first() is not None
@@ -362,7 +375,8 @@ async def submit_assignment(
     # Check if already submitted
     existing_query = select(AssignmentSubmission.id).where(
         AssignmentSubmission.assignment_id == assignment_id, 
-        AssignmentSubmission.user_id == current_user.id
+        AssignmentSubmission.user_id == current_user.id,
+        AssignmentSubmission.site_id == current_site.id
     )
     existing = (await session.exec(existing_query)).first()
 
@@ -378,6 +392,7 @@ async def submit_assignment(
         user_id=current_user.id,
         assignment_id=assignment_id,
         course_id=assignment.course_id,
+        site_id=current_site.id,
         submitted_at=datetime.utcnow()
     )
 
@@ -398,10 +413,11 @@ async def submit_assignment(
 async def get_assignment_submissions(
     assignment_id: uuid.UUID,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get assignment and check permission
-    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id)
+    query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
     result = await session.exec(query)
     row = result.first()
     
@@ -413,7 +429,7 @@ async def get_assignment_submissions(
     
     assignment, course = row
 
-    if current_user.role != "admin" and course.instructor_id != current_user.id:
+    if current_user.role != UserRole.admin and course.instructor_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view submissions for this assignment"
@@ -427,7 +443,8 @@ async def get_assignment_submissions(
         User.last_name, 
         User.email
     ).join(User, User.id == AssignmentSubmission.user_id).where(
-        AssignmentSubmission.assignment_id == assignment_id
+        AssignmentSubmission.assignment_id == assignment_id,
+        AssignmentSubmission.site_id == current_site.id
     ).order_by(desc(AssignmentSubmission.submitted_at))
     
     result = await session.exec(sub_query)
@@ -451,14 +468,15 @@ async def grade_assignment_submission(
     grade: int,
     feedback: Optional[str] = None,
     current_user = Depends(require_instructor_or_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Get submission and check permission
     query = select(AssignmentSubmission, Assignment, Course).join(
         Assignment, AssignmentSubmission.assignment_id == Assignment.id
     ).join(
         Course, Assignment.course_id == Course.id
-    ).where(AssignmentSubmission.id == submission_id)
+    ).where(AssignmentSubmission.id == submission_id, AssignmentSubmission.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -471,7 +489,7 @@ async def grade_assignment_submission(
     
     submission, assignment, course = row
 
-    if current_user.role != "admin" and course.instructor_id != current_user.id:
+    if current_user.role != UserRole.admin and course.instructor_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to grade this submission"
@@ -500,7 +518,8 @@ async def grade_assignment_submission(
 async def get_assignment_submission(
     submission_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get individual submission details for the current user"""
     query = select(
@@ -509,7 +528,7 @@ async def get_assignment_submission(
         Course.title.label("course_title")
     ).join(Assignment, AssignmentSubmission.assignment_id == Assignment.id).join(
         Course, AssignmentSubmission.course_id == Course.id
-    ).where(AssignmentSubmission.id == submission_id, AssignmentSubmission.user_id == current_user.id)
+    ).where(AssignmentSubmission.id == submission_id, AssignmentSubmission.user_id == current_user.id, AssignmentSubmission.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()

@@ -19,6 +19,7 @@ from schemas.auth import (
     PasswordResetRequest, PasswordReset,
     TwoFactorAuthResponse, TwoFactorVerifyRequest
 )
+from models.auth_tokens import PasswordResetToken, EmailVerificationToken
 from middleware.auth import (
     authenticate_user, create_access_token, create_refresh_token,
     verify_refresh_token, get_password_hash,
@@ -76,12 +77,13 @@ async def register(
     # Generate verification code
     verification_code = ''.join(random.choices(string.digits, k=6))
     
-    # Use raw SQL for tokens table if not migrated to SQLModel
-    # Assuming email_verification_tokens table exists
-    await session.exec(
-        text("INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES (:uid, :token, NOW() + INTERVAL '24 hours')"),
-        params={"uid": new_user.id, "token": verification_code}
+    # Use ORM for tokens
+    verification_token = EmailVerificationToken(
+        user_id=new_user.id,
+        token=verification_code,
+        expires_at=datetime.utcnow() + timedelta(hours=24)
     )
+    session.add(verification_token)
     await session.commit()
 
     # Send email
@@ -195,62 +197,56 @@ async def forgot_password(
     if not user:
         return {"message": "If the email exists, a password reset link has been sent"}
     
-    reset_token = str(uuid.uuid4())
+    reset_token_str = str(uuid.uuid4())
     
-    await session.exec(
-        text("INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (:uid, :token, NOW() + INTERVAL '1 hour')"),
-        params={"uid": user.id, "token": reset_token}
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token=reset_token_str,
+        expires_at=datetime.utcnow() + timedelta(hours=1)
     )
+    session.add(reset_token)
     await session.commit()
     
-    await send_password_reset_email(user.email, user.first_name, reset_token)
+    await send_password_reset_email(user.email, user.first_name, reset_token_str)
     return {"message": "If the email exists, a password reset link has been sent"}
 
 @router.post("/reset-password")
 async def reset_password(
     reset_data: PasswordReset,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     # Verify reset token
-    query = text("""
-        SELECT prt.*, u.id as user_id 
-        FROM password_reset_tokens prt
-        JOIN users u ON prt.user_id = u.id
-        WHERE prt.token = :token AND prt.expires_at > NOW() AND prt.used_at IS NULL
-    """)
-    result = await session.exec(query, params={"token": reset_data.token})
-    token_record = result.first()
+    query = select(PasswordResetToken, User).join(User, PasswordResetToken.user_id == User.id).where(
+        PasswordResetToken.token == reset_data.token,
+        PasswordResetToken.expires_at > datetime.utcnow(),
+        PasswordResetToken.used_at == None,
+        User.site_id == current_site.id
+    )
+    result = await session.exec(query)
+    token_record_pair = result.first()
     
-    if not token_record:
+    if not token_record_pair:
         raise HTTPException(status_code=400, detail="Invalid or expired reset token")
     
-    hashed_password = get_password_hash(reset_data.new_password)
-    user_id = token_record.user_id
-
-    # Update user password using SQLModel object if possible, or raw SQL to avoid fetching
-    query_update = select(User).where(User.id == user_id)
-    user_result = await session.exec(query_update)
-    user = user_result.first()
+    token_record, user = token_record_pair
     
-    if user:
-        user.hashed_password = hashed_password
-        session.add(user)
-        
-        # Mark token as used
-        await session.exec(
-            text("UPDATE password_reset_tokens SET used_at = NOW() WHERE token = :token"),
-            params={"token": reset_data.token}
-        )
-        await session.commit()
-        return {"message": "Password reset successfully"}
-        
-    raise HTTPException(status_code=404, detail="User not found")
+    hashed_password = get_password_hash(reset_data.new_password)
+    user.hashed_password = hashed_password
+    session.add(user)
+    
+    # Mark token as used
+    token_record.used_at = datetime.utcnow()
+    session.add(token_record)
+    await session.commit()
+    return {"message": "Password reset successfully"}
 
 @router.post("/verify-email-code")
 async def verify_email_code(
     verification_data: dict, 
     response: Response,
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     code = verification_data.get("code")
     email = verification_data.get("email")
@@ -258,66 +254,54 @@ async def verify_email_code(
     if not code or not email:
         raise HTTPException(status_code=400, detail="Code and email are required")
         
-    # Find token and user (using raw SQL for token)
-    query = text("""
-        SELECT evt.*, u.id as user_id
-        FROM email_verification_tokens evt
-        JOIN users u ON evt.user_id = u.id
-        WHERE evt.token = :token AND u.email = :email AND evt.expires_at > NOW() AND evt.verified_at IS NULL
-    """)
-    result = await session.exec(query, params={"token": code, "email": email})
-    record = result.first()
+    # Find token and user
+    query = select(EmailVerificationToken, User).join(User, EmailVerificationToken.user_id == User.id).where(
+        EmailVerificationToken.token == code,
+        User.email == email,
+        EmailVerificationToken.expires_at > datetime.utcnow(),
+        EmailVerificationToken.verified_at == None,
+        User.site_id == current_site.id
+    )
+    result = await session.exec(query)
+    record_pair = result.first()
     
-    if not record:
+    if not record_pair:
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
         
-    user_id = record.user_id
+    record, user = record_pair
     
-    # Update user via SQLModel
-    user = await session.get(User, user_id)
-    if user:
-        user.email_verified = True # Assuming implicit attribute or tracked elsewhere? 
-        # Actually User model doesn't have email_verified in the snippet I saw earlier (Step 128 view_file models/user.py)
-        # Check models/user.py again. Step 128 showed:
-        # class User(SQLModel, table=True): ... first_name, last_name, role, status ...
-        # It did NOT show email_verified explicitly. It might be good to add it or ignore if not there.
-        # But 'status' = 'active'
-        user.status = UserStatus.active
-        session.add(user)
+    # Update user
+    user.status = UserStatus.active
+    session.add(user)
+    
+    # Mark token verified
+    record.verified_at = datetime.utcnow()
+    session.add(record)
+    await session.commit()
         
-        # Mark token verified
-        await session.exec(
-            text("UPDATE email_verification_tokens SET verified_at = NOW() WHERE token = :token"),
-            params={"token": code}
+    # Issue tokens
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    
+    response.set_cookie(
+        key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": UserResponse(
+            id=user.id,
+            email=user.email,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role,
+            status=user.status,
+            site_id=user.site_id,
+            email_verified=True,
+            created_at=user.created_at,
+            updated_at=user.updated_at
         )
-        await session.commit()
-        
-        # Issue tokens
-        access_token = create_access_token(data={"sub": str(user.id)})
-        refresh_token = create_refresh_token(data={"sub": str(user.id)})
-        
-        response.set_cookie(
-            key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="lax", max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
-        )
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "user": UserResponse(
-                id=user.id,
-                email=user.email,
-                username=user.username,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                role=user.role,
-                status=user.status,
-                site_id=user.site_id,
-                # email_verified logic might be missing in model, default True if active
-                email_verified=True,
-                created_at=user.created_at,
-                updated_at=user.updated_at
-            )
-        }
-
-    raise HTTPException(status_code=404, detail="User not found")
+    }

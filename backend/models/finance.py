@@ -2,12 +2,12 @@ from typing import Optional
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field
+from models.base import MultiTenantMixin
 
-class RevenueRecord(SQLModel, table=True):
+class RevenueRecord(MultiTenantMixin, table=True):
     __tablename__ = "revenue_records"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     

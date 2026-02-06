@@ -3,10 +3,10 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field
 from models.enums import EnrollmentStatus, CompletionStatus
+from models.base import MultiTenantMixin
 
-class Enrollment(SQLModel, table=True):
+class Enrollment(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)
     cohort_id: Optional[uuid.UUID] = Field(default=None, foreign_key="cohort.id", index=True)
@@ -20,7 +20,7 @@ class Enrollment(SQLModel, table=True):
     progress_percentage: int = Field(default=0)
     certificate_issued_at: Optional[datetime] = None
 
-class LessonProgress(SQLModel, table=True):
+class LessonProgress(MultiTenantMixin, table=True):
     __tablename__ = "lesson_progress"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -40,7 +40,7 @@ class LessonProgress(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Certificate(SQLModel, table=True):
+class Certificate(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", index=True)

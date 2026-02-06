@@ -404,48 +404,62 @@ class CohortAnalytics:
     """Cohort analysis utilities"""
     
     @staticmethod
-    async def calculate_user_retention_cohorts(session: AsyncSession, months_back: int = 12) -> List[Dict[str, Any]]:
+    async def calculate_user_retention_cohorts(session: AsyncSession, site_id: uuid.UUID, months_back: int = 12) -> List[Dict[str, Any]]:
         """Calculate user retention by monthly cohorts using session-based activity"""
-        # Note: For complex CTEs like cohort analysis, we can use session.execute with text()
-        # for maximum compatibility with specific DB functions like DATE_TRUNC while still using the session.
-        from sqlalchemy import text
+        from sqlalchemy import func, cast, Float, extract, text
+        from sqlalchemy.sql import expression
         
-        raw_query = f"""
-            WITH monthly_cohorts AS (
-                SELECT 
-                    u.id as user_id,
-                    DATE_TRUNC('month', u.created_at) as cohort_month,
-                    DATE_TRUNC('month', lp.updated_at) as activity_month
-                FROM users u
-                LEFT JOIN lesson_progress lp ON u.id = lp.user_id
-                WHERE u.created_at >= CURRENT_DATE - INTERVAL '{months_back} months'
-                AND u.status = 'active'
-            ),
-            cohort_data AS (
-                SELECT 
-                    cohort_month,
-                    COUNT(DISTINCT user_id) as cohort_size,
-                    activity_month,
-                    COUNT(DISTINCT CASE WHEN activity_month IS NOT NULL THEN user_id END) as active_users,
-                    EXTRACT(YEAR FROM age(activity_month, cohort_month)) * 12 + EXTRACT(MONTH FROM age(activity_month, cohort_month)) as period_number
-                FROM monthly_cohorts
-                GROUP BY cohort_month, activity_month
-            )
-            SELECT 
-                cohort_month,
-                cohort_size,
-                period_number,
-                active_users,
-                CASE 
-                    WHEN cohort_size > 0 THEN ROUND((active_users::float / cohort_size) * 100, 2)
-                    ELSE 0 
-                END as retention_rate
-            FROM cohort_data
-            WHERE period_number IS NOT NULL AND period_number >= 0
-            ORDER BY cohort_month, period_number
-        """
+        # 1. monthly_cohorts CTE
+        monthly_cohorts = select(
+            User.id.label("user_id"),
+            func.date_trunc('month', User.created_at).label("cohort_month"),
+            func.date_trunc('month', LessonProgress.updated_at).label("activity_month")
+        ).outerjoin(
+            LessonProgress, User.id == LessonProgress.user_id
+        ).where(
+            User.site_id == site_id,
+            User.created_at >= func.now() - text(f"INTERVAL '{months_back} months'"),
+            User.status == 'active'
+        ).cte("monthly_cohorts")
+
+        # 2. cohort_data CTE
+        period_number = (
+            extract('year', func.age(monthly_cohorts.c.activity_month, monthly_cohorts.c.cohort_month)) * 12 +
+            extract('month', func.age(monthly_cohorts.c.activity_month, monthly_cohorts.c.cohort_month))
+        ).label("period_number")
+
+        cohort_data = select(
+            monthly_cohorts.c.cohort_month,
+            func.count(func.distinct(monthly_cohorts.c.user_id)).label("cohort_size"),
+            monthly_cohorts.c.activity_month,
+            func.count(func.distinct(expression.case(
+                (monthly_cohorts.c.activity_month != None, monthly_cohorts.c.user_id),
+            ))).label("active_users"),
+            period_number
+        ).group_by(
+            monthly_cohorts.c.cohort_month, 
+            monthly_cohorts.c.activity_month
+        ).cte("cohort_data")
+
+        # 3. Final Query
+        query = select(
+            cohort_data.c.cohort_month,
+            cohort_data.c.cohort_size,
+            cohort_data.c.period_number,
+            cohort_data.c.active_users,
+            expression.case(
+                (cohort_data.c.cohort_size > 0, func.round(cast(cohort_data.c.active_users, Float) / cohort_data.c.cohort_size * 100, 2)),
+                else_=0
+            ).label("retention_rate")
+        ).where(
+            cohort_data.c.period_number != None,
+            cohort_data.c.period_number >= 0
+        ).order_by(
+            cohort_data.c.cohort_month,
+            cohort_data.c.period_number
+        )
         
-        result = await session.execute(text(raw_query))
+        result = await session.exec(query)
         rows = result.all()
         
         cohorts = {}

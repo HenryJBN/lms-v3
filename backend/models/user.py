@@ -3,12 +3,12 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field
 from models.enums import UserRole, UserStatus
+from models.base import MultiTenantMixin
 
-class User(SQLModel, table=True):
+class User(MultiTenantMixin, table=True):
     __tablename__ = "users"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     
     email: str = Field(index=True)
     username: str = Field(index=True)
@@ -31,7 +31,7 @@ class User(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class UserProfile(SQLModel, table=True):
+class UserProfile(MultiTenantMixin, table=True):
     __tablename__ = "user_profiles"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

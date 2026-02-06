@@ -11,6 +11,7 @@ async def create_notification(
     title: str,
     message: str,
     session: AsyncSession,
+    site_id: uuid.UUID,
     notification_type: str = "system",
     priority: str = "medium",
     data: Optional[Dict[str, Any]] = None,
@@ -20,6 +21,7 @@ async def create_notification(
     try:
         new_notification = Notification(
             user_id=user_id,
+            site_id=site_id,
             title=title,
             message=message,
             type=notification_type,
@@ -47,33 +49,35 @@ async def create_notification(
             "error": str(e)
         }
 
-async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, course_id: uuid.UUID, session: AsyncSession):
+async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Send notification when user enrolls in a course"""
     await create_notification(
         user_id=user_id,
         title="Course Enrollment Confirmed",
         message=f"You have successfully enrolled in '{course_title}'. Start learning now!",
         session=session,
+        site_id=site_id,
         notification_type="course",
         priority="medium",
         data={"course_id": str(course_id), "course_title": course_title},
         action_url=f"/learn/{course_id}"
     )
 
-async def send_lesson_completion_notification(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID, session: AsyncSession):
+async def send_lesson_completion_notification(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Send notification when user completes a lesson"""
     await create_notification(
         user_id=user_id,
         title="Lesson Completed! 🎉",
         message=f"Great job completing '{lesson_title}'! You earned 10 L-Tokens.",
         session=session,
+        site_id=site_id,
         notification_type="course",
         priority="low",
         data={"lesson_title": lesson_title, "course_id": str(course_id), "tokens_earned": 10},
         action_url=f"/learn/{course_id}"
     )
 
-async def send_certificate_notification(user_id: uuid.UUID, course_title: str, status: str, session: AsyncSession):
+async def send_certificate_notification(user_id: uuid.UUID, course_title: str, status: str, session: AsyncSession, site_id: uuid.UUID):
     """Send notification about certificate status"""
     if status == "issued":
         title = "Certificate Issued! 🏆"
@@ -95,19 +99,22 @@ async def send_certificate_notification(user_id: uuid.UUID, course_title: str, s
         title=title,
         message=message,
         session=session,
+        site_id=site_id,
         notification_type="certificate",
         priority="high",
         data={"course_title": course_title, "certificate_status": status},
         action_url=action_url
     )
 
-async def send_assignment_reminder(user_id: uuid.UUID, assignment_title: str, due_date: datetime, course_id: uuid.UUID):
+async def send_assignment_reminder(user_id: uuid.UUID, assignment_title: str, due_date: datetime, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Send reminder notification for assignment due date"""
     
     await create_notification(
         user_id=user_id,
         title="Assignment Due Soon ⏰",
         message=f"Don't forget! '{assignment_title}' is due on {due_date.strftime('%B %d, %Y')}.",
+        session=session,
+        site_id=site_id,
         notification_type="assignment",
         priority="high",
         data={
@@ -118,7 +125,7 @@ async def send_assignment_reminder(user_id: uuid.UUID, assignment_title: str, du
         action_url=f"/learn/{course_id}"
     )
 
-async def send_course_update_notification(user_ids: List[uuid.UUID], course_title: str, update_message: str, course_id: uuid.UUID):
+async def send_course_update_notification(user_ids: List[uuid.UUID], course_title: str, update_message: str, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Send course update notification to multiple users"""
     
     for user_id in user_ids:
@@ -126,6 +133,8 @@ async def send_course_update_notification(user_ids: List[uuid.UUID], course_titl
             user_id=user_id,
             title=f"Update: {course_title}",
             message=update_message,
+            session=session,
+            site_id=site_id,
             notification_type="course",
             priority="medium",
             data={"course_id": str(course_id), "course_title": course_title},
@@ -184,58 +193,57 @@ async def send_email_notification(user_id: uuid.UUID, subject: str, template: st
     except Exception as e:
         print(f"Failed to send email notification: {e}")
 
-async def mark_notifications_read(user_id: uuid.UUID, notification_ids: List[uuid.UUID]) -> int:
+async def mark_notifications_read(user_id: uuid.UUID, notification_ids: List[uuid.UUID], session: AsyncSession) -> int:
     """Mark multiple notifications as read"""
-    
     try:
         if not notification_ids:
             return 0
         
-        # Convert UUIDs to strings for the query
-        id_placeholders = ','.join([f"'{str(nid)}'" for nid in notification_ids])
+        from sqlalchemy import update
+        query = update(Notification).where(
+            Notification.user_id == user_id,
+            Notification.id.in_(notification_ids)
+        ).values(
+            is_read=True,
+            read_at=datetime.utcnow()
+        )
         
-        query = f"""
-            UPDATE notifications 
-            SET is_read = true, read_at = NOW(), updated_at = NOW()
-            WHERE user_id = :user_id AND id IN ({id_placeholders})
-        """
-        
-        result = await database.execute(query, values={"user_id": user_id})
-        return result
+        result = await session.execute(query)
+        await session.commit()
+        return result.rowcount
         
     except Exception as e:
         print(f"Failed to mark notifications as read: {e}")
         return 0
 
-async def get_unread_count(user_id: uuid.UUID) -> int:
+async def get_unread_count(user_id: uuid.UUID, session: AsyncSession) -> int:
     """Get count of unread notifications for user"""
-    
     try:
-        query = """
-            SELECT COUNT(*) as count 
-            FROM notifications 
-            WHERE user_id = :user_id AND is_read = false
-        """
-        
-        result = await database.fetch_one(query, values={"user_id": user_id})
-        return result.count if result else 0
+        from sqlmodel import func
+        query = select(func.count(Notification.id)).where(
+            Notification.user_id == user_id,
+            Notification.is_read == False
+        )
+        result = await session.execute(query)
+        return result.scalar() or 0
         
     except Exception as e:
         print(f"Failed to get unread count: {e}")
         return 0
 
-async def cleanup_old_notifications(days: int = 30):
+async def cleanup_old_notifications(session: AsyncSession, days: int = 30):
     """Clean up old read notifications"""
-    
     try:
-        query = """
-            DELETE FROM notifications 
-            WHERE is_read = true 
-            AND read_at < NOW() - INTERVAL ':days days'
-        """
+        from sqlalchemy import delete
+        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        query = delete(Notification).where(
+            Notification.is_read == True,
+            Notification.read_at < cutoff_date
+        )
         
-        result = await database.execute(query, values={"days": days})
-        print(f"Cleaned up {result} old notifications")
+        result = await session.execute(query)
+        await session.commit()
+        print(f"Cleaned up {result.rowcount} old notifications")
         
     except Exception as e:
         print(f"Failed to cleanup old notifications: {e}")

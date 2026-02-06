@@ -4,10 +4,13 @@ import uuid
 from datetime import datetime
 
 from database.session import get_session, AsyncSession
+from dependencies import get_current_site
+from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.enrollment import Certificate, Enrollment
 from models.course import Course
 from models.user import User
+from models.enums import UserRole
 from schemas.enrollment import CertificateCreate, CertificateUpdate, CertificateResponse
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, require_admin
@@ -19,7 +22,8 @@ router = APIRouter()
 @router.get("/my-certificates", response_model=List[CertificateResponse])
 async def get_my_certificates(
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Get certificates for current user"""
     query = select(
@@ -27,7 +31,8 @@ async def get_my_certificates(
         Course.title.label("course_title"), 
         Course.thumbnail_url.label("course_thumbnail")
     ).join(Course, Certificate.course_id == Course.id).where(
-        Certificate.user_id == current_user.id
+        Certificate.user_id == current_user.id,
+        Certificate.site_id == current_site.id
     ).order_by(desc(Certificate.issued_at))
     
     result = await session.exec(query)
@@ -43,7 +48,8 @@ async def get_my_certificates(
 async def get_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     query = select(
         Certificate, 
@@ -52,7 +58,7 @@ async def get_certificate(
         User.first_name, User.last_name, User.email
     ).join(Course, Course.id == Certificate.course_id).join(
         User, User.id == Certificate.user_id
-    ).where(Certificate.id == certificate_id)
+    ).where(Certificate.id == certificate_id, Certificate.site_id == current_site.id)
     
     result = await session.exec(query)
     row = result.first()
@@ -67,7 +73,7 @@ async def get_certificate(
     
     # Check if user owns certificate or is admin
     if (str(cert.user_id) != str(current_user.id) and 
-        current_user.role != "admin"):
+        current_user.role != UserRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to view this certificate"
@@ -132,7 +138,8 @@ async def verify_certificate(
 async def mint_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Mint certificate as NFT on blockchain"""
     query = select(
@@ -141,7 +148,11 @@ async def mint_certificate(
         User.wallet_address
     ).join(Course, Course.id == Certificate.course_id).join(
         User, User.id == Certificate.user_id
-    ).where(Certificate.id == certificate_id, Certificate.user_id == current_user.id)
+    ).where(
+        Certificate.id == certificate_id, 
+        Certificate.user_id == current_user.id,
+        Certificate.site_id == current_site.id
+    )
     
     result = await session.exec(query)
     row = result.first()
@@ -226,7 +237,8 @@ async def get_all_certificates(
     course_id: Optional[uuid.UUID] = Query(None),
     status: Optional[str] = Query(None),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to get all certificates"""
     # Base query for certificates
@@ -237,7 +249,7 @@ async def get_all_certificates(
         User.first_name, User.last_name, User.email
     ).join(Course, Course.id == Certificate.course_id).join(
         User, User.id == Certificate.user_id
-    )
+    ).where(Certificate.site_id == current_site.id)
     
     # Filtering
     if user_id:
@@ -279,14 +291,16 @@ async def get_all_certificates(
 async def create_certificate(
     certificate_in: CertificateCreate,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to manually create certificate"""
     # Check if user completed the course
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == certificate_in.user_id,
         Enrollment.course_id == certificate_in.course_id,
-        Enrollment.status == 'completed'
+        Enrollment.status == EnrollmentStatus.completed,
+        Enrollment.site_id == current_site.id
     )
     enrollment = (await session.exec(enrollment_query)).first()
     
@@ -299,7 +313,8 @@ async def create_certificate(
     # Check if certificate already exists
     existing_query = select(Certificate.id).where(
         Certificate.user_id == certificate_in.user_id,
-        Certificate.course_id == certificate_in.course_id
+        Certificate.course_id == certificate_in.course_id,
+        Certificate.site_id == current_site.id
     )
     existing = (await session.exec(existing_query)).first()
     
@@ -310,7 +325,11 @@ async def create_certificate(
         )
     
     # Get course info
-    course = await session.get(Course, certificate_in.course_id)
+    query = select(Course).where(
+        Course.id == certificate_in.course_id,
+        Course.site_id == current_site.id
+    )
+    course = (await session.exec(query)).first()
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -325,6 +344,7 @@ async def create_certificate(
         description=certificate_in.description or f"This certificate verifies completion of {course.title}",
         status='issued',
         blockchain_network='polygon',
+        site_id=current_site.id,
         issued_at=datetime.utcnow()
     )
     
@@ -348,10 +368,15 @@ async def update_certificate(
     certificate_id: uuid.UUID,
     certificate_update: CertificateUpdate,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to update certificate"""
-    cert = await session.get(Certificate, certificate_id)
+    query = select(Certificate).where(
+        Certificate.id == certificate_id,
+        Certificate.site_id == current_site.id
+    )
+    cert = (await session.exec(query)).first()
     if not cert:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -373,14 +398,16 @@ async def update_certificate(
 async def revoke_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
 ):
     """Admin endpoint to revoke certificate"""
     query = select(
         Certificate, 
         Course.title.label("course_title")
     ).join(Course, Course.id == Certificate.course_id).where(
-        Certificate.id == certificate_id
+        Certificate.id == certificate_id,
+        Certificate.site_id == current_site.id
     )
     
     result = await session.exec(query)

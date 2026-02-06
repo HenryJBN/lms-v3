@@ -3,10 +3,10 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON, Column
 from models.enums import NotificationType, NotificationPriority
+from models.base import MultiTenantMixin
 
-class Notification(SQLModel, table=True):
+class Notification(MultiTenantMixin, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    site_id: uuid.UUID = Field(foreign_key="site.id", index=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     
     title: str
@@ -22,7 +22,7 @@ class Notification(SQLModel, table=True):
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class NotificationSettings(SQLModel, table=True):
+class NotificationSettings(MultiTenantMixin, table=True):
     __tablename__ = "notification_settings"
     
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
