@@ -8,7 +8,7 @@ import SiteFooter from "@/components/site-footer"
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdminRoute = pathname?.startsWith("/admin")
+  const isAdminRoute = pathname?.startsWith("/admin") || pathname?.startsWith("/system-admin")
 
   if (isAdminRoute) {
     // Admin routes handle their own layout
