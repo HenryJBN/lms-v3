@@ -7599,3 +7599,1261 @@ FROM enrollment
 WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
 2026-02-07 01:34:39,017 - sqlalchemy.engine.Engine - INFO - [cached since 25.29s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
 2026-02-07 01:34:39,018 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:25,463 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:25,463 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,463 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,465 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:25,466 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:25,468 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,469 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,471 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:25,475 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:25,476 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,476 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,478 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:25,478 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,478 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,480 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:25,480 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:25,481 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:25,481 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:25,483 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,483 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,484 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,485 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,486 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:25,489 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:40:25,489 - sqlalchemy.engine.Engine - INFO - [cached since 372s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:40:25,491 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:25,494 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:25,494 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,494 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,496 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:25,496 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:25,498 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:25,498 - sqlalchemy.engine.Engine - INFO - [cached since 372.1s ago] ('admin',)
+2026-02-07 01:40:25,503 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:40:25,504 - sqlalchemy.engine.Engine - INFO - [cached since 372s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:40:25,510 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:42,863 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,865 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,865 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,871 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,873 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,884 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,884 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,891 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:42,907 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,907 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,908 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,910 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,910 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,911 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,913 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,913 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,916 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,917 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,919 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,919 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,920 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,921 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,923 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:42,926 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:40:42,926 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:40:42,928 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:42,931 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,932 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,933 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,935 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,935 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,937 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,937 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ('admin',)
+2026-02-07 01:40:42,938 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:40:42,939 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:40:42,941 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:42,972 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,973 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,973 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:42,976 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,976 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,977 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:42,978 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:42,978 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,979 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:42,981 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,981 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,983 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,983 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,984 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,985 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:42,987 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:42,988 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:42,994 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:42,999 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:43,001 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,002 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:43,003 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,003 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:43,005 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,005 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:43,006 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:40:43,007 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] ()
+2026-02-07 01:40:43,008 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,008 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (8,)
+2026-02-07 01:40:43,010 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,010 - sqlalchemy.engine.Engine - INFO - [cached since 389.6s ago] ('admin',)
+2026-02-07 01:40:43,011 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:40:43,012 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] ()
+2026-02-07 01:40:43,019 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,019 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,020 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,020 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (8,)
+2026-02-07 01:40:43,021 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:40:43,022 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] ()
+2026-02-07 01:40:43,023 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,024 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,025 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,026 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (8,)
+2026-02-07 01:40:43,026 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:40:43,027 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] ()
+2026-02-07 01:40:43,028 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,028 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,029 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:43,030 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,030 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 1, 8, 0, 40, 43, 29900),)
+2026-02-07 01:40:43,032 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,032 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,033 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,033 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 1, 8, 0, 40, 43, 29900),)
+2026-02-07 01:40:43,035 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,035 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,043 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:43,046 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,046 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,048 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:43,048 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,049 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,050 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,050 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,051 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:43,052 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,052 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,054 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:43,055 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:43,056 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,056 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,058 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:43,058 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:43,059 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,059 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,060 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,060 - sqlalchemy.engine.Engine - INFO - [cached since 389.3s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,061 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,062 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,063 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,063 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,065 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,065 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,066 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,066 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,067 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:40:43,068 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ()
+2026-02-07 01:40:43,069 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,069 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (8,)
+2026-02-07 01:40:43,070 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,070 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,072 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,072 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,074 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,074 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (8,)
+2026-02-07 01:40:43,075 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:40:43,075 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ()
+2026-02-07 01:40:43,077 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,077 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,078 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:40:43,078 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (8,)
+2026-02-07 01:40:43,080 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,080 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,081 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:40:43,081 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ()
+2026-02-07 01:40:43,082 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:43,083 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,083 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,085 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,085 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,089 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,090 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,091 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:40:43,091 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] ()
+2026-02-07 01:40:43,093 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,093 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,094 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,094 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (datetime.datetime(2026, 1, 8, 0, 40, 43, 93850),)
+2026-02-07 01:40:43,095 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:43,098 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:40:43,099 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,099 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,101 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,101 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (datetime.datetime(2026, 1, 8, 0, 40, 43, 93850),)
+2026-02-07 01:40:43,104 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:40:43,104 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:40:43,106 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:40:43,108 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,109 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,110 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:40:43,110 - sqlalchemy.engine.Engine - INFO - [cached since 389.7s ago] ('admin',)
+2026-02-07 01:40:43,112 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,112 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,115 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,115 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,116 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,117 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:40:43,119 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,119 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,121 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,121 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,123 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,123 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:40:43,125 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,125 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,127 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,127 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,129 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,129 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:40:43,131 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,131 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,133 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,133 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,137 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,137 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:40:43,139 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,139 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,141 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,141 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,143 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,143 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:40:43,148 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,148 - sqlalchemy.engine.Engine - INFO - [cached since 389.4s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,169 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,171 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,175 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:40:43,178 - sqlalchemy.engine.Engine - INFO - [cached since 389.5s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:40:43,181 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:47:10,490 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:47:10,491 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:47:10,492 - sqlalchemy.engine.Engine - INFO - [cached since 777.1s ago] ('admi',)
+2026-02-07 01:47:10,495 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:47:27,915 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:47:27,916 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:47:27,918 - sqlalchemy.engine.Engine - INFO - [cached since 794.5s ago] ('googl',)
+2026-02-07 01:47:27,923 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:47:28,519 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:47:28,521 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:47:28,521 - sqlalchemy.engine.Engine - INFO - [cached since 795.1s ago] ('google',)
+2026-02-07 01:47:28,524 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:48:16,293 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:48:16,294 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:48:16,294 - sqlalchemy.engine.Engine - INFO - [cached since 842.9s ago] ('google',)
+2026-02-07 01:48:16,297 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.email = $1::VARCHAR
+2026-02-07 01:48:16,298 - sqlalchemy.engine.Engine - INFO - [generated in 0.00041s] ('admin@google.com',)
+2026-02-07 01:48:16,606 - sqlalchemy.engine.Engine - INFO - INSERT INTO site (id, subdomain, custom_domain, name, logo_url, theme_config, owner_id, is_active, created_at, updated_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::JSON, $7::UUID, $8::BOOLEAN, $9::TIMESTAMP WITHOUT TIME ZONE, $10::TIMESTAMP WITHOUT TIME ZONE)
+2026-02-07 01:48:16,606 - sqlalchemy.engine.Engine - INFO - [generated in 0.00036s] (UUID('1a4509a3-6d2a-4c2c-9055-e7687b501343'), 'google', None, 'Google', None, '{}', UUID('f843610b-d66d-4cea-9118-8bf39d6cccce'), True, datetime.datetime(2026, 2, 7, 0, 48, 16, 303689), datetime.datetime(2026, 2, 7, 0, 48, 16, 303722))
+2026-02-07 01:48:16,612 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (site_id, id, email, username, password_hash, first_name, last_name, role, status, avatar_url, bio, phone, timezone, language, email_verified, last_login_at, created_at, updated_at) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::user_role, $9::user_status, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::BOOLEAN, $16::TIMESTAMP WITHOUT TIME ZONE, $17::TIMESTAMP WITHOUT TIME ZONE, $18::TIMESTAMP WITHOUT TIME ZONE)
+2026-02-07 01:48:16,613 - sqlalchemy.engine.Engine - INFO - [generated in 0.00052s] (UUID('1a4509a3-6d2a-4c2c-9055-e7687b501343'), UUID('f843610b-d66d-4cea-9118-8bf39d6cccce'), 'admin@google.com', 'admin@google.com', '$2b$12$KqV56lS/yDjubFxh6Tzl0OrMtDYOJt5fFAYRqQKr3ujYj45BOw14a', 'google', 'google', 'admin', 'active', None, None, None, 'UTC', 'en', True, None, datetime.datetime(2026, 2, 7, 0, 48, 16, 604053), datetime.datetime(2026, 2, 7, 0, 48, 16, 604184))
+2026-02-07 01:48:16,619 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-02-07 01:48:16,623 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:48:16,624 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.id = $1::UUID
+2026-02-07 01:48:16,625 - sqlalchemy.engine.Engine - INFO - [generated in 0.00029s] (UUID('1a4509a3-6d2a-4c2c-9055-e7687b501343'),)
+2026-02-07 01:48:16,628 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:48:31,257 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:48:31,258 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:48:31,259 - sqlalchemy.engine.Engine - INFO - [cached since 857.8s ago] ('google',)
+2026-02-07 01:48:31,270 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:49:48,490 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:49:48,493 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:49:48,494 - sqlalchemy.engine.Engine - INFO - [cached since 935.1s ago] ('facebool',)
+2026-02-07 01:49:48,497 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:49:49,325 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:49:49,326 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:49:49,327 - sqlalchemy.engine.Engine - INFO - [cached since 935.9s ago] ('faceboo',)
+2026-02-07 01:49:49,330 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:49:49,897 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:49:49,898 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:49:49,898 - sqlalchemy.engine.Engine - INFO - [cached since 936.5s ago] ('facebook',)
+2026-02-07 01:49:49,905 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:50:20,287 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:50:20,288 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:50:20,288 - sqlalchemy.engine.Engine - INFO - [cached since 966.9s ago] ('facebook',)
+2026-02-07 01:50:20,290 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.email = $1::VARCHAR
+2026-02-07 01:50:20,290 - sqlalchemy.engine.Engine - INFO - [cached since 124s ago] ('admin@facebook.com',)
+2026-02-07 01:50:20,644 - sqlalchemy.engine.Engine - INFO - INSERT INTO site (id, subdomain, custom_domain, name, logo_url, theme_config, owner_id, is_active, created_at, updated_at) VALUES ($1::UUID, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::JSON, $7::UUID, $8::BOOLEAN, $9::TIMESTAMP WITHOUT TIME ZONE, $10::TIMESTAMP WITHOUT TIME ZONE)
+2026-02-07 01:50:20,644 - sqlalchemy.engine.Engine - INFO - [cached since 124s ago] (UUID('0973fc02-e09d-45f8-9b33-0a281d325a57'), 'facebook', None, 'Facebook', None, '{}', UUID('d579b918-6b48-4daa-b344-0ee460e5652f'), True, datetime.datetime(2026, 2, 7, 0, 50, 20, 294069), datetime.datetime(2026, 2, 7, 0, 50, 20, 294147))
+2026-02-07 01:50:20,646 - sqlalchemy.engine.Engine - INFO - INSERT INTO users (site_id, id, email, username, password_hash, first_name, last_name, role, status, avatar_url, bio, phone, timezone, language, email_verified, last_login_at, created_at, updated_at) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::user_role, $9::user_status, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::BOOLEAN, $16::TIMESTAMP WITHOUT TIME ZONE, $17::TIMESTAMP WITHOUT TIME ZONE, $18::TIMESTAMP WITHOUT TIME ZONE)
+2026-02-07 01:50:20,647 - sqlalchemy.engine.Engine - INFO - [cached since 124s ago] (UUID('0973fc02-e09d-45f8-9b33-0a281d325a57'), UUID('d579b918-6b48-4daa-b344-0ee460e5652f'), 'admin@facebook.com', 'admin@facebook.com', '$2b$12$tsEbKAv96bzYvvosSaQunOL.vcNgSxvpby8gLcI32KeOJAT0n40Ku', 'facebook', 'facebook', 'admin', 'active', None, None, None, 'UTC', 'en', True, None, datetime.datetime(2026, 2, 7, 0, 50, 20, 643971), datetime.datetime(2026, 2, 7, 0, 50, 20, 644101))
+2026-02-07 01:50:20,649 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-02-07 01:50:20,651 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:50:20,652 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.id = $1::UUID
+2026-02-07 01:50:20,652 - sqlalchemy.engine.Engine - INFO - [cached since 124s ago] (UUID('0973fc02-e09d-45f8-9b33-0a281d325a57'),)
+2026-02-07 01:50:20,655 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,028 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,029 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,029 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,032 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,032 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,033 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,035 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,036 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,037 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,039 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,039 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,043 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,043 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,045 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,045 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,047 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,047 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,049 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,049 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,051 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,052 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,055 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,055 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,056 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,057 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,057 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:51:49,058 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,059 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,059 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,060 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:51:49,061 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,061 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,062 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,063 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,063 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,064 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:51:49,064 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,065 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,065 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,066 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,067 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,068 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:51:49,068 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,069 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,069 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,070 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,071 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,072 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,072 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 8, 0, 51, 49, 71655),)
+2026-02-07 01:51:49,072 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,073 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,074 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,075 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,075 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 8, 0, 51, 49, 71655),)
+2026-02-07 01:51:49,076 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,076 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,085 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,086 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,087 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,095 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,096 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,096 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,098 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,098 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,102 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,104 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,104 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,106 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,106 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,108 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,109 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,112 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,112 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,115 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,115 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,117 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,117 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,118 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,118 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,119 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,119 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,120 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,120 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,121 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,121 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,123 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,124 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,124 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:51:49,125 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,126 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,126 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,127 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:51:49,128 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,129 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,129 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,131 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,131 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,133 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:51:49,133 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,134 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,134 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,135 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,136 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,137 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:51:49,137 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] ()
+2026-02-07 01:51:49,138 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:51:49,138 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (8,)
+2026-02-07 01:51:49,139 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,139 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,142 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,142 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 8, 0, 51, 49, 141897),)
+2026-02-07 01:51:49,145 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,146 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,146 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,147 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,147 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 8, 0, 51, 49, 141897),)
+2026-02-07 01:51:49,149 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,149 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,154 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,155 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,155 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,159 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:51:49,165 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:51:49,166 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,168 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,171 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:51:49,171 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:51:49,172 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,173 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,174 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:51:49,175 - sqlalchemy.engine.Engine - INFO - [cached since 1056s ago] ('admin',)
+2026-02-07 01:51:49,178 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,178 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,180 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,181 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,185 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,187 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:51:49,188 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,189 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,191 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,191 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,195 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,195 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:51:49,199 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,199 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,202 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,203 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,206 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,206 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:51:49,219 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,219 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,222 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,223 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,228 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,229 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:51:49,232 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,232 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,235 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,236 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,237 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,237 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:51:49,238 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,239 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,240 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,240 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,242 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:51:49,243 - sqlalchemy.engine.Engine - INFO - [cached since 1055s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:51:49,245 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:08,237 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:08,239 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,240 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,249 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:08,249 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:08,254 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,254 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,257 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:08,264 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:08,265 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,265 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,269 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:08,269 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:08,271 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,271 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,274 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:08,305 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:08,305 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,305 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,308 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:08,308 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:08,310 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,310 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,312 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:52:08,313 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:52:08,315 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:08,318 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:08,318 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,319 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,321 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:08,321 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:08,324 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:08,324 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] ('admin',)
+2026-02-07 01:52:08,327 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:52:08,328 - sqlalchemy.engine.Engine - INFO - [cached since 1075s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:52:08,332 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,264 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,264 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,264 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,271 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,272 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,282 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,282 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,285 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:52:13,285 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:52:13,289 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,292 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,292 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,293 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,296 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,296 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,298 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,299 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,302 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-07 01:52:13,302 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (UUID('0b25d751-ecae-48f2-9bce-29dbc48823d4'), UUID('d31f1ba2-eedb-4f6d-a475-c4062e14ca36'))
+2026-02-07 01:52:13,305 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,368 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,370 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,371 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,372 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,373 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,373 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,379 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,455 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,455 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,639 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,639 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,641 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,642 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,643 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,643 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,645 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,645 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,646 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,646 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,648 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,648 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,649 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,650 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,651 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,651 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,653 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,653 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,657 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:52:13,658 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,659 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,659 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,662 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:52:13,662 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,666 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,666 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,668 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,668 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,673 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:52:13,674 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,679 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:52:13,679 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,681 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,681 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,684 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,685 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,687 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,688 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,690 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,692 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 8, 0, 52, 13, 690154),)
+2026-02-07 01:52:13,698 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,698 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:13,699 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,699 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 8, 0, 52, 13, 690154),)
+2026-02-07 01:52:13,704 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,704 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:13,712 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,714 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,715 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,715 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,736 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,737 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:13,745 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,746 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,748 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,748 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:13,750 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,750 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,752 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,754 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:13,765 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,765 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,769 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site
+2026-02-07 01:52:13,769 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,770 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,771 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:13,777 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users
+2026-02-07 01:52:13,778 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,780 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,780 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:13,782 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course
+2026-02-07 01:52:13,783 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,785 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,786 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:13,788 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,794 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment
+2026-02-07 01:52:13,794 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ()
+2026-02-07 01:52:13,796 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,797 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:13,798 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,799 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 8, 0, 52, 13, 798313),)
+2026-02-07 01:52:13,803 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,803 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:13,809 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,810 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 8, 0, 52, 13, 798313),)
+2026-02-07 01:52:13,813 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,813 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:13,817 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,817 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,817 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,818 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,825 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,825 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:13,831 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,832 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:13,833 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,833 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,836 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,837 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:13,839 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,840 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,842 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,842 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:13,849 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,851 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,869 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,870 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site ORDER BY site.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,871 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,873 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-07 01:52:13,874 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,875 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('admin',)
+2026-02-07 01:52:13,917 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-07 01:52:13,917 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] ('0b25d751-ecae-48f2-9bce-29dbc48823d4',)
+2026-02-07 01:52:13,921 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users ORDER BY users.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,923 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,926 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,927 - sqlalchemy.engine.Engine - INFO - [cached since 1081s ago] ('admin',)
+2026-02-07 01:52:13,930 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, users.email, site.name 
+FROM enrollment JOIN users ON enrollment.user_id = users.id JOIN site ON users.site_id = site.id ORDER BY enrollment.created_at DESC 
+ LIMIT $1::INTEGER
+2026-02-07 01:52:13,930 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (8,)
+2026-02-07 01:52:13,933 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-07 01:52:13,933 - sqlalchemy.engine.Engine - INFO - [cached since 1081s ago] ('admin',)
+2026-02-07 01:52:13,937 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-07 01:52:13,943 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,943 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,946 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,946 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,953 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,954 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 2, 1, 0, 0), datetime.datetime(2026, 2, 28, 23, 59, 59))
+2026-02-07 01:52:13,970 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:13,970 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:14,047 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,047 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:14,050 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,050 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2026, 1, 1, 0, 0), datetime.datetime(2026, 1, 31, 23, 59, 59))
+2026-02-07 01:52:14,053 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,053 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:14,057 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,057 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:14,060 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,061 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 12, 1, 0, 0), datetime.datetime(2025, 12, 31, 23, 59, 59))
+2026-02-07 01:52:14,063 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,063 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:14,066 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,066 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:14,069 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,069 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 11, 1, 0, 0), datetime.datetime(2025, 11, 30, 23, 59, 59))
+2026-02-07 01:52:14,073 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,073 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:14,075 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,076 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:14,079 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,079 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 10, 1, 0, 0), datetime.datetime(2025, 10, 31, 23, 59, 59))
+2026-02-07 01:52:14,081 - sqlalchemy.engine.Engine - INFO - SELECT count(site.id) AS count_1 
+FROM site 
+WHERE site.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND site.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,081 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:14,082 - sqlalchemy.engine.Engine - INFO - SELECT count(users.id) AS count_1 
+FROM users 
+WHERE users.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND users.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,083 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:14,087 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.created_at >= $1::TIMESTAMP WITHOUT TIME ZONE AND enrollment.created_at <= $2::TIMESTAMP WITHOUT TIME ZONE
+2026-02-07 01:52:14,088 - sqlalchemy.engine.Engine - INFO - [cached since 1080s ago] (datetime.datetime(2025, 9, 1, 0, 0), datetime.datetime(2025, 9, 30, 23, 59, 59))
+2026-02-07 01:52:14,090 - sqlalchemy.engine.Engine - INFO - ROLLBACK
