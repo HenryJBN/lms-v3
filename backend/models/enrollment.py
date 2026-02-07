@@ -19,6 +19,8 @@ class Enrollment(MultiTenantMixin, table=True):
     
     progress_percentage: int = Field(default=0)
     certificate_issued_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class LessonProgress(MultiTenantMixin, table=True):
     __tablename__ = "lesson_progress"

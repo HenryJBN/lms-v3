@@ -6,6 +6,24 @@ export interface GlobalStats {
   total_users: number
   total_courses: number
   total_enrollments: number
+  new_sites_30d: number
+  new_users_30d: number
+}
+
+export interface ActivityItem {
+  id: string
+  type: 'site_registered' | 'user_joined' | 'course_enrollment'
+  title: string
+  description: string
+  timestamp: string
+}
+
+export interface GrowthData {
+  month: string
+  sites: number
+  users: number
+  enrollments: number
+  timestamp: string
 }
 
 export interface SiteResponse {
@@ -34,6 +52,14 @@ const buildUrl = (baseUrl: string, params?: any) => {
 export const systemAdminService = {
   getGlobalStats: async (): Promise<GlobalStats> => {
     return await api.get<GlobalStats>(API_ENDPOINTS.systemAdminGlobalStats)
+  },
+
+  getGlobalActivity: async (limit: number = 5): Promise<ActivityItem[]> => {
+    return await api.get<ActivityItem[]>(`${API_ENDPOINTS.systemAdminActivity}?limit=${limit}`)
+  },
+
+  getGrowthStats: async (months: number = 6): Promise<GrowthData[]> => {
+    return await api.get<GrowthData[]>(`${API_ENDPOINTS.systemAdminGrowth}?months=${months}`)
   },
 
   getAllSites: async (params?: any): Promise<{ items: SiteResponse[], total: number, pages: number }> => {

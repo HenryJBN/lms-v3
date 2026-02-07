@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
-from sqlmodel import select, func, and_
+from datetime import datetime, timedelta
+from sqlmodel import select, func, and_, desc, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_session
@@ -123,9 +124,113 @@ async def get_global_stats(
     total_courses = (await session.exec(select(func.count(Course.id)))).one()
     total_enrollments = (await session.exec(select(func.count(Enrollment.id)))).one()
     
+    # Get changes in the last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    new_sites = (await session.exec(select(func.count(Site.id)).where(Site.created_at >= thirty_days_ago))).one()
+    new_users = (await session.exec(select(func.count(User.id)).where(User.created_at >= thirty_days_ago))).one()
+    
     return {
         "total_sites": total_sites,
         "total_users": total_users,
         "total_courses": total_courses,
-        "total_enrollments": total_enrollments
+        "total_enrollments": total_enrollments,
+        "new_sites_30d": new_sites,
+        "new_users_30d": new_users
     }
+
+@router.get("/stats/activity")
+async def get_activity_stats(
+    limit: int = Query(5, ge=1, le=20),
+    session: AsyncSession = Depends(get_session),
+    super_admin = Depends(require_super_admin)
+):
+    """Get recent platform activity"""
+    # Recent Sites
+    recent_sites_query = select(Site).order_by(desc(Site.created_at)).limit(limit)
+    recent_sites = (await session.exec(recent_sites_query)).all()
+    
+    # Recent Users
+    recent_users_query = select(User).order_by(desc(User.created_at)).limit(limit)
+    recent_users = (await session.exec(recent_users_query)).all()
+    
+    # Recent Enrollments
+    # We join with Site and Course to get more context
+    recent_enrollments_query = select(Enrollment, User.email, Site.name).join(
+        User, Enrollment.user_id == User.id
+    ).join(
+        Site, User.site_id == Site.id
+    ).order_by(desc(Enrollment.created_at)).limit(limit)
+    
+    recent_enrollments = (await session.exec(recent_enrollments_query)).all()
+    
+    activity = []
+    
+    for s in recent_sites:
+        activity.append({
+            "type": "site_registered",
+            "title": f"New Site: {s.name}",
+            "description": f"Subdomain: {s.subdomain}",
+            "timestamp": s.created_at,
+            "id": str(s.id)
+        })
+        
+    for u in recent_users:
+        activity.append({
+            "type": "user_joined",
+            "title": f"User Joined: {u.email}",
+            "description": f"Role: {u.role}",
+            "timestamp": u.created_at,
+            "id": str(u.id)
+        })
+        
+    for e, email, site_name in recent_enrollments:
+        activity.append({
+            "type": "course_enrollment",
+            "title": f"Enrollment in {site_name}",
+            "description": f"User: {email}",
+            "timestamp": e.created_at,
+            "id": str(e.id)
+        })
+        
+    # Sort all by timestamp
+    activity.sort(key=lambda x: x["timestamp"], reverse=True)
+    
+    return activity[:limit*2]
+
+@router.get("/stats/growth")
+async def get_growth_stats(
+    months: int = Query(6, ge=1, le=12),
+    session: AsyncSession = Depends(get_session),
+    super_admin = Depends(require_super_admin)
+):
+    """Get growth data for charts"""
+    stats = []
+    now = datetime.utcnow()
+    
+    for i in range(months):
+        date = now - timedelta(days=i*30)
+        month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+        
+        sites_count = (await session.exec(select(func.count(Site.id)).where(
+            and_(Site.created_at >= month_start, Site.created_at <= month_end)
+        ))).one()
+        
+        users_count = (await session.exec(select(func.count(User.id)).where(
+            and_(User.created_at >= month_start, User.created_at <= month_end)
+        ))).one()
+        
+        enrollments_count = (await session.exec(select(func.count(Enrollment.id)).where(
+            and_(Enrollment.created_at >= month_start, Enrollment.created_at <= month_end)
+        ))).one()
+        
+        stats.append({
+            "month": month_start.strftime("%b %Y"),
+            "sites": sites_count,
+            "users": users_count,
+            "enrollments": enrollments_count,
+            "timestamp": month_start
+        })
+        
+    stats.reverse()
+    return stats
