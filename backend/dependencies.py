@@ -42,20 +42,24 @@ async def get_current_site(
         else:
             # dcalms.com -> maybe www or root
             subdomain = "www"
-            
-    # Normalize 'localhost' or 'www' logic if needed
-    subdomain = host.split(".")[0]
     
-    # Query Site
+    # Query Site by subdomain
     query = select(Site).where(Site.subdomain == subdomain)
     result = await session.exec(query)
     site = result.first()
     
     if not site:
-        # Fallback: Check custom domain
+        # 4. Fallback: Check custom domain
         query_custom = select(Site).where(Site.custom_domain == host)
         result_custom = await session.exec(query_custom)
         site = result_custom.first()
+        
+    if not site:
+        # 5. Last Fallback: If on root domain or no site found, default to first site
+        # This allows global admin login on the root domain
+        query_fallback = select(Site).order_by(Site.id)
+        result_fallback = await session.exec(query_fallback)
+        site = result_fallback.first()
         
     if not site:
         raise HTTPException(

@@ -41,9 +41,17 @@ interface SidebarProps {
   className?: string
 }
 
+interface MenuItem {
+  title: string
+  href?: string
+  icon: any
+  children?: { title: string; href: string }[]
+}
+
 function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [openSections, setOpenSections] = useState<string[]>([])
+  const { user } = useAuth()
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) =>
@@ -51,12 +59,30 @@ function Sidebar({ className }: SidebarProps) {
     )
   }
 
-  const menuItems = [
+  const isSystemAdmin = typeof window !== 'undefined' && window.location.hostname.startsWith('admin.')
+  const isImpersonating = user?.role === 'admin' && !isSystemAdmin && (user?.email?.endsWith('@dcalms.com') || user?.site_id === 'admin-site-id')
+
+  const menuItems: MenuItem[] = [
     {
       title: "Dashboard",
       href: "/admin",
       icon: LayoutDashboard,
     },
+  ]
+  
+  if (isSystemAdmin || isImpersonating) {
+    menuItems.push({
+      title: "Platform Management",
+      icon: Shield,
+      children: [
+        { title: "Global Overview", href: "/system-admin" },
+        { title: "Manage Tenants", href: "/system-admin/tenants" },
+        { title: "System Settings", href: "/system-admin/settings" },
+      ]
+    })
+  }
+
+  menuItems.push(
     {
       title: "Users",
       icon: Users,
@@ -120,18 +146,18 @@ function Sidebar({ className }: SidebarProps) {
       href: "/admin/settings",
       icon: Settings,
     },
-  ]
+  )
 
   return (
     <div className={`flex h-full w-full flex-col bg-background ${className}`}>
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link href="/admin" className="flex items-center gap-2 font-semibold">
-          <GraduationCap className="h-6 w-6" />
-          <span>LMS Admin</span>
+        <Link href={isSystemAdmin ? "/system-admin" : "/admin"} className="flex items-center gap-2 font-semibold text-primary">
+          <Shield className="h-6 w-6" />
+          <span>{isSystemAdmin ? "System Admin" : "LMS Admin"}</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto">
-        <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+        <nav className="grid items-start px-2 text-sm font-medium lg:px-4 py-4">
           {menuItems.map((item) => {
             if (item.children) {
               const isOpen = openSections.includes(item.title)
@@ -164,7 +190,7 @@ function Sidebar({ className }: SidebarProps) {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1">
-                    {item.children.map((child) => (
+                    {item.children.map((child: any) => (
                       <Link
                         key={child.href}
                         href={child.href}
@@ -186,7 +212,7 @@ function Sidebar({ className }: SidebarProps) {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={item.href || "#"}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
                   pathname === item.href ? "bg-muted text-primary" : ""
                 }`}
@@ -205,8 +231,11 @@ function Sidebar({ className }: SidebarProps) {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const isSystemAdmin = typeof window !== 'undefined' && window.location.hostname.startsWith('admin.')
+  const isImpersonating = user?.role === 'admin' && !isSystemAdmin && user?.email?.endsWith('@dcalms.com')
 
   // Hide sidebar on login and forgot password pages
   const hideSidebar = pathname === "/admin/login" || pathname === "/admin/forgot-password"
@@ -229,6 +258,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content Area */}
       <div className="flex flex-col">
+        {/* Super Admin Mode Banner */}
+        {isImpersonating && (
+          <div className="bg-primary/10 border-b border-primary/20 px-4 py-1.5 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 font-medium text-primary">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Super Admin Mode: You are managing this tenant</span>
+            </div>
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="h-auto p-0 text-primary font-bold decoration-primary"
+              onClick={() => window.location.href = `http://admin.dcalms.test:3000/system-admin`}
+            >
+              Exit to Global Dashboard
+            </Button>
+          </div>
+        )}
+
         {/* Header */}
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           {/* Mobile Menu Button */}

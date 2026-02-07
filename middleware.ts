@@ -9,8 +9,11 @@ export function middleware(request: NextRequest) {
     requestHeaders.set("x-tenant-domain", host)
   }
 
-  // Check if the request is for admin routes
-  if (request.nextUrl.pathname.startsWith("/admin")) {
+  // Check if the request is for admin or system-admin routes
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin")
+  const isSystemAdminRoute = request.nextUrl.pathname.startsWith("/system-admin")
+
+  if (isAdminRoute || isSystemAdminRoute) {
     // Skip middleware for login and forgot-password pages
     if (
       request.nextUrl.pathname === "/admin/login" ||
@@ -30,9 +33,6 @@ export function middleware(request: NextRequest) {
       // Redirect to admin login if not authenticated
       return NextResponse.redirect(new URL("/admin/login", request.url))
     }
-
-    // In a real app, you would validate the token here
-    // For demo purposes, we'll assume any token is valid
   }
 
   return NextResponse.next({

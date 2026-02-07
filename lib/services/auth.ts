@@ -43,6 +43,7 @@ export interface User {
   total_enrollments?: number
   completed_courses?: number
   total_certificates?: number
+  site_id: string
 }
 
 export type BasicUser = Pick<User, "email" | "role"> & { first_name: string; last_name: string }

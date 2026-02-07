@@ -26,7 +26,8 @@ import {
   MoreVertical,
   Loader2,
   Users,
-  BookOpen
+  BookOpen,
+  LayoutDashboard
 } from "lucide-react"
 import { 
   DropdownMenu, 
@@ -218,6 +219,10 @@ function TenantsContent() {
                           <DropdownMenuItem onClick={() => window.open(`http://${site.domain}`, "_blank")}>
                             <ExternalLink className="mr-2 h-4 w-4" />
                             Visit Site
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.location.href = `http://${site.subdomain}.dcalms.test:3000/admin`}>
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            Jump to Dashboard
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => router.push(`/system-admin/tenants/${site.id}`)}>
                             <Filter className="mr-2 h-4 w-4" />

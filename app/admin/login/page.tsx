@@ -72,15 +72,24 @@ export default function AdminLogin() {
         const authResponse = response as any // Cast to access properties safely if needed, or better, rely on type guards
         if (authResponse.access_token) {
           setAccessToken(authResponse.access_token)
-          await refreshUser()
+          const user = await refreshUser() as any
+          
           // Set cookie for middleware
           Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" })
-        }
 
-        setSuccess("Login successful! Redirecting to admin dashboard...")
-        setTimeout(() => {
-          router.push("/admin")
-        }, 1000)
+          setSuccess("Login successful! Redirecting to dashboard...")
+          
+          setTimeout(() => {
+            // If user is super admin (role=admin and belongs to 'admin' site or has no site_id yet in some cases)
+            // For now, check if they are on the admin subdomain
+            const isSystemAdmin = window.location.hostname.startsWith('admin.')
+            if (isSystemAdmin) {
+              router.push("/system-admin")
+            } else {
+              router.push("/admin")
+            }
+          }, 1000)
+        }
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.")
@@ -107,9 +116,14 @@ export default function AdminLogin() {
       // Set the admin-token cookie upon successful 2FA
       Cookies.set("admin-token", "mock-admin-token-123", { expires: 7, path: "/" })
 
-      setSuccess("Login successful! Redirecting to admin dashboard...")
+      setSuccess("Login successful! Redirecting to dashboard...")
       setTimeout(() => {
-        router.push("/admin")
+        const isSystemAdmin = window.location.hostname.startsWith('admin.')
+        if (isSystemAdmin) {
+          router.push("/system-admin")
+        } else {
+          router.push("/admin")
+        }
       }, 1500)
     } catch (err: any) {
       setError(err.message || "2FA verification failed. Please try again.")

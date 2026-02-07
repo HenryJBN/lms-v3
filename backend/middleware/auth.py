@@ -104,7 +104,16 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
         
-    if str(user.site_id) != str(current_site.id):
+    # Super Admin Bypass: If user is from the 'admin' site, allow access to any site
+    # This enables platform-wide impersonation
+    is_super_admin = False
+    query_admin_site = select(Site).where(Site.subdomain == "admin")
+    admin_site = (await session.exec(query_admin_site)).first()
+    
+    if admin_site and str(user.site_id) == str(admin_site.id) and user.role == UserRole.admin:
+        is_super_admin = True
+
+    if not is_super_admin and str(user.site_id) != str(current_site.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not belong to this site"
