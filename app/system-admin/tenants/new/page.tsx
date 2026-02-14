@@ -33,19 +33,7 @@ import { onboardingService } from "@/lib/services/system-admin"
 import { toast } from "sonner"
 import Link from "next/link"
 
-const registerSchema = z.object({
-  school_name: z.string().min(2, "Academy name must be at least 2 characters"),
-  subdomain: z.string()
-    .min(2, "Subdomain must be at least 2 characters")
-    .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens allowed")
-    .transform(val => val.toLowerCase()),
-  admin_email: z.string().email("Invalid email address"),
-  admin_password: z.string().min(8, "Password must be at least 8 characters"),
-  admin_first_name: z.string().min(1, "First name is required"),
-  admin_last_name: z.string().min(1, "Last name is required"),
-})
-
-type RegisterFormValues = z.infer<typeof registerSchema>
+import { tenantRegistrationSchema as registerSchema, TenantRegistrationValues as RegisterFormValues } from "@/lib/schemas/tenant"
 
 export default function RegisterSitePage() {
   const router = useRouter()
