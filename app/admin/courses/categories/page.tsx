@@ -164,7 +164,7 @@ export default function CategoriesPage() {
         description: data.description || undefined,
         icon: data.icon || undefined,
         color: data.color || undefined,
-        parent_id: data.parent_id || undefined,
+        parent_id: data.parent_id === "none" ? undefined : data.parent_id,
         sort_order: data.sort_order,
         is_active: data.is_active,
       })
@@ -201,7 +201,7 @@ export default function CategoriesPage() {
         description: data.description || undefined,
         icon: data.icon || undefined,
         color: data.color || undefined,
-        parent_id: data.parent_id || undefined,
+        parent_id: data.parent_id === "none" ? null : data.parent_id,
         sort_order: data.sort_order,
         is_active: data.is_active,
       })

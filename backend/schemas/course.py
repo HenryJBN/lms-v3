@@ -22,9 +22,11 @@ class CategoryCreate(CategoryBase):
 
 class CategoryUpdate(BaseSchema):
     name: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
+    parent_id: Optional[uuid.UUID] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
 

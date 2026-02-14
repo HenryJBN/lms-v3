@@ -8,7 +8,7 @@ export interface Category {
   description?: string
   icon?: string
   color?: string
-  parent_id?: string
+  parent_id?: string | null
   sort_order?: number
   is_active?: boolean
   course_count?: number
