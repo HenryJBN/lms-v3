@@ -323,7 +323,7 @@ export default function LessonsManagement() {
         description: values.description?.trim() || "",
         content: values.content?.trim() || "",
         course_id: values.courseId,
-        section_id: values.sectionId === "" ? null : values.sectionId,
+        section_id: values.sectionId === "" || values.sectionId === "none" ? null : values.sectionId,
         type: values.type,
         sort_order: values.order || 0,
         is_published: false, // Start as draft
@@ -411,10 +411,12 @@ export default function LessonsManagement() {
     draftLessons: lessons.filter((l) => l.status === "draft").length,
     totalViews: lessons.reduce((sum, lesson) => sum + lesson.views, 0),
     averageCompletion:
-      lessons
-        .filter((l) => (l.completionRate ?? 0) > 0)
-        .reduce((sum, lesson) => sum + (lesson.completionRate ?? 0), 0) /
-      lessons.filter((l) => (l.completionRate ?? 0) > 0).length,
+      lessons.filter((l) => (l.completionRate ?? 0) > 0).length > 0
+        ? lessons
+            .filter((l) => (l.completionRate ?? 0) > 0)
+            .reduce((sum, lesson) => sum + (lesson.completionRate ?? 0), 0) /
+          lessons.filter((l) => (l.completionRate ?? 0) > 0).length
+        : 0,
     totalDuration: lessons.reduce((sum, lesson) => {
       const [minutes, seconds] = lesson.duration.split(":").map(Number)
       return sum + minutes + seconds / 60
@@ -700,7 +702,9 @@ export default function LessonsManagement() {
         description: values.description?.trim() || "",
         content: values.content?.trim() || "",
         course_id: values.courseId,
-        section_id: values.sectionId,
+        course_id: values.courseId,
+        section_id: values.sectionId === "" || values.sectionId === "none" ? null : values.sectionId,
+        type: values.type,
         type: values.type,
         sort_order: values.order ? parseInt(values.order) : 0,
         is_preview: values.isPreview,

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile
 from typing import List, Optional
 import uuid
 import os
+from datetime import datetime
 
 from sqlmodel import select, func, or_, and_, desc, asc
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -13,7 +14,7 @@ from models.lesson import Lesson, Quiz, Assignment
 from models.course import Course, Section
 from models.user import User
 from models.enrollment import Enrollment, LessonProgress
-from models.enums import LessonType
+from models.enums import LessonType, UserRole
 from schemas.lesson import (
     LessonCreate, LessonUpdate, LessonResponse,
     QuizCreate, QuizUpdate, QuizResponse,
@@ -320,13 +321,28 @@ async def create_lesson(
             detail="Not authorized to create lessons for this course"
         )
     
+    # Validate section_id if provided
+    if lesson_in.section_id:
+        section_query = select(Section).where(
+            Section.id == lesson_in.section_id,
+            Section.course_id == lesson_in.course_id
+        )
+        section_result = await session.exec(section_query)
+        section = section_result.first()
+        
+        if not section:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid section ID. Section must belong to this course."
+            )
+    
     # Get next sort order
     sort_query = select(func.max(Lesson.sort_order)).where(Lesson.course_id == lesson_in.course_id)
     sort_result = await session.exec(sort_query)
     max_order = sort_result.one() or 0
     
     new_lesson = Lesson(
-        **lesson_in.dict(),
+        **lesson_in.dict(exclude={"sort_order"}),
         sort_order=max_order + 1,
         site_id=current_site.id
     )
@@ -377,6 +393,21 @@ async def update_lesson(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this lesson"
         )
+    
+    # Validate section_id if provided in update
+    if lesson_update.section_id:
+        section_query = select(Section).where(
+            Section.id == lesson_update.section_id,
+            Section.course_id == lesson.course_id
+        )
+        section_result = await session.exec(section_query)
+        section = section_result.first()
+        
+        if not section:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid section ID. Section must belong to the same course."
+            )
     
     update_data = lesson_update.dict(exclude_unset=True)
 
