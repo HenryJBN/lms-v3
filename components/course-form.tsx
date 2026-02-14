@@ -214,23 +214,35 @@ export const CourseCreateForm = ({
   } = useForm<CourseCreateFormData>({
     resolver: zodResolver(schema),
     mode: "onChange",
-    defaultValues: initialData || {
-      title: "",
-      slug: "",
-      description: "",
-      short_description: "",
-      category_id: "",
-      level: "beginner",
-      price: 0,
-      duration_hours: 1,
-      language: "en",
-      is_free: false,
-      is_featured: false,
-      token_reward: 0,
-      requirements: [],
-      learning_outcomes: [],
-      tags: [],
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          // Ensure nulls are converted to undefined for optional fields
+          category_id: initialData.category_id || "",
+          thumbnail: initialData.thumbnail_url,
+          trailer_video: initialData.trailer_video_url,
+          requirements: initialData.requirements || [],
+          learning_outcomes: initialData.learning_outcomes || [],
+          tags: initialData.tags || [],
+          token_reward: initialData.token_reward || 0,
+        }
+      : {
+          title: "",
+          slug: "",
+          description: "",
+          short_description: "",
+          category_id: "",
+          level: "beginner",
+          price: 0,
+          duration_hours: 1,
+          language: "en",
+          is_free: false,
+          is_featured: false,
+          token_reward: 0,
+          requirements: [],
+          learning_outcomes: [],
+          tags: [],
+        },
   })
 
   const thumbnailFile = watch("thumbnail")
@@ -356,13 +368,17 @@ export const CourseCreateForm = ({
     }
   }
 
+  const onError = (errors: any) => {
+    console.error("❌ Form validation errors:", errors)
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle>{mode === "create" ? "Create New Course" : "Update Course"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -402,6 +418,58 @@ export const CourseCreateForm = ({
             {errors.short_description && (
               <p className="text-sm text-destructive">{errors.short_description.message}</p>
             )}
+          </div>
+
+          {/* Target Audience */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Target Audience</label>
+            <Textarea
+              {...register("target_audience")}
+              placeholder="Who is this course for?"
+              rows={2}
+            />
+            {errors.target_audience && (
+              <p className="text-sm text-destructive">{errors.target_audience.message}</p>
+            )}
+          </div>
+
+          {/* Lists: Requirements, Learning Outcomes, Tags */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Requirements (comma separated)</label>
+              <Input
+                placeholder="e.g. Basic JS knowledge, Laptop"
+                onBlur={(e) => {
+                  const val = e.target.value
+                  if (val) setValue("requirements", val.split(",").map((s) => s.trim()).filter(Boolean))
+                }}
+                defaultValue={initialData?.requirements?.join(", ")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Learning Outcomes (comma separated)</label>
+              <Input
+                placeholder="e.g. Build a full-stack app, Master React"
+                onBlur={(e) => {
+                  const val = e.target.value
+                  if (val) setValue("learning_outcomes", val.split(",").map((s) => s.trim()).filter(Boolean))
+                }}
+                defaultValue={initialData?.learning_outcomes?.join(", ")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tags (comma separated)</label>
+              <Input
+                placeholder="e.g. react, nextjs, typescript"
+                onBlur={(e) => {
+                  const val = e.target.value
+                  if (val) setValue("tags", val.split(",").map((s) => s.trim()).filter(Boolean))
+                }}
+                defaultValue={initialData?.tags?.join(", ")}
+              />
+            </div>
           </div>
 
           {/* Category and Level */}
@@ -544,14 +612,16 @@ export const CourseCreateForm = ({
 
           {/* Submit Button */}
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting || !isValid} className="min-w-[120px]">
+            <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {mode === "create" ? "Creating..." : "Updating..."}
                 </>
-              ) : (
+              ) : mode === "create" ? (
                 "Create Course"
+              ) : (
+                "Update Course"
               )}
             </Button>
           </div>

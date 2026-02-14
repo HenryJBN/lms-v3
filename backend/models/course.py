@@ -2,6 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, JSON
 from models.enums import CourseLevel, CourseStatus
 from models.base import MultiTenantMixin
 
@@ -46,6 +47,12 @@ class Course(MultiTenantMixin, table=True):
     total_students: int = Field(default=0)
     rating: float = Field(default=0.0)
     token_reward: int = Field(default=0)
+    
+    # Content fields
+    requirements: List[str] = Field(default=[], sa_column=Column(JSON))
+    learning_outcomes: List[str] = Field(default=[], sa_column=Column(JSON))
+    target_audience: Optional[str] = None
+    tags: List[str] = Field(default=[], sa_column=Column(JSON))
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

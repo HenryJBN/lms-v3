@@ -26,6 +26,21 @@ async def migrate():
         except Exception as e:
             print(f"Error adding course.language: {e}")
 
+        # Add requirements, learning_outcomes, target_audience, tags
+        new_json_fields = ["requirements", "learning_outcomes", "tags"]
+        for field in new_json_fields:
+            try:
+                await conn.execute(text(f"ALTER TABLE course ADD COLUMN IF NOT EXISTS {field} JSONB DEFAULT '[]'"))
+                print(f"Successfully checked/added course.{field}")
+            except Exception as e:
+                print(f"Error adding course.{field}: {e}")
+                
+        try:
+            await conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS target_audience VARCHAR DEFAULT NULL"))
+            print("Successfully checked/added course.target_audience")
+        except Exception as e:
+            print(f"Error adding course.target_audience: {e}")
+
         print("Migration completed.")
 
 if __name__ == "__main__":

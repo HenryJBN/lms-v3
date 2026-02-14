@@ -86,11 +86,10 @@ export const CourseCreateSchema = z.object({
 
   is_featured: z.boolean().default(false),
 
-  enrollment_limit: z.coerce
-    .number()
-    .min(1, "Enrollment limit must be at least 1")
-    .max(10000, "Enrollment limit cannot exceed 10,000")
-    .optional(),
+  enrollment_limit: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(1, "Enrollment limit must be at least 1").max(10000, "Enrollment limit cannot exceed 10,000").optional()
+  ),
 
   token_reward: z.coerce
     .number()
