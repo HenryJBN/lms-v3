@@ -74,6 +74,8 @@ export const API_ENDPOINTS = {
   systemAdminGlobalStats: "/api/system-admin/stats/global",
   systemAdminActivity: "/api/system-admin/stats/activity",
   systemAdminGrowth: "/api/system-admin/stats/growth",
+  systemAdminSettings: "/api/system-admin/settings",
+  systemAdminSettingItem: (id: string) => `/api/system-admin/settings/${id}`,
 
   // Onboarding endpoints
   onboarding: "/api/onboarding",

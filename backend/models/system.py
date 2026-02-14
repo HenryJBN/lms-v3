@@ -18,3 +18,17 @@ class AdminAuditLog(MultiTenantMixin, SQLModel, table=True):
     action_metadata: Optional[str] = Field(default=None, alias="metadata_alias") # Renamed from metadata to avoid reserved word
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SystemConfig(SQLModel, table=True):
+    __tablename__ = "system_config"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    key: str = Field(unique=True, index=True)
+    value: str
+    description: Optional[str] = None
+    category: str = Field(default="general", index=True) # general, email, security, maintenance
+    is_public: bool = Field(default=False)
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+

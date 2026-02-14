@@ -107,6 +107,7 @@ class SystemConfigBase(BaseSchema):
     key: str
     value: str
     description: Optional[str] = None
+    category: str = "general"
     is_public: bool = False
 
 class SystemConfigCreate(SystemConfigBase):
@@ -115,6 +116,7 @@ class SystemConfigCreate(SystemConfigBase):
 class SystemConfigUpdate(BaseSchema):
     value: Optional[str] = None
     description: Optional[str] = None
+    category: Optional[str] = None
     is_public: Optional[bool] = None
 
 class SystemConfigResponse(SystemConfigBase):

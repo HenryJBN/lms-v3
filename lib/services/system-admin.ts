@@ -12,7 +12,7 @@ export interface GlobalStats {
 
 export interface ActivityItem {
   id: string
-  type: 'site_registered' | 'user_joined' | 'course_enrollment'
+  type: "site_registered" | "user_joined" | "course_enrollment"
   title: string
   description: string
   timestamp: string
@@ -37,6 +37,15 @@ export interface SiteResponse {
   course_count: number
 }
 
+export interface SystemConfig {
+  id: string
+  key: string
+  value: string
+  description: string
+  category: string
+  is_public: boolean
+}
+
 const buildUrl = (baseUrl: string, params?: any) => {
   if (!params) return baseUrl
   const query = new URLSearchParams()
@@ -54,17 +63,20 @@ export const systemAdminService = {
     return await api.get<GlobalStats>(API_ENDPOINTS.systemAdminGlobalStats)
   },
 
-  getGlobalActivity: async (limit: number = 5): Promise<ActivityItem[]> => {
-    return await api.get<ActivityItem[]>(`${API_ENDPOINTS.systemAdminActivity}?limit=${limit}`)
+  getGlobalActivity: async (
+    params?: any,
+  ): Promise<{ items: ActivityItem[]; total: number; page: number; size: number; pages: number }> => {
+    const url = buildUrl(API_ENDPOINTS.systemAdminActivity, params)
+    return await api.get<{ items: ActivityItem[]; total: number; page: number; size: number; pages: number }>(url)
   },
 
   getGrowthStats: async (months: number = 6): Promise<GrowthData[]> => {
     return await api.get<GrowthData[]>(`${API_ENDPOINTS.systemAdminGrowth}?months=${months}`)
   },
 
-  getAllSites: async (params?: any): Promise<{ items: SiteResponse[], total: number, pages: number }> => {
+  getAllSites: async (params?: any): Promise<{ items: SiteResponse[]; total: number; pages: number }> => {
     const url = buildUrl(API_ENDPOINTS.systemAdminSites, params)
-    return await api.get<{ items: SiteResponse[], total: number, pages: number }>(url)
+    return await api.get<{ items: SiteResponse[]; total: number; pages: number }>(url)
   },
 
   getSiteDetails: async (siteId: string): Promise<SiteResponse> => {
@@ -73,15 +85,29 @@ export const systemAdminService = {
 
   updateSiteStatus: async (siteId: string, data: { is_active: boolean }): Promise<SiteResponse> => {
     return await api.patch<SiteResponse>(`${API_ENDPOINTS.systemAdminSites}/${siteId}`, data)
-  }
+  },
+
+  getSystemSettings: async (category?: string): Promise<SystemConfig[]> => {
+    const url = category
+      ? `${API_ENDPOINTS.systemAdminSettings}?category=${category}`
+      : API_ENDPOINTS.systemAdminSettings
+    return await api.get<SystemConfig[]>(url)
+  },
+
+  updateSystemSetting: async (id: string, value: string): Promise<SystemConfig> => {
+    return await api.patch<SystemConfig>(API_ENDPOINTS.systemAdminSettingItem(id), { value })
+  },
 }
 
 export const onboardingService = {
-  checkSubdomain: async (subdomain: string): Promise<{ available: boolean, message: string }> => {
-    return await api.post<{ available: boolean, message: string }>(API_ENDPOINTS.checkSubdomain, { subdomain, available: false })
+  checkSubdomain: async (subdomain: string): Promise<{ available: boolean; message: string }> => {
+    return await api.post<{ available: boolean; message: string }>(API_ENDPOINTS.checkSubdomain, {
+      subdomain,
+      available: false,
+    })
   },
 
   registerTenant: async (data: any): Promise<any> => {
     return await api.post<any>(API_ENDPOINTS.registerTenant, data)
-  }
+  },
 }

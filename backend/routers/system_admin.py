@@ -10,7 +10,9 @@ from models.site import Site
 from models.user import User
 from models.course import Course
 from models.enrollment import Enrollment
+from models.system import SystemConfig
 from schemas.system_admin import SiteResponse, SiteUpdate
+from schemas.system import SystemConfigResponse, SystemConfigUpdate
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import require_super_admin
 
@@ -140,59 +142,59 @@ async def get_global_stats(
 
 @router.get("/stats/activity")
 async def get_activity_stats(
-    limit: int = Query(5, ge=1, le=20),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    activity_type: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
     super_admin = Depends(require_super_admin)
 ):
-    """Get recent platform activity"""
-    # Recent Sites
-    recent_sites_query = select(Site).order_by(desc(Site.created_at)).limit(limit)
-    recent_sites = (await session.exec(recent_sites_query)).all()
-    
-    # Recent Users
-    recent_users_query = select(User).order_by(desc(User.created_at)).limit(limit)
-    recent_users = (await session.exec(recent_users_query)).all()
-    
-    # Recent Enrollments
-    # We join with Site and Course to get more context
-    recent_enrollments_query = select(Enrollment, User.email, Site.name).join(
-        User, Enrollment.user_id == User.id
-    ).join(
-        Site, User.site_id == Site.id
-    ).order_by(desc(Enrollment.created_at)).limit(limit)
-    
-    recent_enrollments = (await session.exec(recent_enrollments_query)).all()
-    
+    """Get platform activity with pagination and filtering"""
     activity = []
     
-    for s in recent_sites:
-        activity.append({
-            "type": "site_registered",
-            "title": f"New Site: {s.name}",
-            "description": f"Subdomain: {s.subdomain}",
-            "timestamp": s.created_at,
-            "id": str(s.id)
-        })
-        
-    for u in recent_users:
-        activity.append({
-            "type": "user_joined",
-            "title": f"User Joined: {u.email}",
-            "description": f"Role: {u.role}",
-            "timestamp": u.created_at,
-            "id": str(u.id)
-        })
-        
-    for e, email, site_name in recent_enrollments:
-        activity.append({
-            "type": "course_enrollment",
-            "title": f"Enrollment in {site_name}",
-            "description": f"User: {email}",
-            "timestamp": e.created_at,
-            "id": str(e.id)
-        })
-        
-    # Sort all by timestamp, ensuring all are offset-naive for comparison
+    # Recent Sites
+    if not activity_type or activity_type == "site_registered":
+        recent_sites_query = select(Site).order_by(desc(Site.created_at))
+        recent_sites = (await session.exec(recent_sites_query)).all()
+        for s in recent_sites:
+            activity.append({
+                "type": "site_registered",
+                "title": f"New Site: {s.name}",
+                "description": f"Subdomain: {s.subdomain}",
+                "timestamp": s.created_at,
+                "id": str(s.id)
+            })
+    
+    # Recent Users
+    if not activity_type or activity_type == "user_joined":
+        recent_users_query = select(User).order_by(desc(User.created_at))
+        recent_users = (await session.exec(recent_users_query)).all()
+        for u in recent_users:
+            activity.append({
+                "type": "user_joined",
+                "title": f"User Joined: {u.email}",
+                "description": f"Role: {u.role}",
+                "timestamp": u.created_at,
+                "id": str(u.id)
+            })
+    
+    # Recent Enrollments
+    if not activity_type or activity_type == "course_enrollment":
+        recent_enrollments_query = select(Enrollment, User.email, Site.name).join(
+            User, Enrollment.user_id == User.id
+        ).join(
+            Site, User.site_id == Site.id
+        ).order_by(desc(Enrollment.created_at))
+        recent_enrollments = (await session.exec(recent_enrollments_query)).all()
+        for e, email, site_name in recent_enrollments:
+            activity.append({
+                "type": "course_enrollment",
+                "title": f"Enrollment in {site_name}",
+                "description": f"User: {email}",
+                "timestamp": e.created_at,
+                "id": str(e.id)
+            })
+    
+    # Sort all by timestamp
     def get_timestamp(x):
         ts = x.get("timestamp")
         if ts and hasattr(ts, "replace"):
@@ -201,7 +203,19 @@ async def get_activity_stats(
 
     activity.sort(key=get_timestamp, reverse=True)
     
-    return activity[:limit]
+    # Manual pagination
+    total = len(activity)
+    start = (page - 1) * size
+    end = start + size
+    items = activity[start:end]
+    
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": (total + size - 1) // size if size > 0 else 0
+    }
 
 @router.get("/stats/growth")
 async def get_growth_stats(
@@ -240,3 +254,75 @@ async def get_growth_stats(
         
     stats.reverse()
     return stats
+
+@router.get("/settings", response_model=List[SystemConfigResponse])
+async def get_system_settings(
+    category: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session),
+    super_admin = Depends(require_super_admin)
+):
+    """Get all platform settings, filtered by category if provided"""
+    query = select(SystemConfig)
+    if category:
+        query = query.where(SystemConfig.category == category)
+    
+    result = await session.exec(query)
+    settings = result.all()
+    
+    # If no settings exist, initialize defaults
+    if not settings and not category:
+        await initialize_default_settings(session)
+        result = await session.exec(select(SystemConfig))
+        settings = result.all()
+        
+    return settings
+
+@router.patch("/settings/{config_id}", response_model=SystemConfigResponse)
+async def update_system_setting(
+    config_id: uuid.UUID,
+    config_update: SystemConfigUpdate,
+    session: AsyncSession = Depends(get_session),
+    super_admin = Depends(require_super_admin)
+):
+    """Update a specific platform setting"""
+    config = await session.get(SystemConfig, config_id)
+    if not config:
+        raise HTTPException(status_code=404, detail="Setting not found")
+        
+    update_data = config_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(config, key, value)
+        
+    config.updated_at = datetime.utcnow()
+    session.add(config)
+    await session.commit()
+    await session.refresh(config)
+    
+    return config
+
+async def initialize_default_settings(session: AsyncSession):
+    """Initialize default platform settings"""
+    defaults = [
+        # General
+        {"key": "site_name", "value": "DCA LMS", "category": "general", "description": "Platform Name"},
+        {"key": "site_tagline", "value": "Advanced Learning Platform", "category": "general", "description": "Platform Tagline"},
+        {"key": "maintenance_mode", "value": "false", "category": "maintenance", "description": "Enable maintenance mode"},
+        
+        # Email
+        {"key": "smtp_host", "value": "localhost", "category": "email", "description": "SMTP Host"},
+        {"key": "smtp_port", "value": "1025", "category": "email", "description": "SMTP Port"},
+        {"key": "smtp_user", "value": "", "category": "email", "description": "SMTP Username"},
+        {"key": "smtp_pass", "value": "", "category": "email", "description": "SMTP Password"},
+        {"key": "smtp_from_email", "value": "no-reply@dcalms.com", "category": "email", "description": "Sender Email Address"},
+        {"key": "smtp_from_name", "value": "DCA LMS", "category": "email", "description": "Sender Name"},
+    ]
+    
+    for d in defaults:
+        # Check if already exists
+        existing = await session.exec(select(SystemConfig).where(SystemConfig.key == d["key"]))
+        if not existing.first():
+            config = SystemConfig(**d)
+            session.add(config)
+            
+    await session.commit()
+
