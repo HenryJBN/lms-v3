@@ -51,7 +51,7 @@ export default function SystemAdminDashboard() {
     try {
       const [statsRes, activityRes, growthRes] = await Promise.allSettled([
         systemAdminService.getGlobalStats(),
-        systemAdminService.getGlobalActivity(8),
+        systemAdminService.getGlobalActivity(5),
         systemAdminService.getGrowthStats(6)
       ])
 

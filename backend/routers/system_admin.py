@@ -192,10 +192,16 @@ async def get_activity_stats(
             "id": str(e.id)
         })
         
-    # Sort all by timestamp
-    activity.sort(key=lambda x: x["timestamp"], reverse=True)
+    # Sort all by timestamp, ensuring all are offset-naive for comparison
+    def get_timestamp(x):
+        ts = x.get("timestamp")
+        if ts and hasattr(ts, "replace"):
+            return ts.replace(tzinfo=None)
+        return ts
+
+    activity.sort(key=get_timestamp, reverse=True)
     
-    return activity[:limit*2]
+    return activity[:limit]
 
 @router.get("/stats/growth")
 async def get_growth_stats(
