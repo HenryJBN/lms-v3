@@ -188,6 +188,18 @@ class CourseService {
   }
 
   /**
+   * ✅ Fetch single course details by ID
+   */
+  async getCourseById(courseId: string): Promise<CourseReponse> {
+    try {
+      return await apiClient.get<CourseReponse>(`${API_ENDPOINTS.courses}/${courseId}`)
+    } catch (error) {
+      console.error("❌ Failed to get course by ID:", error)
+      throw error
+    }
+  }
+
+  /**
    * ✅ Fetch all course categories
    */
   async getCategories(): Promise<CourseCategory[]> {
@@ -371,16 +383,93 @@ class CourseService {
   }
 
   /**
+   * ✅ Fetch all site cohorts
+   */
+  async getAllCohorts(): Promise<Cohort[]> {
+    try {
+      return await apiClient.get<Cohort[]>(API_ENDPOINTS.cohorts)
+    } catch (error) {
+      console.error("❌ Failed to get all cohorts:", error)
+      throw error
+    }
+  }
+
+  /**
    * ✅ Fetch course cohorts
    */
-  async getCourseCohorts(courseId: string): Promise<any[]> {
+  async getCourseCohorts(courseId: string): Promise<Cohort[]> {
     try {
-      return await apiClient.get(`${API_ENDPOINTS.courses}/${courseId}/cohorts`)
+      return await apiClient.get<Cohort[]>(`${API_ENDPOINTS.cohorts}/course/${courseId}`)
     } catch (error) {
       console.error("❌ Failed to get course cohorts:", error)
       throw error
     }
   }
+
+  /**
+   * ✅ Create new cohort
+   */
+  async createCohort(cohortData: {
+    course_id: string
+    name: string
+    start_date: string
+    end_date?: string
+    max_students?: number | null
+    registration_open?: boolean
+  }): Promise<Cohort> {
+    try {
+      return await apiClient.post<Cohort>(API_ENDPOINTS.cohorts, cohortData)
+    } catch (error) {
+      console.error("❌ Failed to create cohort:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Update existing cohort
+   */
+  async updateCohort(
+    cohortId: string,
+    data: {
+      name?: string
+      start_date?: string
+      end_date?: string
+      max_students?: number | null
+      registration_open?: boolean
+    }
+  ): Promise<Cohort> {
+    try {
+      return await apiClient.put<Cohort>(`${API_ENDPOINTS.cohorts}/${cohortId}`, data)
+    } catch (error) {
+      console.error("❌ Failed to update cohort:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Delete cohort
+   */
+  async deleteCohort(cohortId: string): Promise<void> {
+    try {
+      await apiClient.delete(`${API_ENDPOINTS.cohorts}/${cohortId}`)
+    } catch (error) {
+      console.error("❌ Failed to delete cohort:", error)
+      throw error
+    }
+  }
+}
+
+export interface Cohort {
+  id: string
+  course_id: string
+  name: string
+  start_date: string
+  end_date: string | null
+  max_students: number | null
+  registration_open: boolean
+  current_enrollment_count: number
+  created_at: string
+  updated_at: string
 }
 
 export const courseService = new CourseService()

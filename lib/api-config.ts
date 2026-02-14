@@ -83,7 +83,7 @@ export const API_ENDPOINTS = {
   checkSubdomain: "/api/onboarding/check-subdomain",
   registerTenant: "/api/onboarding/register-tenant",
   
-  // Extra specific endpoints often used in dashboard
   inProgressCourses: "/api/enrollments/my-courses?status=active",
   completedCourses: "/api/enrollments/my-courses?status=completed",
+  cohorts: "/api/cohorts",
 }

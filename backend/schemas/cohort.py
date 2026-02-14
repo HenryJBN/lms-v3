@@ -8,7 +8,7 @@ class CohortBase(BaseSchema):
     start_date: datetime
     end_date: Optional[datetime] = None
     max_students: Optional[int] = None
-    is_active: bool = True
+    registration_open: bool = True
 
 class CohortCreate(CohortBase):
     course_id: uuid.UUID
@@ -18,7 +18,7 @@ class CohortUpdate(BaseSchema):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     max_students: Optional[int] = None
-    is_active: Optional[bool] = None
+    registration_open: Optional[bool] = None
 
 class CohortResponse(CohortBase):
     id: uuid.UUID

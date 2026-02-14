@@ -18,6 +18,7 @@ import {
   FileText,
   Upload,
   Download,
+  Calendar,
 } from "lucide-react"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { StatsGrid } from "@/components/admin/stats-grid"
@@ -319,9 +320,11 @@ export default function CoursesManagement() {
         course.status === "draft" ? handlePublishCourse(course) : handleUnpublishCourse(course),
     },
     {
-      label: "Manage lessons",
-      icon: Play,
-      onClick: handleManageLessons,
+      label: "Manage cohorts",
+      icon: Calendar,
+      onClick: (course: any) => {
+        router.push(`/admin/courses/${course.id}/cohorts`)
+      },
     },
     {
       label: "View students",
@@ -332,7 +335,7 @@ export default function CoursesManagement() {
       label: "Delete course",
       icon: Trash2,
       variant: "destructive" as const,
-      onClick: (course: any) => {},
+      onClick: () => {}, // Required by DataTable type but overridden by render
       render: (row: any) => (
         <AlertDialog>
           <AlertDialogTrigger asChild>

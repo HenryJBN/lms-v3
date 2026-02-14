@@ -14,7 +14,7 @@ import models  # Register SQLModel tables
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
     progress, certificates, notifications, admin, analytics, sections, assignments,
-    system_admin, onboarding
+    system_admin, onboarding, cohorts
 )
 from middleware.auth import get_current_user
 from middleware.logging import setup_logging
@@ -73,6 +73,7 @@ app.include_router(sections.router, prefix="/api/sections", tags=["Sections"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])
 app.include_router(system_admin.router, prefix="/api/system-admin", tags=["System Administration"])
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
+app.include_router(cohorts.router, prefix="/api/cohorts", tags=["Cohorts"])
 
 # Mount static files directory for uploaded files
 from utils.file_upload import LOCAL_UPLOAD_PATH

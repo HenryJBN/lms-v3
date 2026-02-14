@@ -96,6 +96,7 @@ function Sidebar({ className }: SidebarProps) {
       icon: BookOpen,
       children: [
         { title: "All Courses", href: "/admin/courses" },
+        { title: "Cohorts", href: "/admin/courses/cohorts" },
         { title: "Categories", href: "/admin/courses/categories" },
         { title: "Sections", href: "/admin/courses/sections" },
         { title: "Lessons", href: "/admin/courses/lessons" },
@@ -298,6 +299,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {pathname === "/admin/users" && "User Management"}
               {pathname === "/admin/users/instructors" && "Instructor Management"}
               {pathname === "/admin/courses" && "Course Management"}
+              {pathname === "/admin/courses/cohorts" && "All Cohorts"}
               {pathname === "/admin/courses/categories" && "Course Categories"}
               {pathname === "/admin/courses/lessons" && "Lesson Management"}
               {pathname === "/admin/courses/completions" && "Course Completions"}

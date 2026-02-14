@@ -206,7 +206,7 @@ async def get_course_cohorts(
     query = select(Cohort).where(
         Cohort.course_id == course_id,
         Cohort.site_id == current_site.id,
-        Cohort.is_active == True
+        Cohort.registration_open == True
     ).order_by(Cohort.start_date.desc())
     
     results = await session.exec(query)
