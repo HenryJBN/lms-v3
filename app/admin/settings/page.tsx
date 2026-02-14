@@ -24,6 +24,15 @@ interface SiteSettings {
     primary_color?: string
     secondary_color?: string
     accent_color?: string
+    allow_registration?: boolean
+    require_email_verification?: boolean
+    enable_course_reviews?: boolean
+    auto_approve_courses?: boolean
+    enable_token_rewards?: boolean
+    default_token_reward?: number
+    enable_notifications?: boolean
+    maintenance_mode?: boolean
+    [key: string]: any  // Allow additional dynamic properties
   }
   is_active: boolean
 }
@@ -138,7 +147,7 @@ export default function AdminSettings() {
     return result
   }
 
-  const updateThemeColor = (key: string, value: string) => {
+  const updateThemeColor = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       theme_config: {
