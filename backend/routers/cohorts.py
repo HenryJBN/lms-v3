@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -59,7 +59,7 @@ async def list_all_cohorts(
         
     return enriched_cohorts
 
-@router.post("/", response_model=CohortResponse)
+@router.post("", response_model=CohortResponse)
 async def create_cohort(
     cohort_in: CohortCreate,
     current_user: User = Depends(require_instructor_or_admin),
@@ -78,6 +78,12 @@ async def create_cohort(
     if current_user.role != "admin" and str(course.instructor_id) != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized to create cohorts for this course")
         
+    # Ensure datetimes are naive UTC for asyncpg
+    if cohort_in.start_date.tzinfo:
+        cohort_in.start_date = cohort_in.start_date.astimezone(timezone.utc).replace(tzinfo=None)
+    if cohort_in.end_date and cohort_in.end_date.tzinfo:
+        cohort_in.end_date = cohort_in.end_date.astimezone(timezone.utc).replace(tzinfo=None)
+
     new_cohort = Cohort(
         **cohort_in.model_dump(),
         site_id=current_site.id
@@ -164,6 +170,12 @@ async def update_cohort(
     course = await session.get(Course, cohort.course_id)
     if current_user.role != "admin" and str(course.instructor_id) != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not authorized to update this cohort")
+
+    # Ensure datetimes are naive UTC for asyncpg
+    if cohort_update.start_date and cohort_update.start_date.tzinfo:
+        cohort_update.start_date = cohort_update.start_date.astimezone(timezone.utc).replace(tzinfo=None)
+    if cohort_update.end_date and cohort_update.end_date.tzinfo:
+        cohort_update.end_date = cohort_update.end_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     cohort_data = cohort_update.model_dump(exclude_unset=True)
     for key, value in cohort_data.items():
