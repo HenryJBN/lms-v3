@@ -85,14 +85,35 @@ async def update_user_by_admin(
 
 @router.get("/dashboard", response_model=AdminDashboardStats)
 async def get_admin_dashboard(
+    period: str = Query("30d", description="Time period for stats: today, yesterday, 7d, 30d, 3m, 6m, 1y"),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
     """Get admin dashboard statistics"""
     from sqlalchemy import case
+    
+    # Calculate time range
+    now = datetime.utcnow()
+    end_date = now
+    
+    if period == "today":
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == "yesterday":
+        end_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = end_date - timedelta(days=1)
+    elif period == "7d":
+        start_date = now - timedelta(days=7)
+    elif period == "3m":
+        start_date = now - timedelta(days=90)
+    elif period == "6m":
+        start_date = now - timedelta(days=180)
+    elif period == "1y":
+        start_date = now - timedelta(days=365)
+    else:  # default 30d
+        start_date = now - timedelta(days=30)
 
-    # Basic stats
+    # Basic stats (Totals remain cumulative)
     user_count_query = select(func.count(User.id)).where(User.status == 'active', User.site_id == current_site.id)
     student_count_query = select(func.count(User.id)).where(User.role == 'student', User.status == 'active', User.site_id == current_site.id)
     instructor_count_query = select(func.count(User.id)).where(User.role == 'instructor', User.status == 'active', User.site_id == current_site.id)
@@ -111,20 +132,31 @@ async def get_admin_dashboard(
     total_certificates = (await session.exec(certificate_count_query)).one()
     total_revenue = (await session.exec(revenue_sum_query)).one()
     
-    # Recent activity (last 30 days)
-    now = datetime.utcnow()
-    thirty_days_ago = now - timedelta(days=30)
+    # Recent activity based on selected period
+    new_users_period = (await session.exec(select(func.count(User.id)).where(User.created_at >= start_date, User.created_at <= end_date, User.site_id == current_site.id))).one()
+    new_courses_period = (await session.exec(select(func.count(Course.id)).where(Course.created_at >= start_date, Course.created_at <= end_date, Course.site_id == current_site.id))).one()
+    new_enrollments_period = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date, Enrollment.site_id == current_site.id))).one()
+    new_certificates_period = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= start_date, Certificate.issued_at <= end_date, Certificate.site_id == current_site.id))).one()
     
-    new_users_30d = (await session.exec(select(func.count(User.id)).where(User.created_at >= thirty_days_ago, User.site_id == current_site.id))).one()
-    new_courses_30d = (await session.exec(select(func.count(Course.id)).where(Course.created_at >= thirty_days_ago, Course.site_id == current_site.id))).one()
-    new_enrollments_30d = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= thirty_days_ago, Enrollment.site_id == current_site.id))).one()
-    new_certificates_30d = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= thirty_days_ago, Certificate.site_id == current_site.id))).one()
-    
-    # Top courses
-    top_courses_query = select(Course.id, Course.title, Course.enrollment_count, Course.thumbnail_url).where(
+    # Top courses (count enrollments per course)
+    enrollment_count_sub = select(
+        Enrollment.course_id, 
+        func.count(Enrollment.id).label("enroll_count")
+    ).where(
+        Enrollment.site_id == current_site.id
+    ).group_by(Enrollment.course_id).subquery()
+
+    top_courses_query = select(
+        Course.id, 
+        Course.title, 
+        func.coalesce(enrollment_count_sub.c.enroll_count, 0).label("enrollment_count"), 
+        Course.thumbnail_url
+    ).outerjoin(
+        enrollment_count_sub, Course.id == enrollment_count_sub.c.course_id
+    ).where(
         Course.status == 'published',
         Course.site_id == current_site.id
-    ).order_by(desc(Course.enrollment_count)).limit(5)
+    ).order_by(desc("enrollment_count")).limit(5)
     
     top_courses_res = await session.exec(top_courses_query)
     top_courses_list = [dict(zip(["id", "title", "enrollment_count", "thumbnail_url"], row)) for row in top_courses_res.all()]
@@ -147,10 +179,10 @@ async def get_admin_dashboard(
         total_completions=total_completions,
         total_certificates=total_certificates,
         total_revenue=float(total_revenue),
-        new_users_30d=new_users_30d,
-        new_courses_30d=new_courses_30d,
-        new_enrollments_30d=new_enrollments_30d,
-        new_certificates_30d=new_certificates_30d,
+        new_users_30d=new_users_period,
+        new_courses_30d=new_courses_period,
+        new_enrollments_30d=new_enrollments_period,
+        new_certificates_30d=new_certificates_period,
         top_courses=top_courses_list,
         recent_users=recent_users_list
     )

@@ -57,6 +57,7 @@ export const API_ENDPOINTS = {
 
   // Admin endpoints
   admin: "/api/admin",
+  adminDashboard: "/api/admin/dashboard",
   adminUsers: "/api/admin/users",
   adminCourses: "/api/admin/courses",
   adminAnalytics: "/api/admin/analytics",
