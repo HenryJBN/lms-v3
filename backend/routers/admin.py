@@ -27,7 +27,9 @@ from tasks.email_tasks import send_admin_created_user_email_task
 from routers.admin_import import import_admin_data
 import secrets
 import string
-import json
+from schemas.site import SiteSettings, SiteSettingsUpdate
+from schemas.system import FileUploadResponse
+from utils.file_upload import upload_image
 
 router = APIRouter()
 
@@ -908,4 +910,92 @@ async def get_system_health(
             "error": str(e),
             "timestamp": datetime.utcnow()
         }
+
+@router.get("/settings/site", response_model=SiteSettings)
+async def get_site_settings(
+    current_user = Depends(require_admin),
+    current_site: Site = Depends(get_current_site)
+):
+    """Get current site settings"""
+    # Helper to get values from theme_config primarily for dynamic fields
+    config = current_site.theme_config or {}
+    
+    return SiteSettings(
+        name=current_site.name,
+        description=config.get("description"),
+        support_email=config.get("support_email"),
+        logo_url=current_site.logo_url,
+        theme_config=config,
+        is_active=current_site.is_active
+    )
+
+
+@router.patch("/settings/site", response_model=SiteSettings)
+async def update_site_settings(
+    settings: SiteSettingsUpdate,
+    session: AsyncSession = Depends(get_session),
+    current_user = Depends(require_admin),
+    current_site: Site = Depends(get_current_site)
+):
+    """Update current site settings"""
+    # Re-fetch to ensure we have attached object
+    site = await session.get(Site, current_site.id)
+    if not site:
+         raise HTTPException(status_code=404, detail="Site not found")
+
+    if settings.name is not None:
+        site.name = settings.name
+    
+    # Update theme config structure
+    current_config = dict(site.theme_config) if site.theme_config else {}
+    
+    if settings.description is not None:
+        current_config["description"] = settings.description
+    if settings.support_email is not None:
+        current_config["support_email"] = settings.support_email
+        
+    if settings.theme_config:
+        # Merge provided config
+        current_config.update(settings.theme_config)
+        
+    site.theme_config = current_config
+    
+    site.updated_at = datetime.utcnow()
+    session.add(site)
+    await session.commit()
+    await session.refresh(site)
+    
+    config = site.theme_config or {}
+    return SiteSettings(
+        name=site.name,
+        description=config.get("description"),
+        support_email=config.get("support_email"),
+        logo_url=site.logo_url,
+        theme_config=config,
+        is_active=site.is_active
+    )
+
+
+@router.post("/settings/site/logo", response_model=FileUploadResponse)
+async def upload_site_logo(
+    file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_session),
+    current_user = Depends(require_admin),
+    current_site: Site = Depends(get_current_site)
+):
+    """Upload site logo"""
+    try:
+        # Use existing upload utility
+        result = await upload_image(file, f"sites/{current_site.id}/branding")
+        
+        # Update site record
+        site = await session.get(Site, current_site.id)
+        if site:
+            site.logo_url = result["url"]
+            session.add(site)
+            await session.commit()
+            
+        return FileUploadResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 

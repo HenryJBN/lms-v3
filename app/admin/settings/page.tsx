@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,21 +9,152 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Shield, Users, BookOpen, Save } from "lucide-react"
+import { Settings, Shield, Users, BookOpen, Save, Loader2, Palette } from "lucide-react"
+import { ImageUpload } from "@/components/admin/image-upload"
+import { useToast } from "@/hooks/use-toast"
+
+interface SiteSettings {
+  name: string
+  description: string | null
+  support_email: string | null
+  logo_url: string | null
+  theme_config: {
+    description?: string
+    support_email?: string
+    primary_color?: string
+    secondary_color?: string
+    accent_color?: string
+  }
+  is_active: boolean
+}
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState({
-    siteName: "DCA LMS",
-    siteDescription: "Decentralized Learning Management System",
-    adminEmail: "admin@dcalms.com",
-    supportEmail: "support@dcalms.com",
-    allowRegistration: true,
-    requireEmailVerification: true,
-    enableNotifications: true,
-    enableTokenRewards: true,
-    defaultTokenReward: 25,
-    maintenanceMode: false,
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [settings, setSettings] = useState<SiteSettings>({
+    name: "",
+    description: null,
+    support_email: null,
+    logo_url: null,
+    theme_config: {},
+    is_active: true,
   })
+
+  useEffect(() => {
+    fetchSettings()
+  }, [])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/settings/site")
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load settings",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load settings",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const response = await fetch("/api/admin/settings/site", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: settings.name,
+          description: settings.description,
+          support_email: settings.support_email,
+          theme_config: settings.theme_config,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
+        toast({
+          title: "Success",
+          description: "Settings saved successfully",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save settings",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Failed to save settings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleLogoUpload = async (file: File) => {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const response = await fetch("/api/admin/settings/site/logo", {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to upload logo")
+    }
+
+    const result = await response.json()
+    
+    // Update local state
+    setSettings(prev => ({ ...prev, logo_url: result.url }))
+    
+    toast({
+      title: "Success",
+      description: "Logo uploaded successfully",
+    })
+    
+    return result
+  }
+
+  const updateThemeColor = (key: string, value: string) => {
+    setSettings(prev => ({
+      ...prev,
+      theme_config: {
+        ...prev.theme_config,
+        [key]: value,
+      },
+    }))
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -74,10 +205,14 @@ export default function AdminSettings() {
         {/* Header */}
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold">System Settings</h1>
+            <h1 className="text-lg font-semibold">Site Settings</h1>
           </div>
-          <Button>
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             Save Changes
           </Button>
         </header>
@@ -87,6 +222,7 @@ export default function AdminSettings() {
           <Tabs defaultValue="general" className="space-y-4">
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="branding">Branding</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
@@ -98,36 +234,26 @@ export default function AdminSettings() {
               <Card>
                 <CardHeader>
                   <CardTitle>Site Information</CardTitle>
-                  <CardDescription>Basic information about your LMS platform</CardDescription>
+                  <CardDescription>Basic information about your academy</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="siteName">Site Name</Label>
-                      <Input
-                        id="siteName"
-                        value={settings.siteName}
-                        onChange={(e) => setSettings({ ...settings, siteName: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="adminEmail">Admin Email</Label>
-                      <Input
-                        id="adminEmail"
-                        type="email"
-                        value={settings.adminEmail}
-                        onChange={(e) => setSettings({ ...settings, adminEmail: e.target.value })}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="siteName">Site Name</Label>
+                    <Input
+                      id="siteName"
+                      value={settings.name}
+                      onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="siteDescription">Site Description</Label>
                     <Textarea
                       id="siteDescription"
-                      value={settings.siteDescription}
+                      value={settings.description || ""}
                       onChange={(e) =>
-                        setSettings({ ...settings, siteDescription: e.target.value })
+                        setSettings({ ...settings, description: e.target.value })
                       }
+                      rows={3}
                     />
                   </div>
                   <div className="space-y-2">
@@ -135,32 +261,96 @@ export default function AdminSettings() {
                     <Input
                       id="supportEmail"
                       type="email"
-                      value={settings.supportEmail}
-                      onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
+                      value={settings.support_email || ""}
+                      onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="branding" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brand Logo</CardTitle>
+                  <CardDescription>Upload your academy logo</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ImageUpload
+                    value={settings.logo_url}
+                    onChange={(url) => setSettings(prev => ({ ...prev, logo_url: url }))}
+                    onUpload={handleLogoUpload}
+                    label="Academy Logo"
+                  />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>System Status</CardTitle>
-                  <CardDescription>Control system-wide settings</CardDescription>
+                  <CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Palette className="h-5 w-5" />
+                      Theme Colors
+                    </div>
+                  </CardTitle>
+                  <CardDescription>Customize your academy's color scheme</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Maintenance Mode</Label>
-                      <div className="text-sm text-muted-foreground">
-                        Enable to temporarily disable access to the platform
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="primaryColor">Primary Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="primaryColor"
+                          type="color"
+                          value={settings.theme_config.primary_color || "#ef4444"}
+                          onChange={(e) => updateThemeColor("primary_color", e.target.value)}
+                          className="h-10 w-20"
+                        />
+                        <Input
+                          type="text"
+                          value={settings.theme_config.primary_color || "#ef4444"}
+                          onChange={(e) => updateThemeColor("primary_color", e.target.value)}
+                          placeholder="#ef4444"
+                        />
                       </div>
                     </div>
-                    <Switch
-                      checked={settings.maintenanceMode}
-                      onCheckedChange={(checked) =>
-                        setSettings({ ...settings, maintenanceMode: checked })
-                      }
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="secondaryColor">Secondary Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="secondaryColor"
+                          type="color"
+                          value={settings.theme_config.secondary_color || "#3b82f6"}
+                          onChange={(e) => updateThemeColor("secondary_color", e.target.value)}
+                          className="h-10 w-20"
+                        />
+                        <Input
+                          type="text"
+                          value={settings.theme_config.secondary_color || "#3b82f6"}
+                          onChange={(e) => updateThemeColor("secondary_color", e.target.value)}
+                          placeholder="#3b82f6"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accentColor">Accent Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="accentColor"
+                          type="color"
+                          value={settings.theme_config.accent_color || "#8b5cf6"}
+                          onChange={(e) => updateThemeColor("accent_color", e.target.value)}
+                          className="h-10 w-20"
+                        />
+                        <Input
+                          type="text"
+                          value={settings.theme_config.accent_color || "#8b5cf6"}
+                          onChange={(e) => updateThemeColor("accent_color", e.target.value)}
+                          placeholder="#8b5cf6"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -183,9 +373,9 @@ export default function AdminSettings() {
                       </div>
                     </div>
                     <Switch
-                      checked={settings.allowRegistration}
+                      checked={settings.theme_config.allow_registration !== false}
                       onCheckedChange={(checked) =>
-                        setSettings({ ...settings, allowRegistration: checked })
+                        updateThemeColor("allow_registration", checked)
                       }
                     />
                   </div>
@@ -197,9 +387,48 @@ export default function AdminSettings() {
                       </div>
                     </div>
                     <Switch
-                      checked={settings.requireEmailVerification}
+                      checked={settings.theme_config.require_email_verification !== false}
                       onCheckedChange={(checked) =>
-                        setSettings({ ...settings, requireEmailVerification: checked })
+                        updateThemeColor("require_email_verification", checked)
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="courses" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Course Settings</CardTitle>
+                  <CardDescription>Configure course-related settings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Enable Course Reviews</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Allow students to review and rate courses
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settings.theme_config.enable_course_reviews !== false}
+                      onCheckedChange={(checked) =>
+                        updateThemeColor("enable_course_reviews", checked)
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Auto-approve Courses</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Automatically approve new courses without admin review
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settings.theme_config.auto_approve_courses === true}
+                      onCheckedChange={(checked) =>
+                        updateThemeColor("auto_approve_courses", checked)
                       }
                     />
                   </div>
@@ -222,9 +451,9 @@ export default function AdminSettings() {
                       </div>
                     </div>
                     <Switch
-                      checked={settings.enableTokenRewards}
+                      checked={settings.theme_config.enable_token_rewards !== false}
                       onCheckedChange={(checked) =>
-                        setSettings({ ...settings, enableTokenRewards: checked })
+                        updateThemeColor("enable_token_rewards", checked)
                       }
                     />
                   </div>
@@ -233,12 +462,9 @@ export default function AdminSettings() {
                     <Input
                       id="defaultTokenReward"
                       type="number"
-                      value={settings.defaultTokenReward}
+                      value={settings.theme_config.default_token_reward || 25}
                       onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          defaultTokenReward: Number.parseInt(e.target.value),
-                        })
+                        updateThemeColor("default_token_reward", Number.parseInt(e.target.value))
                       }
                     />
                     <div className="text-sm text-muted-foreground">
@@ -264,9 +490,34 @@ export default function AdminSettings() {
                       </div>
                     </div>
                     <Switch
-                      checked={settings.enableNotifications}
+                      checked={settings.theme_config.enable_notifications !== false}
                       onCheckedChange={(checked) =>
-                        setSettings({ ...settings, enableNotifications: checked })
+                        updateThemeColor("enable_notifications", checked)
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="security" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>System Status</CardTitle>
+                  <CardDescription>Control system-wide settings</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Maintenance Mode</Label>
+                      <div className="text-sm text-muted-foreground">
+                        Enable to temporarily disable access to the platform
+                      </div>
+                    </div>
+                    <Switch
+                      checked={settings.theme_config.maintenance_mode === true}
+                      onCheckedChange={(checked) =>
+                        updateThemeColor("maintenance_mode", checked)
                       }
                     />
                   </div>
