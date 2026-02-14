@@ -62,23 +62,35 @@ class ApiClient {
     }
   }
 
+  private getHeaders(options: RequestInit = {}): Record<string, string> {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...Object.fromEntries(
+        Object.entries(options.headers || {}).map(([k, v]) => [k, String(v)])
+      ),
+    }
+
+    // Determine tenant domain (client-side only)
+    if (typeof window !== "undefined") {
+      const tenantDomain = window.location.host
+      if (tenantDomain) {
+        headers["X-Tenant-Domain"] = tenantDomain
+      }
+    }
+
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`
+    }
+
+    return headers
+  }
+
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
 
-    // Determine tenant domain (client-side only)
-    let tenantDomain = ""
-    if (typeof window !== "undefined") {
-      tenantDomain = window.location.host
-    }
-
     const config: RequestInit = {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(tenantDomain && { "X-Tenant-Domain": tenantDomain }),
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-        ...options.headers,
-      },
+      headers: this.getHeaders(options),
       credentials: "include",
     }
 
@@ -182,11 +194,20 @@ class ApiClient {
     }
 
     const url = `${this.baseURL}${endpoint}`
+    const headers: Record<string, string> = {}
+    if (typeof window !== "undefined") {
+      const tenantDomain = window.location.host
+      if (tenantDomain) {
+        headers["X-Tenant-Domain"] = tenantDomain
+      }
+    }
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`
+    }
+
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-      },
+      headers,
       body: formData,
       credentials: "include",
     })
@@ -202,13 +223,27 @@ class ApiClient {
   async postFormData<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<T> {
     const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
 
+    const headers: Record<string, string> = {
+      ...Object.fromEntries(
+        Object.entries(options?.headers || {}).map(([k, v]) => [k, String(v)])
+      ),
+    }
+
+    if (typeof window !== "undefined") {
+      const tenantDomain = window.location.host
+      if (tenantDomain) {
+        headers["X-Tenant-Domain"] = tenantDomain
+      }
+    }
+
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`
+    }
+
     const config: RequestInit = {
       ...options,
       method: "POST",
-      headers: {
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-        ...options?.headers,
-      },
+      headers,
       body: formData,
       credentials: "include",
     }

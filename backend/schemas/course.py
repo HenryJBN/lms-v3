@@ -57,6 +57,7 @@ class CourseBase(BaseSchema):
     is_featured: bool = False
     is_free: bool = False
     enrollment_limit: Optional[int] = None
+    token_reward: int = 0
 
 class CourseCreate(CourseBase):
     pass
@@ -79,6 +80,7 @@ class CourseUpdate(BaseSchema):
     is_featured: Optional[bool] = None
     is_free: Optional[bool] = None
     enrollment_limit: Optional[int] = None
+    token_reward: Optional[int] = None
 
 class CourseResponse(BaseModel): # Use BaseModel if config isn't enough, but BaseSchema has config.
     # Original used BaseModel with `class Config: orm_mode = True` inline.

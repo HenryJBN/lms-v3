@@ -1,15 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 import uuid
-from sqlmodel import select, text, func, cast, String
+from datetime import datetime
+from sqlmodel import select, text, func, cast, String, col, or_, desc
+from sqlalchemy import case
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
 from dependencies import get_current_site
 from models.site import Site
 from models.user import User, UserProfile
+from models.enrollment import Enrollment
 from models.gamification import TokenBalance, TokenTransaction
-from models.enums import UserRole, UserStatus
+from models.enums import UserRole, UserStatus, EnrollmentStatus
 from schemas.user import UserResponse, UserUpdate, UserCreate, UserProfile as UserProfileSchema, AdminUserResponse
 from schemas.gamification import TokenBalance as TokenBalanceSchema, TokenTransaction as TokenTransactionSchema
 from schemas.common import PaginationParams, PaginatedResponse
@@ -178,7 +181,7 @@ async def get_user_by_id(
         
     return user
 
-@router.get("/", response_model=PaginatedResponse)
+@router.get("", response_model=PaginatedResponse[AdminUserResponse])
 async def get_users(
     pagination: PaginationParams = Depends(),
     role: Optional[str] = Query(None),
@@ -206,10 +209,6 @@ async def get_users(
     total_result = await session.exec(count_query)
     total = total_result.one()
 
-    from models.enrollment import Enrollment
-    from models.gamification import TokenBalance
-    from models.enums import EnrollmentStatus
-    from sqlalchemy import func, case, or_
 
     # Get users with aggregations
     offset = (pagination.page - 1) * pagination.size

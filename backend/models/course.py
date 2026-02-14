@@ -43,6 +43,10 @@ class Course(MultiTenantMixin, table=True):
     is_free: bool = Field(default=False)
     enrollment_limit: Optional[int] = None
     
+    total_students: int = Field(default=0)
+    rating: float = Field(default=0.0)
+    token_reward: int = Field(default=0)
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

@@ -92,6 +92,12 @@ export const CourseCreateSchema = z.object({
     .max(10000, "Enrollment limit cannot exceed 10,000")
     .optional(),
 
+  token_reward: z.coerce
+    .number()
+    .min(0, "Token reward cannot be negative")
+    .max(1000, "Token reward cannot exceed 1000")
+    .default(0),
+
   status: z.enum(["draft", "published", "archived"]).default("draft"),
 
   // File validations

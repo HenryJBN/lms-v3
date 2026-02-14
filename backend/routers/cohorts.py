@@ -19,7 +19,7 @@ from middleware.auth import require_instructor_or_admin
 
 router = APIRouter()
 
-@router.get("/", response_model=List[CohortResponse])
+@router.get("", response_model=List[CohortResponse])
 async def list_all_cohorts(
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),

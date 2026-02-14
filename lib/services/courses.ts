@@ -252,6 +252,7 @@ class CourseService {
     is_free?: boolean
     is_featured?: boolean
     enrollment_limit?: number
+    token_reward?: number
     tags?: string[]
   }): Promise<CourseReponse> {
     const response = await apiClient.post<CourseReponse>(API_ENDPOINTS.courses, courseData)

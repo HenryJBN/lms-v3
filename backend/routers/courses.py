@@ -20,7 +20,7 @@ from models.user import User
 # I will fetch Course + User strictly. For Category, I might need to fetch it separately or ignore if not critical for now,
 # OR I'll assume I can just use raw SQL for the joins if I want to match the previous efficiency.
 # Actually, let's use SQLModel for Course but keep the `select` flexible.
-from models.enums import CourseLevel, CourseStatus
+from models.enums import CourseLevel, CourseStatus, UserRole
 
 from schemas.course import (
     CourseResponse, CourseCreate, CourseUpdate, CategoryResponse,
@@ -38,7 +38,7 @@ from utils.file_upload import upload_image, upload_video
 
 router = APIRouter()
 
-@router.get("/", response_model=PaginatedResponse)
+@router.get("", response_model=PaginatedResponse[CourseResponse])
 async def get_courses(
     pagination: PaginationParams = Depends(),
     category_id: Optional[uuid.UUID] = Query(None),
@@ -99,7 +99,7 @@ async def get_courses(
     # Actually, let's use `select(Course, User)` and fill category_name separately or via lazy load?
     # No, let's use the explicit select.
     
-    query = select(Course, User).join(User, Course.instructor_id == User.id).where(Course.site_id == current_site.id)
+    query = select(Course, User).outerjoin(User, Course.instructor_id == User.id).where(Course.site_id == current_site.id)
     
     # Apply same filters
     if status is not None:
@@ -126,9 +126,10 @@ async def get_courses(
     query = query.offset((pagination.page - 1) * pagination.size).limit(pagination.size)
     
     results = await session.exec(query)
+    rows = results.all()
     
     items = []
-    for course, instructor in results:
+    for course, instructor in rows:
         # Map to CourseResponse
         # Note: category_name is missing here. If needed, we'd add Category to select.
         # But we don't have Category model imported yet.
@@ -152,19 +153,20 @@ async def get_courses(
         pages=(total + pagination.size - 1) // pagination.size
     )
 
-@router.get("/featured/", response_model=List[CourseResponse])
+@router.get("/featured", response_model=List[CourseResponse])
 async def get_featured_courses(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
-    query = select(Course, User).join(User).where(
+    query = select(Course, User).outerjoin(User).where(
         Course.site_id == current_site.id,
         Course.is_featured == True
     ).order_by(Course.title)
     
     results = await session.exec(query)
+    rows = results.all()
     items = []
-    for course, instructor in results:
+    for course, instructor in rows:
         item = CourseResponse(
             **course.model_dump(),
             instructor_first_name=instructor.first_name,
@@ -179,7 +181,7 @@ async def get_course(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
-    query = select(Course, User).join(User).where(
+    query = select(Course, User).outerjoin(User).where(
         Course.slug == slug,
         Course.site_id == current_site.id
     )
@@ -189,7 +191,6 @@ async def get_course(
     if not row:
         raise HTTPException(status_code=404, detail="Course not found")
         
-    course, instructor = row
     course, instructor = row
     return CourseResponse(
         **course.model_dump(),
@@ -222,7 +223,7 @@ async def get_course_by_id(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
-    query = select(Course, User).join(User).where(
+    query = select(Course, User).outerjoin(User).where(
         Course.id == course_id,
         Course.site_id == current_site.id # Strict Site Check!
     )
@@ -239,7 +240,7 @@ async def get_course_by_id(
         instructor_last_name=instructor.last_name
     )
 
-@router.post("/", response_model=CourseResponse)
+@router.post("", response_model=CourseResponse)
 async def create_course(
     course_in: CourseCreate,
     current_user: User = Depends(require_instructor_or_admin),
@@ -416,7 +417,7 @@ async def upload_course_trailer(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/categories/", response_model=List[CategoryResponse])
+@router.get("/categories", response_model=List[CategoryResponse])
 async def get_categories(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)

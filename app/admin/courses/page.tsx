@@ -450,8 +450,6 @@ export default function CoursesManagement() {
             mode="create"
             onSuccess={handleCreateSuccess}
             onCancel={() => setIsAddCourseDialogOpen(false)}
-            isSubmitting={createForm.isSubmitting}
-            uploadProgress={createForm.uploadProgress}
           />
         </DialogContent>
       </Dialog>
@@ -475,8 +473,6 @@ export default function CoursesManagement() {
                 setIsEditCourseDialogOpen(false)
                 setEditingCourse(null)
               }}
-              isSubmitting={updateForm.isSubmitting}
-              uploadProgress={updateForm.uploadProgress}
             />
           )}
         </DialogContent>

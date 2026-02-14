@@ -24,7 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Upload, X, CheckCircle, AlertCircle } from "lucide-react"
+import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 // File upload component with validation
 const FileUploadField = ({
@@ -226,6 +226,7 @@ export const CourseCreateForm = ({
       language: "en",
       is_free: false,
       is_featured: false,
+      token_reward: 0,
       requirements: [],
       learning_outcomes: [],
       tags: [],
@@ -452,7 +453,7 @@ export const CourseCreateForm = ({
           </div>
 
           {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Price ($)</label>
               <Input
@@ -474,6 +475,19 @@ export const CourseCreateForm = ({
               />
               {errors.duration_hours && (
                 <p className="text-sm text-destructive">{errors.duration_hours.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Token Reward</label>
+              <Input
+                {...register("token_reward", { valueAsNumber: true })}
+                type="number"
+                min="0"
+                step="1"
+              />
+              {errors.token_reward && (
+                <p className="text-sm text-destructive">{errors.token_reward.message}</p>
               )}
             </div>
 
@@ -531,7 +545,14 @@ export const CourseCreateForm = ({
           {/* Submit Button */}
           <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting || !isValid} className="min-w-[120px]">
-              {isSubmitting ? "Creating..." : "Create Course"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Course"
+              )}
             </Button>
           </div>
         </form>
