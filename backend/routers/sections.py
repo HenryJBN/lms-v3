@@ -178,7 +178,7 @@ async def create_section(
     max_order = sort_result.one() or 0
 
     new_section = Section(
-        **section_data.model_dump(),
+        **section_data.model_dump(exclude={"sort_order"}),
         sort_order=max_order + 1,
         site_id=current_site.id
     )
