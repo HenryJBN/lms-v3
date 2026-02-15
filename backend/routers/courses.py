@@ -35,6 +35,7 @@ from schemas.cohort import CohortResponse
 from models.cohort import Cohort
 from middleware.auth import get_current_active_user, require_instructor_or_admin
 from utils.file_upload import upload_image, upload_video
+from utils.site_settings import are_courses_auto_approved
 
 router = APIRouter()
 
@@ -248,8 +249,14 @@ async def create_course(
     current_site: Site = Depends(get_current_site)
 ):
     # Create object
+    # Set initial status based on site settings
+    course_data = course_in.model_dump()
+    if "status" not in course_data or course_data["status"] is None:
+        # Auto-approve if setting is enabled, otherwise set to draft
+        course_data["status"] = "published" if are_courses_auto_approved(current_site) else "draft"
+    
     new_course = Course(
-        **course_in.model_dump(),
+        **course_data,
         instructor_id=current_user.id,
         site_id=current_site.id # Bind to current site
     )

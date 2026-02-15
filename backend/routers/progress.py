@@ -18,6 +18,7 @@ from schemas.lesson import QuizAttemptCreate, QuizAttemptResponse
 from middleware.auth import get_current_active_user
 from utils.tokens import award_tokens
 from utils.notifications import send_lesson_completion_notification
+from utils.site_settings import are_token_rewards_enabled, get_default_token_reward
 
 router = APIRouter()
 
@@ -224,22 +225,23 @@ async def update_lesson_progress(
     await session.commit()
     await session.refresh(updated_progress)
 
-    # Award tokens if lesson just completed
+    # Award tokens if lesson just completed and rewards are enabled
     if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
-        await award_tokens(
-            user_id=current_user.id,
-            amount=10.0,
-            description=f"Completed lesson: {lesson.title}",
-            session=session,
-            reference_type="lesson_completed",
-            reference_id=lesson_id
-        )
+        if are_token_rewards_enabled(current_site):
+            await award_tokens(
+                user_id=current_user.id,
+                amount=10.0,
+                description=f"Completed lesson: {lesson.title}",
+                session=session,
+                reference_type="lesson_completed",
+                reference_id=lesson_id
+            )
 
         # Send completion notification
         await send_lesson_completion_notification(current_user.id, lesson.title, lesson.course_id, session)
 
         # Update course progress
-        await update_course_progress(current_user.id, lesson.course_id, session, site_id=current_site.id)
+        await update_course_progress(current_user.id, lesson.course_id, session, current_site)
 
     # Prepare response from updated_progress
     res_dict = updated_progress.model_dump()
@@ -331,8 +333,8 @@ async def submit_quiz_attempt(
     await session.commit()
     await session.refresh(new_attempt)
     
-    # Award tokens if passed
-    if passed:
+    # Award tokens if passed and rewards are enabled
+    if passed and are_token_rewards_enabled(current_site):
         await award_tokens(
             user_id=current_user.id,
             amount=15.0,
@@ -381,7 +383,7 @@ async def get_quiz_attempts(
     attempts_result = await session.exec(query)
     return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site: Site):
     """Update overall course progress based on lesson completions"""
     from models.enrollment import Enrollment, LessonProgress
     from models.lesson import Lesson
@@ -392,7 +394,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     total_query = select(func.count(Lesson.id)).where(
         Lesson.course_id == course_id,
         Lesson.is_published == True,
-        Lesson.site_id == site_id
+        Lesson.site_id == site.id
     )
     total_result = await session.exec(total_query)
     total_lessons = total_result.one()
@@ -406,7 +408,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
         LessonProgress.user_id == user_id,
         LessonProgress.course_id == course_id,
         LessonProgress.status == CompletionStatus.completed,
-        LessonProgress.site_id == site_id,
+        LessonProgress.site_id == site.id,
         Lesson.is_published == True
     )
     completed_result = await session.exec(completed_query)
@@ -418,7 +420,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == user_id,
         Enrollment.course_id == course_id,
-        Enrollment.site_id == site_id
+        Enrollment.site_id == site.id
     )
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
@@ -447,18 +449,20 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
             )
             bonus_result = await session.exec(bonus_query)
             if not bonus_result.first():
-                # Award course completion bonus
-                await award_tokens(
-                    user_id=user_id,
-                    amount=50.0,
-                    description="Course completion bonus",
-                    session=session,
-                    reference_type="course_completed",
-                    reference_id=course_id
-                )
+                # Award course completion bonus if rewards are enabled
+                if are_token_rewards_enabled(site):
+                    reward_amount = get_default_token_reward(site)
+                    await award_tokens(
+                        user_id=user_id,
+                        amount=float(reward_amount),
+                        description="Course completion bonus",
+                        session=session,
+                        reference_type="course_completed",
+                        reference_id=course_id
+                    )
                 
                 # Issue certificate
-                await issue_certificate(user_id, course_id, session, site_id=site_id)
+                await issue_certificate(user_id, course_id, session, site_id=site.id)
 
 async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """

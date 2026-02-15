@@ -29,6 +29,7 @@ from utils.email import send_password_reset_email
 from utils.email_async import send_welcome_email_async, send_two_factor_auth_email_async, send_email_verification_async
 from utils.validation import validate_email
 from utils.redis_client import two_fa_manager
+from utils.site_settings import is_registration_enabled, is_email_verification_required
 
 router = APIRouter()
 
@@ -38,6 +39,13 @@ async def register(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
+    # Check if registration is enabled
+    if not is_registration_enabled(current_site):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User registration is currently disabled"
+        )
+    
     # Check if user already exists IN THIS SITE
     existing_user = await get_user_by_email(user_in.email, session, str(current_site.id))
     if existing_user:
@@ -58,6 +66,9 @@ async def register(
         )
 
     # Create new user
+    # If email verification is not required, set status to active immediately
+    user_status = UserStatus.pending if is_email_verification_required(current_site) else UserStatus.active
+    
     new_user = User(
         email=user_in.email,
         username=user_in.username,
@@ -66,7 +77,7 @@ async def register(
         last_name=user_in.last_name,
         role=user_in.role,
         site_id=current_site.id,
-        status=UserStatus.pending
+        status=user_status
     )
     
     session.add(new_user)
@@ -74,29 +85,33 @@ async def register(
     await session.commit()
     await session.refresh(new_user)
 
-    # Generate verification code
-    verification_code = ''.join(random.choices(string.digits, k=6))
+    # Only send verification email if required
+    requires_verification = is_email_verification_required(current_site)
     
-    # Use ORM for tokens
-    verification_token = EmailVerificationToken(
-        user_id=new_user.id,
-        token=verification_code,
-        expires_at=datetime.utcnow() + timedelta(hours=24)
-    )
-    session.add(verification_token)
-    await session.commit()
+    if requires_verification:
+        # Generate verification code
+        verification_code = ''.join(random.choices(string.digits, k=6))
+        
+        # Use ORM for tokens
+        verification_token = EmailVerificationToken(
+            user_id=new_user.id,
+            token=verification_code,
+            expires_at=datetime.utcnow() + timedelta(hours=24)
+        )
+        session.add(verification_token)
+        await session.commit()
 
-    # Send email
-    try:
-        send_email_verification_async(new_user.email, new_user.first_name, verification_code)
-    except Exception as e:
-        print(f"Failed to queue verification email: {e}")
+        # Send email
+        try:
+            send_email_verification_async(new_user.email, new_user.first_name, verification_code)
+        except Exception as e:
+            print(f"Failed to queue verification email: {e}")
 
     return {
-        "message": "Registration successful. Please check your email for verification code.",
+        "message": "Registration successful. Please check your email for verification code." if requires_verification else "Registration successful. You can now log in.",
         "user_id": str(new_user.id),
         "email": new_user.email,
-        "requires_verification": True
+        "requires_verification": requires_verification
     }
 
 @router.post("/login")

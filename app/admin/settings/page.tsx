@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings, Shield, Users, BookOpen, Save, Loader2, Palette } from "lucide-react"
 import { ImageUpload } from "@/components/admin/image-upload"
 import { useToast } from "@/hooks/use-toast"
+import { apiClient } from "@/lib/api-client"
 
 interface SiteSettings {
   name: string
@@ -56,17 +57,8 @@ export default function AdminSettings() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("/api/admin/settings/site")
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to load settings",
-          variant: "destructive",
-        })
-      }
+      const data = await apiClient.get<SiteSettings>("/api/admin/settings/site")
+      setSettings(data)
     } catch (error) {
       console.error("Failed to fetch settings:", error)
       toast({
@@ -82,33 +74,18 @@ export default function AdminSettings() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch("/api/admin/settings/site", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: settings.name,
-          description: settings.description,
-          support_email: settings.support_email,
-          theme_config: settings.theme_config,
-        }),
+      const data = await apiClient.patch<SiteSettings>("/api/admin/settings/site", {
+        name: settings.name,
+        description: settings.description,
+        support_email: settings.support_email,
+        theme_config: settings.theme_config,
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setSettings(data)
-        toast({
-          title: "Success",
-          description: "Settings saved successfully",
-        })
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save settings",
-          variant: "destructive",
-        })
-      }
+      
+      setSettings(data)
+      toast({
+        title: "Success",
+        description: "Settings saved successfully",
+      })
     } catch (error) {
       console.error("Failed to save settings:", error)
       toast({
@@ -122,29 +99,22 @@ export default function AdminSettings() {
   }
 
   const handleLogoUpload = async (file: File) => {
-    const formData = new FormData()
-    formData.append("file", file)
-
-    const response = await fetch("/api/admin/settings/site/logo", {
-      method: "POST",
-      body: formData,
-    })
-
-    if (!response.ok) {
+    try {
+      const result = await apiClient.uploadFile<{ url: string }>("/api/admin/settings/site/logo", file)
+      
+      // Update local state
+      setSettings(prev => ({ ...prev, logo_url: result.url }))
+      
+      toast({
+        title: "Success",
+        description: "Logo uploaded successfully",
+      })
+      
+      return result
+    } catch (error) {
+      console.error("Failed to upload logo:", error)
       throw new Error("Failed to upload logo")
     }
-
-    const result = await response.json()
-    
-    // Update local state
-    setSettings(prev => ({ ...prev, logo_url: result.url }))
-    
-    toast({
-      title: "Success",
-      description: "Logo uploaded successfully",
-    })
-    
-    return result
   }
 
   const updateThemeColor = (key: string, value: any) => {
@@ -378,7 +348,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Allow User Registration</Label>
                       <div className="text-sm text-muted-foreground">
-                        Allow new users to register for accounts
+                        When disabled, new users cannot create accounts. Existing users can still log in.
                       </div>
                     </div>
                     <Switch
@@ -392,7 +362,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Require Email Verification</Label>
                       <div className="text-sm text-muted-foreground">
-                        Require users to verify their email address
+                        When disabled, new users can log in immediately without verifying their email address.
                       </div>
                     </div>
                     <Switch
@@ -417,7 +387,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Enable Course Reviews</Label>
                       <div className="text-sm text-muted-foreground">
-                        Allow students to review and rate courses
+                        Allow students to review and rate courses after completion.
                       </div>
                     </div>
                     <Switch
@@ -431,7 +401,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Auto-approve Courses</Label>
                       <div className="text-sm text-muted-foreground">
-                        Automatically approve new courses without admin review
+                        Automatically publish new courses without admin review. Disable for manual approval workflow.
                       </div>
                     </div>
                     <Switch
@@ -456,7 +426,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Enable Token Rewards</Label>
                       <div className="text-sm text-muted-foreground">
-                        Award tokens for course completion and achievements
+                        Award L-tokens for course completion, lesson progress, and quiz achievements.
                       </div>
                     </div>
                     <Switch
@@ -471,13 +441,14 @@ export default function AdminSettings() {
                     <Input
                       id="defaultTokenReward"
                       type="number"
+                      min="0"
                       value={settings.theme_config.default_token_reward || 25}
                       onChange={(e) =>
                         updateThemeColor("default_token_reward", Number.parseInt(e.target.value))
                       }
                     />
                     <div className="text-sm text-muted-foreground">
-                      Default number of tokens awarded for course completion
+                      Number of L-tokens awarded for completing a course (lessons: 10, quizzes: 15).
                     </div>
                   </div>
                 </CardContent>
@@ -495,7 +466,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Enable Notifications</Label>
                       <div className="text-sm text-muted-foreground">
-                        Send email notifications to users
+                        Send email notifications for important events (enrollments, completions, announcements).
                       </div>
                     </div>
                     <Switch
@@ -520,7 +491,7 @@ export default function AdminSettings() {
                     <div className="space-y-0.5">
                       <Label>Maintenance Mode</Label>
                       <div className="text-sm text-muted-foreground">
-                        Enable to temporarily disable access to the platform
+                        <span className="text-orange-600 dark:text-orange-400 font-medium">Warning:</span> Temporarily disable public access. Admins can still access the platform.
                       </div>
                     </div>
                     <Switch
