@@ -19,21 +19,23 @@ def send_welcome_email_async(
     email: str,
     first_name: str,
     include_guide: bool = False,
-    guide_path: Optional[str] = None
+    guide_path: Optional[str] = None,
+    site_id: Optional[str] = None
 ) -> str:
     """
     Queue welcome email to be sent in background
-    
+
     Args:
         email: User's email address
         first_name: User's first name
         include_guide: Whether to include getting started guide
         guide_path: Path to the guide PDF
-    
+        site_id: Optional site ID for tenant-specific branding
+
     Returns:
         str: Task ID for tracking
     """
-    task = send_welcome_email_task.delay(email, first_name, include_guide, guide_path)
+    task = send_welcome_email_task.delay(email, first_name, include_guide, guide_path, site_id)
     return task.id
 
 
@@ -127,7 +129,8 @@ def send_password_reset_email_async(
 def send_email_verification_async(
     email: str,
     first_name: str,
-    verification_token: str
+    verification_token: str,
+    site_id: Optional[str] = None
 ) -> str:
     """
     Queue email verification to be sent in background
@@ -135,7 +138,7 @@ def send_email_verification_async(
     Returns:
         str: Task ID for tracking
     """
-    task = send_email_verification_task.delay(email, first_name, verification_token)
+    task = send_email_verification_task.delay(email, first_name, verification_token, site_id)
     return task.id
 
 
@@ -143,7 +146,8 @@ def send_two_factor_auth_email_async(
     email: str,
     first_name: str,
     auth_code: str,
-    ip_address: str = "Unknown"
+    ip_address: str = "Unknown",
+    site_id: Optional[str] = None
 ) -> str:
     """
     Queue two-factor authentication email to be sent in background
@@ -153,11 +157,12 @@ def send_two_factor_auth_email_async(
         first_name: User's first name
         auth_code: 6-digit authentication code
         ip_address: IP address of the login attempt
+        site_id: Optional site ID for tenant-specific branding
 
     Returns:
         str: Task ID for tracking
     """
-    task = send_two_factor_auth_email_task.delay(email, first_name, auth_code, ip_address)
+    task = send_two_factor_auth_email_task.delay(email, first_name, auth_code, ip_address, site_id)
     return task.id
 
 

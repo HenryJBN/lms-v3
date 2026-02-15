@@ -47,6 +47,70 @@ class EmailService:
             print(f"Failed to render template {template_name}: {e}")
             return ""
 
+    def build_tenant_context(self, site, base_context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Build email context with tenant-specific branding and settings.
+
+        Args:
+            site: Site model instance (can be None for fallback to defaults)
+            base_context: Base context dict to merge with tenant settings
+
+        Returns:
+            Dict with tenant-aware context variables for email templates
+        """
+        context = base_context.copy() if base_context else {}
+
+        if site:
+            from utils.site_settings import get_site_setting, get_theme_colors
+
+            # Get theme colors
+            theme_colors = get_theme_colors(site)
+
+            # Build tenant-specific context
+            context.update({
+                # Branding
+                "platform_name": site.name,
+                "platform_logo": site.logo_url or "",
+                "support_email": get_site_setting(site, "support_email", "support@example.com"),
+
+                # Theme colors
+                "primary_color": theme_colors.get("primary_color", "#ef4444"),
+                "secondary_color": theme_colors.get("secondary_color", "#3b82f6"),
+                "accent_color": theme_colors.get("accent_color", "#8b5cf6"),
+
+                # URLs (build from subdomain/custom_domain)
+                "base_url": f"https://{site.custom_domain or site.subdomain + '.dcalms.test'}",
+                "login_url": f"https://{site.custom_domain or site.subdomain + '.dcalms.test'}/login",
+                "dashboard_url": f"https://{site.custom_domain or site.subdomain + '.dcalms.test'}/dashboard",
+
+                # Social links (from theme_config if available)
+                "social_twitter": get_site_setting(site, "social_twitter", ""),
+                "social_linkedin": get_site_setting(site, "social_linkedin", ""),
+                "social_facebook": get_site_setting(site, "social_facebook", ""),
+
+                # Token rewards
+                "welcome_tokens": get_site_setting(site, "default_token_reward", 25),
+            })
+        else:
+            # Fallback to default values
+            context.update({
+                "platform_name": "DCA LMS",
+                "platform_logo": "",
+                "support_email": "support@dcalms.com",
+                "primary_color": "#ef4444",
+                "secondary_color": "#3b82f6",
+                "accent_color": "#8b5cf6",
+                "base_url": "https://dcalms.test",
+                "login_url": "https://dcalms.test/login",
+                "dashboard_url": "https://dcalms.test/dashboard",
+                "social_twitter": "",
+                "social_linkedin": "",
+                "social_facebook": "",
+                "welcome_tokens": 25,
+            })
+
+        return context
+
     def get_smtp_config(self, site=None) -> dict:
         """
         Get SMTP configuration from site settings or fallback to global env vars.
@@ -335,12 +399,32 @@ class EmailService:
 # Initialize email service
 email_service = EmailService()
 
+# Helper function to get site by ID (for Celery tasks)
+def _get_site_by_id(site_id: str):
+    """Get Site object by ID for email context"""
+    if not site_id:
+        return None
+    try:
+        import uuid
+        from sqlmodel import Session, select
+        from database.session import engine
+        from models.site import Site
+
+        with Session(engine) as session:
+            statement = select(Site).where(Site.id == uuid.UUID(site_id))
+            site = session.exec(statement).first()
+            return site
+    except Exception as e:
+        print(f"Failed to fetch site {site_id}: {e}")
+        return None
+
 # Synchronous email functions (used by Celery and can be called directly)
 def send_welcome_email_sync(
     email: str,
     first_name: str,
     include_guide: bool = False,
-    guide_path: Optional[str] = None
+    guide_path: Optional[str] = None,
+    site_id: Optional[str] = None
 ) -> bool:
     """
     Send welcome email to new user (synchronous)
@@ -350,40 +434,42 @@ def send_welcome_email_sync(
         first_name: User's first name
         include_guide: Whether to include a getting started guide attachment
         guide_path: Path to the guide file (if include_guide is True)
+        site_id: Optional site ID for tenant-specific branding
 
     Returns:
         bool: True if email was sent successfully
     """
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
-        "platform_name": "DCA LMS",
-        "login_url": "https://DCA.com/login",
-        "support_email": "support@DCA.com",
-        "welcome_tokens": 25,
         "has_attachment": include_guide,
-        "social_twitter": "https://twitter.com/DCA",
-        "social_linkedin": "https://linkedin.com/company/DCA",
-        "social_facebook": "https://facebook.com/DCA"
-    }
+    })
 
     # Prepare attachments if guide is included
     attachments = None
     if include_guide and guide_path and os.path.exists(guide_path):
         attachments = [{
             "path": guide_path,
-            "filename": "DCA_Getting_Started_Guide.pdf"
+            "filename": f"{context['platform_name']}_Getting_Started_Guide.pdf"
         }]
 
     # Use enhanced template if guide is included
     template_name = "welcome_with_guide.html" if include_guide else "welcome.html"
 
+    # Build subject with platform name
+    subject = f"Welcome to {context['platform_name']}! 🎉"
+
     return email_service.send_email(
         to_email=email,
-        subject="Welcome to DCA LMS! 🎉",
+        subject=subject,
         template_name=template_name,
         context=context,
-        attachments=attachments
+        attachments=attachments,
+        site=site
     )
 
 # Async wrapper for FastAPI compatibility
@@ -396,110 +482,128 @@ async def send_welcome_email(
     """Async wrapper for send_welcome_email_sync"""
     return send_welcome_email_sync(email, first_name, include_guide, guide_path)
 
-def send_password_reset_email_sync(email: str, first_name: str, reset_token: str) -> bool:
+def send_password_reset_email_sync(email: str, first_name: str, reset_token: str, site_id: Optional[str] = None) -> bool:
     """Send password reset email (synchronous)"""
 
-    reset_url = f"https://DCA.com/reset-password?token={reset_token}"
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
 
-    context = {
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
-        "reset_url": reset_url,
-        "platform_name": "DCA LMS",
-        "support_email": "support@DCA.com"
-    }
+    })
+
+    # Build reset URL with tenant's domain
+    reset_url = f"{context['base_url']}/reset-password?token={reset_token}"
+    context["reset_url"] = reset_url
 
     return email_service.send_email(
         to_email=email,
-        subject="Reset Your Password - DCA LMS",
+        subject=f"Reset Your Password - {context['platform_name']}",
         template_name="password_reset.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_password_reset_email(email: str, first_name: str, reset_token: str) -> bool:
     """Async wrapper for send_password_reset_email_sync"""
     return send_password_reset_email_sync(email, first_name, reset_token)
 
-def send_email_verification_sync(email: str, first_name: str, verification_code: str) -> bool:
+def send_email_verification_sync(email: str, first_name: str, verification_code: str, site_id: Optional[str] = None) -> bool:
     """Send email verification with code (synchronous)"""
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
         "verification_code": verification_code,
-        "platform_name": "DCA LMS",
-        "support_email": "support@dcalms.com"
-    }
+    })
 
     return email_service.send_email(
         to_email=email,
-        subject="Verify Your Email - DCA LMS",
+        subject=f"Verify Your Email - {context['platform_name']}",
         template_name="email_verification_code.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_email_verification(email: str, first_name: str, verification_code: str) -> bool:
     """Async wrapper for send_email_verification_sync"""
     return send_email_verification_sync(email, first_name, verification_code)
 
-def send_course_enrollment_email_sync(email: str, first_name: str, course_title: str, course_url: str) -> bool:
+def send_course_enrollment_email_sync(email: str, first_name: str, course_title: str, course_url: str, site_id: Optional[str] = None) -> bool:
     """Send course enrollment confirmation email (synchronous)"""
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
         "course_title": course_title,
         "course_url": course_url,
-        "platform_name": "DCA LMS"
-    }
+    })
 
     return email_service.send_email(
         to_email=email,
         subject=f"Enrollment Confirmed: {course_title}",
         template_name="course_enrollment.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_course_enrollment_email(email: str, first_name: str, course_title: str, course_url: str) -> bool:
     """Async wrapper for send_course_enrollment_email_sync"""
     return send_course_enrollment_email_sync(email, first_name, course_title, course_url)
 
-def send_two_factor_auth_email_sync(email: str, first_name: str, auth_code: str, ip_address: str = "Unknown") -> bool:
+def send_two_factor_auth_email_sync(email: str, first_name: str, auth_code: str, ip_address: str = "Unknown", site_id: Optional[str] = None) -> bool:
     """Send two-factor authentication code email (synchronous)"""
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
         "auth_code": auth_code,
         "expiry_minutes": 10,
         "login_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
         "ip_address": ip_address,
-        "platform_name": "DCA LMS",
-        "support_email": "support@dcalms.com"
-    }
+    })
 
     return email_service.send_email(
         to_email=email,
-        subject="Your Two-Factor Authentication Code - DCA LMS",
+        subject=f"Your Two-Factor Authentication Code - {context['platform_name']}",
         template_name="two_factor_auth.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_two_factor_auth_email(email: str, first_name: str, auth_code: str, ip_address: str = "Unknown") -> bool:
     """Async wrapper for send_two_factor_auth_email_sync"""
     return send_two_factor_auth_email_sync(email, first_name, auth_code, ip_address)
 
-def send_certificate_email_sync(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
+def send_certificate_email_sync(email: str, first_name: str, course_title: str, certificate_url: str, site_id: Optional[str] = None) -> bool:
     """Send certificate issued email (synchronous)"""
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
         "course_title": course_title,
         "certificate_url": certificate_url,
-        "platform_name": "DCA LMS"
-    }
+    })
 
     return email_service.send_email(
         to_email=email,
         subject=f"Certificate Issued: {course_title} 🏆",
         template_name="certificate_issued.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_certificate_email(email: str, first_name: str, course_title: str, certificate_url: str) -> bool:
@@ -543,27 +647,26 @@ async def send_assignment_reminder_email(
     """Async wrapper for send_assignment_reminder_email_sync"""
     return send_assignment_reminder_email_sync(email, first_name, assignment_title, course_title, due_date, assignment_url)
 
-def send_admin_created_user_email_sync(email: str, first_name: str, username: str, password: str) -> bool:
+def send_admin_created_user_email_sync(email: str, first_name: str, username: str, password: str, site_id: Optional[str] = None) -> bool:
     """Send email to admin-created user with login credentials (synchronous)"""
 
-    context = {
+    # Get site for tenant-aware context
+    site = _get_site_by_id(site_id) if site_id else None
+
+    # Build tenant-aware context
+    context = email_service.build_tenant_context(site, {
         "first_name": first_name,
         "username": username,
         "password": password,
-        "platform_name": "DCA LMS",
-        "login_url": "https://DCA.com/login",
-        "support_email": "support@DCA.com",
         "welcome_tokens": 10,
-        "social_twitter": "https://twitter.com/DCA",
-        "social_linkedin": "https://linkedin.com/company/DCA",
-        "social_facebook": "https://facebook.com/DCA"
-    }
+    })
 
     return email_service.send_email(
         to_email=email,
-        subject="Welcome to DCA LMS - Your Account Has Been Created! 🎉",
+        subject=f"Welcome to {context['platform_name']} - Your Account Has Been Created! 🎉",
         template_name="admin_created_user.html",
-        context=context
+        context=context,
+        site=site
     )
 
 async def send_admin_created_user_email(email: str, first_name: str, username: str, password: str) -> bool:

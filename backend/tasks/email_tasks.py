@@ -23,7 +23,7 @@ from utils.email import (
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def send_welcome_email_task(self, email: str, first_name: str, include_guide: bool = False, guide_path: Optional[str] = None):
+def send_welcome_email_task(self, email: str, first_name: str, include_guide: bool = False, guide_path: Optional[str] = None, site_id: Optional[str] = None):
     """
     Celery task to send welcome email to new user
 
@@ -32,14 +32,14 @@ def send_welcome_email_task(self, email: str, first_name: str, include_guide: bo
     """
     try:
         print(f"[Celery] Attempting to send welcome email to {email}")
-        print(f"[Celery] Parameters: first_name={first_name}, include_guide={include_guide}, guide_path={guide_path}")
+        print(f"[Celery] Parameters: first_name={first_name}, include_guide={include_guide}, guide_path={guide_path}, site_id={site_id}")
 
-        result = send_welcome_email_sync(email, first_name, include_guide, guide_path)
+        result = send_welcome_email_sync(email, first_name, include_guide, guide_path, site_id)
 
         print(f"[Celery] send_welcome_email_sync returned: {result}")
 
         if result:
-            return {"status": "success", "to_email": email, "subject": "Welcome to DCA LMS! 🎉"}
+            return {"status": "success", "to_email": email, "subject": "Welcome Email Sent"}
         else:
             print(f"[Celery] Email sending failed - result was False")
             raise Exception("Email sending returned False - check email.py logs for details")
@@ -145,16 +145,16 @@ def send_password_reset_email_task(self, email: str, first_name: str, reset_toke
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def send_email_verification_task(self, email: str, first_name: str, verification_token: str):
+def send_email_verification_task(self, email: str, first_name: str, verification_token: str, site_id: Optional[str] = None):
     """
     Celery task to send email verification
 
     This is a thin wrapper around send_email_verification_sync from utils/email.py
     """
     try:
-        result = send_email_verification_sync(email, first_name, verification_token)
+        result = send_email_verification_sync(email, first_name, verification_token, site_id)
         if result:
-            return {"status": "success", "to_email": email, "subject": "Verify Your Email - DCA LMS"}
+            return {"status": "success", "to_email": email, "subject": "Verify Your Email"}
         else:
             raise Exception("Email sending returned False")
     except Exception as e:
@@ -163,7 +163,7 @@ def send_email_verification_task(self, email: str, first_name: str, verification
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code: str, ip_address: str = "Unknown"):
+def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code: str, ip_address: str = "Unknown", site_id: Optional[str] = None):
     """
     Celery task to send two-factor authentication code email
 
@@ -171,14 +171,14 @@ def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code
     """
     try:
         print(f"[Celery] Attempting to send 2FA email to {email}")
-        print(f"[Celery] Parameters: first_name={first_name}, auth_code={auth_code}, ip_address={ip_address}")
+        print(f"[Celery] Parameters: first_name={first_name}, auth_code={auth_code}, ip_address={ip_address}, site_id={site_id}")
 
-        result = send_two_factor_auth_email_sync(email, first_name, auth_code, ip_address)
+        result = send_two_factor_auth_email_sync(email, first_name, auth_code, ip_address, site_id)
 
         print(f"[Celery] send_two_factor_auth_email_sync returned: {result}")
 
         if result:
-            return {"status": "success", "to_email": email, "subject": "Your Two-Factor Authentication Code - DCA LMS"}
+            return {"status": "success", "to_email": email, "subject": "Your Two-Factor Authentication Code"}
         else:
             print(f"[Celery] 2FA email sending failed - result was False")
             raise Exception("Email sending returned False - check email.py logs for details")
@@ -190,16 +190,16 @@ def send_two_factor_auth_email_task(self, email: str, first_name: str, auth_code
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def send_admin_created_user_email_task(self, email: str, first_name: str, username: str, password: str):
+def send_admin_created_user_email_task(self, email: str, first_name: str, username: str, password: str, site_id: Optional[str] = None):
     """
     Celery task to send email to admin-created user with login credentials
 
     This is a thin wrapper around send_admin_created_user_email_sync from utils/email.py
     """
     try:
-        result = send_admin_created_user_email_sync(email, first_name, username, password)
+        result = send_admin_created_user_email_sync(email, first_name, username, password, site_id)
         if result:
-            return {"status": "success", "to_email": email, "subject": "Welcome to DCA LMS - Your Account Has Been Created! 🎉"}
+            return {"status": "success", "to_email": email, "subject": "Welcome - Your Account Has Been Created! 🎉"}
         else:
             raise Exception("Email sending returned False")
     except Exception as e:

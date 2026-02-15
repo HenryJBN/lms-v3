@@ -103,7 +103,7 @@ async def register(
 
         # Send email
         try:
-            send_email_verification_async(new_user.email, new_user.first_name, verification_code)
+            send_email_verification_async(new_user.email, new_user.first_name, verification_code, str(current_site.id))
         except Exception as e:
             print(f"Failed to queue verification email: {e}")
 

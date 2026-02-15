@@ -244,7 +244,8 @@ async def create_user(
             email=user_data.email,
             first_name=user_data.first_name,
             username=username,
-            password=temp_password
+            password=temp_password,
+            site_id=str(current_site.id)
         )
     except Exception:
         pass
