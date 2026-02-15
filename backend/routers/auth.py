@@ -72,7 +72,7 @@ async def register(
     new_user = User(
         email=user_in.email,
         username=user_in.username,
-        hashed_password=get_password_hash(user_in.password),
+        password_hash=get_password_hash(user_in.password),
         first_name=user_in.first_name,
         last_name=user_in.last_name,
         role=user_in.role,
@@ -246,7 +246,7 @@ async def reset_password(
     token_record, user = token_record_pair
     
     hashed_password = get_password_hash(reset_data.new_password)
-    user.hashed_password = hashed_password
+    user.password_hash = hashed_password
     session.add(user)
     
     # Mark token as used

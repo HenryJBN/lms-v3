@@ -117,7 +117,7 @@ async def import_users(session: AsyncSession, csv_reader, current_user, site_id:
                 site_id=site_id,
                 email=email,
                 username=username,
-                hashed_password=hashed_password,
+                password_hash=hashed_password,
                 first_name=first_name,
                 last_name=last_name,
                 role=role,
