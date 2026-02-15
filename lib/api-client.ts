@@ -339,6 +339,23 @@ class ApiClient {
       throw error
     }
   }
+
+  /**
+   * Test email configuration
+   * @param config Email configuration to test
+   * @returns Test result with success status and message
+   */
+  async testEmailConfig(config: {
+    smtp_host?: string
+    smtp_port?: number
+    smtp_username?: string
+    smtp_password?: string
+    smtp_from_email?: string
+    smtp_from_name?: string
+    test_recipient?: string
+  }): Promise<{ success: boolean; message: string; details?: string }> {
+    return this.post("/api/admin/settings/email/test", config)
+  }
 }
 
 export const apiClient = new ApiClient()

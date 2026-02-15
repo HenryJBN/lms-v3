@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Shield, Users, BookOpen, Save, Loader2, Palette } from "lucide-react"
+import { Settings, Shield, Users, BookOpen, Save, Loader2, Palette, Mail, Send, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ImageUpload } from "@/components/admin/image-upload"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
@@ -36,12 +37,20 @@ interface SiteSettings {
     [key: string]: any  // Allow additional dynamic properties
   }
   is_active: boolean
+  // Email configuration fields (masked for security)
+  smtp_host?: string | null
+  smtp_port?: number | null
+  smtp_username?: string | null
+  smtp_password?: string | null  // Shows "***configured***" if set
+  smtp_from_email?: string | null
+  smtp_from_name?: string | null
 }
 
 export default function AdminSettings() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isTestingEmail, setIsTestingEmail] = useState(false)
   const [settings, setSettings] = useState<SiteSettings>({
     name: "",
     description: null,
@@ -49,6 +58,16 @@ export default function AdminSettings() {
     logo_url: null,
     theme_config: {},
     is_active: true,
+  })
+
+  // Email configuration state
+  const [emailConfig, setEmailConfig] = useState({
+    smtp_host: "",
+    smtp_port: 587,
+    smtp_username: "",
+    smtp_password: "",
+    smtp_from_email: "",
+    smtp_from_name: "",
   })
 
   useEffect(() => {
@@ -59,6 +78,16 @@ export default function AdminSettings() {
     try {
       const data = await apiClient.get<SiteSettings>("/api/admin/settings/site")
       setSettings(data)
+
+      // Populate email config (masked values from server)
+      setEmailConfig({
+        smtp_host: data.smtp_host || "",
+        smtp_port: data.smtp_port || 587,
+        smtp_username: data.smtp_username || "",
+        smtp_password: "", // Never populated (write-only)
+        smtp_from_email: data.smtp_from_email || "",
+        smtp_from_name: data.smtp_from_name || "",
+      })
     } catch (error) {
       console.error("Failed to fetch settings:", error)
       toast({
@@ -98,13 +127,88 @@ export default function AdminSettings() {
     }
   }
 
+  const handleEmailSave = async () => {
+    setIsSaving(true)
+    try {
+      // Only send password if it's been changed (not empty)
+      const emailData: any = {
+        smtp_host: emailConfig.smtp_host || null,
+        smtp_port: emailConfig.smtp_port || null,
+        smtp_username: emailConfig.smtp_username || null,
+        smtp_from_email: emailConfig.smtp_from_email || null,
+        smtp_from_name: emailConfig.smtp_from_name || null,
+      }
+
+      // Only include password if user entered a new one
+      if (emailConfig.smtp_password) {
+        emailData.smtp_password = emailConfig.smtp_password
+      }
+
+      const data = await apiClient.patch<SiteSettings>("/api/admin/settings/site", emailData)
+
+      setSettings(data)
+      // Clear password field after save (write-only)
+      setEmailConfig(prev => ({ ...prev, smtp_password: "" }))
+
+      toast({
+        title: "Success",
+        description: "Email settings saved successfully",
+      })
+    } catch (error) {
+      console.error("Failed to save email settings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save email settings",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleTestEmail = async () => {
+    setIsTestingEmail(true)
+    try {
+      const result = await apiClient.testEmailConfig({
+        smtp_host: emailConfig.smtp_host || undefined,
+        smtp_port: emailConfig.smtp_port || undefined,
+        smtp_username: emailConfig.smtp_username || undefined,
+        smtp_password: emailConfig.smtp_password || undefined,
+        smtp_from_email: emailConfig.smtp_from_email || undefined,
+        smtp_from_name: emailConfig.smtp_from_name || undefined,
+      })
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: result.message,
+        })
+      } else {
+        toast({
+          title: "Test Failed",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Failed to test email:", error)
+      toast({
+        title: "Error",
+        description: "Failed to test email configuration",
+        variant: "destructive",
+      })
+    } finally {
+      setIsTestingEmail(false)
+    }
+  }
+
   const handleLogoUpload = async (file: File) => {
     try {
       const result = await apiClient.uploadFile<{ url: string }>("/api/admin/settings/site/logo", file)
-      
+
       // Update local state
       setSettings(prev => ({ ...prev, logo_url: result.url }))
-      
+
       toast({
         title: "Success",
         description: "Logo uploaded successfully",
@@ -202,6 +306,7 @@ export default function AdminSettings() {
             <TabsList>
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
@@ -330,6 +435,145 @@ export default function AdminSettings() {
                         />
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="email" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-5 w-5" />
+                      Email Configuration
+                    </div>
+                  </CardTitle>
+                  <CardDescription>
+                    Configure SMTP settings for sending emails from your academy.
+                    Credentials are encrypted and write-only for security.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Status indicator */}
+                  {settings.smtp_host && (
+                    <Alert>
+                      <Mail className="h-4 w-4" />
+                      <AlertDescription>
+                        Using custom email configuration
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="smtp_host">SMTP Host *</Label>
+                      <Input
+                        id="smtp_host"
+                        placeholder="smtp.gmail.com"
+                        value={emailConfig.smtp_host}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtp_host: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="smtp_port">SMTP Port *</Label>
+                      <Input
+                        id="smtp_port"
+                        type="number"
+                        placeholder="587"
+                        value={emailConfig.smtp_port}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtp_port: parseInt(e.target.value) || 587 })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_username">SMTP Username *</Label>
+                    <Input
+                      id="smtp_username"
+                      placeholder="your-email@example.com"
+                      value={emailConfig.smtp_username}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, smtp_username: e.target.value })}
+                    />
+                    {settings.smtp_username && settings.smtp_username.includes("***") && (
+                      <p className="text-xs text-muted-foreground">
+                        Current: {settings.smtp_username}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_password">SMTP Password *</Label>
+                    <Input
+                      id="smtp_password"
+                      type="password"
+                      placeholder={settings.smtp_password === "***configured***" ? "Leave empty to keep current password" : "Enter password"}
+                      value={emailConfig.smtp_password}
+                      onChange={(e) => setEmailConfig({ ...emailConfig, smtp_password: e.target.value })}
+                    />
+                    {settings.smtp_password === "***configured***" && (
+                      <p className="text-xs text-muted-foreground">
+                        Password is configured. Leave empty to keep current password.
+                      </p>
+                    )}
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        For security, passwords cannot be viewed after saving. You can update them anytime without entering the old password.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="smtp_from_email">From Email</Label>
+                      <Input
+                        id="smtp_from_email"
+                        type="email"
+                        placeholder="noreply@example.com"
+                        value={emailConfig.smtp_from_email}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtp_from_email: e.target.value })}
+                      />
+                      {settings.smtp_from_email && settings.smtp_from_email.includes("***") && (
+                        <p className="text-xs text-muted-foreground">
+                          Current: {settings.smtp_from_email}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="smtp_from_name">From Name</Label>
+                      <Input
+                        id="smtp_from_name"
+                        placeholder={settings.name}
+                        value={emailConfig.smtp_from_name}
+                        onChange={(e) => setEmailConfig({ ...emailConfig, smtp_from_name: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button onClick={handleEmailSave} disabled={isSaving}>
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      Save Email Settings
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleTestEmail}
+                      disabled={isTestingEmail}
+                    >
+                      {isTestingEmail ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4 mr-2" />
+                      )}
+                      Test Email
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

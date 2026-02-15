@@ -916,17 +916,31 @@ async def get_site_settings(
     current_user = Depends(require_admin),
     current_site: Site = Depends(get_current_site)
 ):
-    """Get current site settings"""
+    """Get current site settings with masked email credentials"""
+    from utils.encryption import mask_credential
+
     # Helper to get values from theme_config primarily for dynamic fields
     config = current_site.theme_config or {}
-    
+
+    # Mask sensitive email credentials for display
+    smtp_username = config.get("smtp_username")
+    smtp_password = config.get("smtp_password")
+    smtp_from_email = config.get("smtp_from_email")
+
     return SiteSettings(
         name=current_site.name,
         description=config.get("description"),
         support_email=config.get("support_email"),
         logo_url=current_site.logo_url,
         theme_config=config,
-        is_active=current_site.is_active
+        is_active=current_site.is_active,
+        # Email configuration (masked for security)
+        smtp_host=config.get("smtp_host"),
+        smtp_port=config.get("smtp_port"),
+        smtp_username=mask_credential(smtp_username) if smtp_username else None,
+        smtp_password="***configured***" if smtp_password else None,
+        smtp_from_email=mask_credential(smtp_from_email) if smtp_from_email else None,
+        smtp_from_name=config.get("smtp_from_name")
     )
 
 
@@ -937,7 +951,9 @@ async def update_site_settings(
     current_user = Depends(require_admin),
     current_site: Site = Depends(get_current_site)
 ):
-    """Update current site settings"""
+    """Update current site settings with encrypted email credentials"""
+    from utils.encryption import encrypt_credential, mask_credential
+
     # Re-fetch to ensure we have attached object
     site = await session.get(Site, current_site.id)
     if not site:
@@ -945,34 +961,68 @@ async def update_site_settings(
 
     if settings.name is not None:
         site.name = settings.name
-    
+
     # Update theme config structure
     current_config = dict(site.theme_config) if site.theme_config else {}
-    
+
     if settings.description is not None:
         current_config["description"] = settings.description
     if settings.support_email is not None:
         current_config["support_email"] = settings.support_email
-        
+
+    # Handle email credentials (encrypt password before storing)
+    if settings.smtp_host is not None:
+        current_config["smtp_host"] = settings.smtp_host
+    if settings.smtp_port is not None:
+        current_config["smtp_port"] = settings.smtp_port
+    if settings.smtp_username is not None:
+        current_config["smtp_username"] = settings.smtp_username
+    if settings.smtp_password is not None:
+        # Encrypt password before storing (write-only pattern)
+        encrypted_password = encrypt_credential(settings.smtp_password)
+        if encrypted_password:
+            current_config["smtp_password"] = encrypted_password
+            print(f"[ADMIN] Encrypted SMTP password for site {site.id}")
+        else:
+            print(f"[ADMIN] Warning: Failed to encrypt SMTP password")
+    if settings.smtp_from_email is not None:
+        current_config["smtp_from_email"] = settings.smtp_from_email
+    if settings.smtp_from_name is not None:
+        current_config["smtp_from_name"] = settings.smtp_from_name
+
     if settings.theme_config:
-        # Merge provided config
-        current_config.update(settings.theme_config)
-        
+        # Merge provided config (but don't override email settings if already set above)
+        for key, value in settings.theme_config.items():
+            if key not in ["smtp_host", "smtp_port", "smtp_username", "smtp_password", "smtp_from_email", "smtp_from_name"]:
+                current_config[key] = value
+
     site.theme_config = current_config
-    
+
     site.updated_at = datetime.utcnow()
     session.add(site)
     await session.commit()
     await session.refresh(site)
-    
+
+    # Return masked credentials
     config = site.theme_config or {}
+    smtp_username = config.get("smtp_username")
+    smtp_password = config.get("smtp_password")
+    smtp_from_email = config.get("smtp_from_email")
+
     return SiteSettings(
         name=site.name,
         description=config.get("description"),
         support_email=config.get("support_email"),
         logo_url=site.logo_url,
         theme_config=config,
-        is_active=site.is_active
+        is_active=site.is_active,
+        # Email configuration (masked for security)
+        smtp_host=config.get("smtp_host"),
+        smtp_port=config.get("smtp_port"),
+        smtp_username=mask_credential(smtp_username) if smtp_username else None,
+        smtp_password="***configured***" if smtp_password else None,
+        smtp_from_email=mask_credential(smtp_from_email) if smtp_from_email else None,
+        smtp_from_name=config.get("smtp_from_name")
     )
 
 

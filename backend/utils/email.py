@@ -37,7 +37,7 @@ class EmailService:
             loader=jinja2.FileSystemLoader(TEMPLATES_DIR),
             autoescape=jinja2.select_autoescape(['html', 'xml'])
         )
-    
+
     def render_template(self, template_name: str, context:Dict[str, Any]) -> str:
         """Render email template with context"""
         try:
@@ -46,6 +46,47 @@ class EmailService:
         except Exception as e:
             print(f"Failed to render template {template_name}: {e}")
             return ""
+
+    def get_smtp_config(self, site=None) -> dict:
+        """
+        Get SMTP configuration from site settings or fallback to global env vars.
+
+        Args:
+            site: Optional Site model instance
+
+        Returns:
+            Dict with SMTP configuration (host, port, username, password, from_email, from_name)
+        """
+        # Try to get tenant-specific configuration
+        if site and site.theme_config:
+            from utils.encryption import decrypt_credential
+            config = site.theme_config
+
+            # Check if site has custom SMTP configuration
+            if config.get('smtp_host') and config.get('smtp_username'):
+                # Decrypt password if present
+                password = None
+                if config.get('smtp_password'):
+                    password = decrypt_credential(config.get('smtp_password'))
+
+                return {
+                    'host': config.get('smtp_host'),
+                    'port': int(config.get('smtp_port', 587)),
+                    'username': config.get('smtp_username'),
+                    'password': password,
+                    'from_email': config.get('smtp_from_email', config.get('smtp_username')),
+                    'from_name': config.get('smtp_from_name', site.name)
+                }
+
+        # Fallback to global settings from environment variables
+        return {
+            'host': SMTP_SERVER,
+            'port': SMTP_PORT,
+            'username': SMTP_USERNAME,
+            'password': SMTP_PASSWORD,
+            'from_email': FROM_EMAIL,
+            'from_name': FROM_NAME
+        }
     
     def send_smtp_email(
         self,
@@ -53,24 +94,54 @@ class EmailService:
         subject: str,
         html_content: str,
         text_content: Optional[str] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None
+        attachments: Optional[List[Dict[str, Any]]] = None,
+        smtp_config: Optional[Dict[str, Any]] = None
     ) -> bool:
-        """Send email using SMTP with proper timeout handling (synchronous)"""
+        """
+        Send email using SMTP with proper timeout handling (synchronous).
+
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            html_content: HTML email content
+            text_content: Plain text email content (optional)
+            attachments: List of attachment dicts with 'path' and 'filename' keys
+            smtp_config: Optional SMTP configuration dict. If None, uses global config.
+
+        Returns:
+            True if email sent successfully, False otherwise
+        """
         server = None
         try:
-            print(f"[SMTP] Starting SMTP send to {to_email}")
-            print(f"[SMTP] SMTP_SERVER: {SMTP_SERVER}")
-            print(f"[SMTP] SMTP_PORT: {SMTP_PORT}")
-            print(f"[SMTP] SMTP_USERNAME: {SMTP_USERNAME}")
-            print(f"[SMTP] FROM_EMAIL: {FROM_EMAIL}")
+            # Use provided SMTP config or fall back to global settings
+            if smtp_config:
+                smtp_server = smtp_config.get('host', SMTP_SERVER)
+                smtp_port = smtp_config.get('port', SMTP_PORT)
+                smtp_username = smtp_config.get('username', SMTP_USERNAME)
+                smtp_password = smtp_config.get('password', SMTP_PASSWORD)
+                from_email = smtp_config.get('from_email', FROM_EMAIL)
+                from_name = smtp_config.get('from_name', FROM_NAME)
+            else:
+                smtp_server = SMTP_SERVER
+                smtp_port = SMTP_PORT
+                smtp_username = SMTP_USERNAME
+                smtp_password = SMTP_PASSWORD
+                from_email = FROM_EMAIL
+                from_name = FROM_NAME
 
-            if not SMTP_USERNAME or not SMTP_PASSWORD:
+            print(f"[SMTP] Starting SMTP send to {to_email}")
+            print(f"[SMTP] SMTP_SERVER: {smtp_server}")
+            print(f"[SMTP] SMTP_PORT: {smtp_port}")
+            print(f"[SMTP] SMTP_USERNAME: {smtp_username}")
+            print(f"[SMTP] FROM_EMAIL: {from_email}")
+
+            if not smtp_username or not smtp_password:
                 print("[SMTP] ERROR: SMTP credentials not configured")
                 return False
 
             # Create message
             msg = MIMEMultipart('alternative')
-            msg['From'] = f"{FROM_NAME} <{FROM_EMAIL}>"
+            msg['From'] = f"{from_name} <{from_email}>"
             msg['To'] = to_email
             msg['Subject'] = subject
 
@@ -101,8 +172,8 @@ class EmailService:
                         continue
 
             # Send email with timeout
-            print(f"Connecting to SMTP server: {SMTP_SERVER}:{SMTP_PORT}")
-            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=SMTP_CONNECTION_TIMEOUT)
+            print(f"Connecting to SMTP server: {smtp_server}:{smtp_port}")
+            server = smtplib.SMTP(smtp_server, smtp_port, timeout=SMTP_CONNECTION_TIMEOUT)
             server.set_debuglevel(0)  # Set to 1 for debugging
 
             # Try STARTTLS if supported (optional for some servers)
@@ -116,7 +187,7 @@ class EmailService:
                 print("STARTTLS not supported by server, continuing without TLS...")
 
             print("Logging in...")
-            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.login(smtp_username, smtp_password)
 
             print(f"Sending email to {to_email}...")
             server.send_message(msg)
@@ -214,9 +285,23 @@ class EmailService:
         subject: str,
         template_name: str,
         context: Dict[str, Any],
-        attachments: Optional[List[Dict[str, Any]]] = None
+        attachments: Optional[List[Dict[str, Any]]] = None,
+        site=None
     ) -> bool:
-        """Send email using configured service (synchronous)"""
+        """
+        Send email using configured service (synchronous).
+
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            template_name: Name of the email template to use
+            context: Template context variables
+            attachments: Optional list of attachments
+            site: Optional Site model instance for tenant-specific SMTP config
+
+        Returns:
+            True if email sent successfully, False otherwise
+        """
 
         print(f"[EmailService] send_email called:")
         print(f"  to_email: {to_email}")
@@ -224,6 +309,7 @@ class EmailService:
         print(f"  template_name: {template_name}")
         print(f"  context keys: {list(context.keys())}")
         print(f"  attachments: {attachments}")
+        print(f"  site: {site.name if site else 'None (using global config)'}")
 
         # Render template
         html_content = self.render_template(template_name, context)
@@ -237,11 +323,14 @@ class EmailService:
         text_template_name = template_name.replace('.html', '.txt')
         text_content = self.render_template(text_template_name, context)
 
+        # Get SMTP configuration (tenant-specific or global)
+        smtp_config = self.get_smtp_config(site) if site else None
+
         # Send email
         if USE_SENDGRID:
             return self.send_sendgrid_email(to_email, subject, html_content, text_content)
         else:
-            return self.send_smtp_email(to_email, subject, html_content, text_content, attachments)
+            return self.send_smtp_email(to_email, subject, html_content, text_content, attachments, smtp_config)
 
 # Initialize email service
 email_service = EmailService()

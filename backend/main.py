@@ -14,7 +14,7 @@ import models  # Register SQLModel tables
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
     progress, certificates, notifications, admin, analytics, sections, assignments,
-    system_admin, onboarding, cohorts
+    system_admin, onboarding, cohorts, admin_email
 )
 from middleware.auth import get_current_user
 from middleware.logging import setup_logging
@@ -68,6 +68,7 @@ app.include_router(lessons.router, prefix="/api/lessons", tags=["Lessons"])
 app.include_router(certificates.router, prefix="/api/certificates", tags=["Certificates"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(admin_email.router, prefix="/api/admin/settings/email", tags=["Admin Email"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(sections.router, prefix="/api/sections", tags=["Sections"])
 app.include_router(assignments.router, prefix="/api/assignments", tags=["Assignments"])

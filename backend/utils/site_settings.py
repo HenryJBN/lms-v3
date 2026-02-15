@@ -112,7 +112,7 @@ def get_support_email(site: Site) -> Optional[str]:
 def get_theme_colors(site: Site) -> dict:
     """
     Get theme color configuration.
-    
+
     Returns:
         Dict with primary_color, secondary_color, accent_color
     """
@@ -121,3 +121,81 @@ def get_theme_colors(site: Site) -> dict:
         "secondary_color": get_site_setting(site, "secondary_color", "#3b82f6"),
         "accent_color": get_site_setting(site, "accent_color", "#8b5cf6"),
     }
+
+
+# Email/SMTP Configuration Helpers
+
+def get_smtp_host(site: Site) -> Optional[str]:
+    """
+    Get SMTP host from site configuration.
+
+    Returns:
+        SMTP host or None if not configured
+    """
+    return get_site_setting(site, "smtp_host")
+
+
+def get_smtp_port(site: Site) -> int:
+    """
+    Get SMTP port from site configuration.
+
+    Returns:
+        SMTP port (default: 587)
+    """
+    return int(get_site_setting(site, "smtp_port", 587))
+
+
+def get_smtp_username(site: Site) -> Optional[str]:
+    """
+    Get SMTP username from site configuration.
+
+    Returns:
+        SMTP username or None if not configured
+    """
+    return get_site_setting(site, "smtp_username")
+
+
+def get_smtp_password(site: Site) -> Optional[str]:
+    """
+    Get encrypted SMTP password from site configuration.
+
+    Note: This returns the encrypted value. Use decrypt_credential() to decrypt.
+
+    Returns:
+        Encrypted SMTP password or None if not configured
+    """
+    return get_site_setting(site, "smtp_password")
+
+
+def get_smtp_from_email(site: Site) -> Optional[str]:
+    """
+    Get SMTP from email address from site configuration.
+
+    Returns:
+        From email address or None if not configured
+    """
+    return get_site_setting(site, "smtp_from_email")
+
+
+def get_smtp_from_name(site: Site) -> Optional[str]:
+    """
+    Get SMTP from name from site configuration.
+
+    Returns:
+        From name or site name as fallback
+    """
+    from_name = get_site_setting(site, "smtp_from_name")
+    if from_name:
+        return from_name
+    # Fallback to site name
+    return site.name if site else None
+
+
+def has_custom_email_config(site: Site) -> bool:
+    """
+    Check if the site has custom email configuration.
+
+    Returns:
+        True if site has configured SMTP settings
+    """
+    return bool(get_smtp_host(site) and get_smtp_username(site) and get_smtp_password(site))
