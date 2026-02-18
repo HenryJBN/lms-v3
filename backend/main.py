@@ -52,9 +52,10 @@ app.add_middleware(
     ],
     allow_origin_regex=r"^https?://(.*\.)?localhost(:\d+)?$|^https?://(.*\.)?dcalms\.test(:\d+)?$|^https?://(.*\.)?dcalms\.com$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "X-Tenant-Domain", "Accept", "Origin", "User-Agent", "DNT", "Cache-Control", "X-Requested-With"],
     expose_headers=["Content-Range", "Accept-Ranges", "Content-Length", "Content-Type", "X-Tenant-Domain"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 # Include routers

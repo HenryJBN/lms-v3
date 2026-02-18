@@ -28,20 +28,23 @@ async def get_current_site(
         host = request.headers.get("host", "")
     
     host = host.split(":")[0] # Remove port
-    
-    # Handle localhost
-    if "localhost" in host:
-        subdomain = host.split(".")[0]
-        if subdomain == "localhost":
-             pass
-    else:
-        # Production: school.lms.com
+
+    # Handle localhost and extract subdomain
+    if "localhost" in host or "127.0.0.1" in host:
+        # localhost or subdomain.localhost
         parts = host.split(".")
-        if len(parts) >= 3:
-            subdomain = parts[0]
+        if len(parts) > 1:
+            subdomain = parts[0]  # e.g., "yappi" from "yappi.localhost"
         else:
-            # dcalms.com -> maybe www or root
-            subdomain = "www"
+            subdomain = "localhost"  # Default for plain "localhost"
+    else:
+        # Production: school.lms.com or dcalms.test
+        parts = host.split(".")
+        if len(parts) >= 2:
+            subdomain = parts[0]  # e.g., "yappi" from "yappi.dcalms.test"
+        else:
+            # Single domain -> use as-is
+            subdomain = host
     
     # Query Site by subdomain
     query = select(Site).where(Site.subdomain == subdomain)

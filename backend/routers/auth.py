@@ -116,12 +116,15 @@ async def register(
 
 @router.post("/login")
 async def login(
-    login_data: LoginRequest, 
-    request: Request, 
+    login_data: LoginRequest,
+    request: Request,
     response: Response,
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
+    print(f"[LOGIN] Received login request for email: {login_data.email}")
+    print(f"[LOGIN] Current site: {current_site.subdomain} (ID: {current_site.id})")
+
     # Authenticate against database and site
     user = await authenticate_user(login_data.email, login_data.password, session, str(current_site.id))
     if not user:
