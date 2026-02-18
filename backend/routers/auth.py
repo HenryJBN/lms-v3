@@ -258,6 +258,7 @@ async def reset_password(
 @router.post("/verify-email-code")
 async def verify_email_code(
     verification_data: dict,
+    request: Request,
     response: Response,
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
