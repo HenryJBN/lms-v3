@@ -128,12 +128,18 @@ class EmailService:
 
             # Check if site has custom SMTP configuration
             if config.get('smtp_host') and config.get('smtp_username'):
+                print(f"[EMAIL] Using tenant-specific SMTP config for site: {site.name}")
+
                 # Decrypt password if present
                 password = None
                 if config.get('smtp_password'):
                     password = decrypt_credential(config.get('smtp_password'))
+                    if password:
+                        print(f"[EMAIL] Successfully decrypted SMTP password")
+                    else:
+                        print(f"[EMAIL] WARNING: Failed to decrypt SMTP password")
 
-                return {
+                smtp_config = {
                     'host': config.get('smtp_host'),
                     'port': int(config.get('smtp_port', 587)),
                     'username': config.get('smtp_username'),
@@ -142,7 +148,11 @@ class EmailService:
                     'from_name': config.get('smtp_from_name', site.name)
                 }
 
+                print(f"[EMAIL] Tenant SMTP: {smtp_config['from_name']} <{smtp_config['from_email']}> via {smtp_config['host']}:{smtp_config['port']}")
+                return smtp_config
+
         # Fallback to global settings from environment variables
+        print(f"[EMAIL] Using global SMTP config from .env (site: {site.name if site else 'None'})")
         return {
             'host': SMTP_SERVER,
             'port': SMTP_PORT,
@@ -401,21 +411,37 @@ email_service = EmailService()
 
 # Helper function to get site by ID (for Celery tasks)
 def _get_site_by_id(site_id: str):
-    """Get Site object by ID for email context"""
+    """Get Site object by ID for email context (synchronous for Celery)"""
     if not site_id:
         return None
     try:
         import uuid
+        import sys
+        import os
+
+        # Add backend directory to path for Celery workers
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if backend_dir not in sys.path:
+            sys.path.insert(0, backend_dir)
+
         from sqlmodel import Session, select
-        from database.session import engine
+        from database.session import sync_engine  # Use sync engine for Celery
         from models.site import Site
 
-        with Session(engine) as session:
+        with Session(sync_engine) as session:
             statement = select(Site).where(Site.id == uuid.UUID(site_id))
             site = session.exec(statement).first()
+
+            if site:
+                print(f"[EMAIL] Successfully fetched site: {site.name} (subdomain: {site.subdomain})")
+            else:
+                print(f"[EMAIL] Site not found for ID: {site_id}")
+
             return site
     except Exception as e:
-        print(f"Failed to fetch site {site_id}: {e}")
+        print(f"[EMAIL] Failed to fetch site {site_id}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 # Synchronous email functions (used by Celery and can be called directly)

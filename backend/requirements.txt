@@ -2,6 +2,7 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 databases[postgresql]==0.8.0
 asyncpg==0.29.0
+psycopg2-binary==2.9.11
 sqlalchemy==1.4.48
 sqlmodel==0.0.14
 python-jose[cryptography]==3.3.0
@@ -15,6 +16,7 @@ httpx==0.25.2
 pytest==7.4.3
 pytest-asyncio==0.21.1
 alembic==1.12.1
+cryptography==46.0.5
 
 # Celery and background tasks
 celery==5.3.4

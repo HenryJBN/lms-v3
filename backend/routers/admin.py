@@ -20,7 +20,7 @@ from schemas.course import AdminCourseResponse
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_password_hash, get_user_by_email, require_admin, get_current_active_user
 from utils.analytics import (
-    AnalyticsCalculator, UserAnalytics, CourseAnalytics, 
+    AnalyticsCalculator, UserAnalytics, CourseAnalytics,
     RevenueAnalytics, get_platform_kpis, get_top_performing_content
 )
 from tasks.email_tasks import send_admin_created_user_email_task
@@ -30,6 +30,7 @@ import string
 from schemas.site import SiteSettings, SiteSettingsUpdate
 from schemas.system import FileUploadResponse
 from utils.file_upload import upload_image
+from utils.encryption import encrypt_credential, mask_credential
 
 router = APIRouter()
 
@@ -918,7 +919,6 @@ async def get_site_settings(
     current_site: Site = Depends(get_current_site)
 ):
     """Get current site settings with masked email credentials"""
-    from utils.encryption import mask_credential
 
     # Helper to get values from theme_config primarily for dynamic fields
     config = current_site.theme_config or {}
@@ -953,7 +953,6 @@ async def update_site_settings(
     current_site: Site = Depends(get_current_site)
 ):
     """Update current site settings with encrypted email credentials"""
-    from utils.encryption import encrypt_credential, mask_credential
 
     # Re-fetch to ensure we have attached object
     site = await session.get(Site, current_site.id)

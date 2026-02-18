@@ -79,13 +79,15 @@ export default function AdminSettings() {
       const data = await apiClient.get<SiteSettings>("/api/admin/settings/site")
       setSettings(data)
 
-      // Populate email config (masked values from server)
+      // Populate email config
+      // Note: Masked values (like "itq***") are shown as placeholders
+      // We'll only send values that the user actually changes
       setEmailConfig({
         smtp_host: data.smtp_host || "",
         smtp_port: data.smtp_port || 587,
-        smtp_username: data.smtp_username || "",
+        smtp_username: data.smtp_username || "", // Will be masked like "itq***"
         smtp_password: "", // Never populated (write-only)
-        smtp_from_email: data.smtp_from_email || "",
+        smtp_from_email: data.smtp_from_email || "", // Will be masked like "con***@***.com"
         smtp_from_name: data.smtp_from_name || "",
       })
     } catch (error) {
@@ -130,13 +132,21 @@ export default function AdminSettings() {
   const handleEmailSave = async () => {
     setIsSaving(true)
     try {
-      // Only send password if it's been changed (not empty)
+      // Build email data, excluding masked values (containing ***)
       const emailData: any = {
         smtp_host: emailConfig.smtp_host || null,
         smtp_port: emailConfig.smtp_port || null,
-        smtp_username: emailConfig.smtp_username || null,
-        smtp_from_email: emailConfig.smtp_from_email || null,
         smtp_from_name: emailConfig.smtp_from_name || null,
+      }
+
+      // Only include username if it's not masked (doesn't contain ***)
+      if (emailConfig.smtp_username && !emailConfig.smtp_username.includes("***")) {
+        emailData.smtp_username = emailConfig.smtp_username
+      }
+
+      // Only include from_email if it's not masked (doesn't contain ***)
+      if (emailConfig.smtp_from_email && !emailConfig.smtp_from_email.includes("***")) {
+        emailData.smtp_from_email = emailConfig.smtp_from_email
       }
 
       // Only include password if user entered a new one

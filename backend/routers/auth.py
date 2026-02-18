@@ -257,17 +257,17 @@ async def reset_password(
 
 @router.post("/verify-email-code")
 async def verify_email_code(
-    verification_data: dict, 
+    verification_data: dict,
     response: Response,
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
     code = verification_data.get("code")
     email = verification_data.get("email")
-    
+
     if not code or not email:
         raise HTTPException(status_code=400, detail="Code and email are required")
-        
+
     # Find token and user
     query = select(EmailVerificationToken, User).join(User, EmailVerificationToken.user_id == User.id).where(
         EmailVerificationToken.token == code,
@@ -278,29 +278,29 @@ async def verify_email_code(
     )
     result = await session.exec(query)
     record_pair = result.first()
-    
+
     if not record_pair:
         raise HTTPException(status_code=400, detail="Invalid or expired verification code")
-        
+
     record, user = record_pair
-    
+
     # Update user
     user.status = UserStatus.active
     session.add(user)
-    
+
     # Mark token verified
     record.verified_at = datetime.utcnow()
     session.add(record)
     await session.commit()
-        
+
     # Issue tokens
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
-    
+
     response.set_cookie(
         key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None, max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
     )
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -319,3 +319,57 @@ async def verify_email_code(
             updated_at=user.updated_at
         )
     }
+
+@router.post("/resend-verification-code")
+async def resend_verification_code(
+    request_data: dict,
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
+    email = request_data.get("email")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    # Find user by email
+    user = await get_user_by_email(email, session, str(current_site.id))
+    if not user:
+        # Return success even if user doesn't exist (security best practice)
+        return {"message": "If the email exists, a new verification code has been sent", "email": email}
+
+    # Check if user is already verified
+    if user.status == UserStatus.active:
+        raise HTTPException(status_code=400, detail="Email is already verified")
+
+    # Invalidate any existing unused verification tokens for this user
+    query = select(EmailVerificationToken).where(
+        EmailVerificationToken.user_id == user.id,
+        EmailVerificationToken.verified_at == None
+    )
+    result = await session.exec(query)
+    existing_tokens = result.all()
+
+    for token in existing_tokens:
+        token.verified_at = datetime.utcnow()  # Mark as used/invalidated
+        session.add(token)
+
+    # Generate new verification code
+    verification_code = ''.join(random.choices(string.digits, k=6))
+
+    # Create new verification token
+    verification_token = EmailVerificationToken(
+        user_id=user.id,
+        token=verification_code,
+        expires_at=datetime.utcnow() + timedelta(hours=24)
+    )
+    session.add(verification_token)
+    await session.commit()
+
+    # Send verification email
+    try:
+        send_email_verification_async(user.email, user.first_name, verification_code, str(current_site.id))
+    except Exception as e:
+        print(f"Failed to queue verification email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+
+    return {"message": "Verification code sent successfully", "email": email}
