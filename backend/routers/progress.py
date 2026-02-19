@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 import uuid
 from datetime import datetime
@@ -25,6 +25,7 @@ router = APIRouter()
 @router.get("/course/slug/{course_slug}", response_model=List[LessonProgressResponse])
 async def get_course_progress_by_slug(
     course_slug: str,
+    cohort_id: Optional[uuid.UUID] = None,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
@@ -47,6 +48,10 @@ async def get_course_progress_by_slug(
         Enrollment.site_id == current_site.id,
         Enrollment.status == EnrollmentStatus.active
     )
+    
+    if cohort_id:
+        enrollment_query = enrollment_query.where(Enrollment.cohort_id == cohort_id)
+        
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
 
@@ -79,6 +84,7 @@ async def get_course_progress_by_slug(
 @router.get("/course/{course_id}", response_model=List[LessonProgressResponse])
 async def get_course_progress(
     course_id: uuid.UUID,
+    cohort_id: Optional[uuid.UUID] = None,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
@@ -90,6 +96,10 @@ async def get_course_progress(
         Enrollment.site_id == current_site.id,
         Enrollment.status == EnrollmentStatus.active
     )
+    
+    if cohort_id:
+        enrollment_query = enrollment_query.where(Enrollment.cohort_id == cohort_id)
+        
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
 
@@ -123,12 +133,13 @@ async def get_course_progress(
 async def update_lesson_progress(
     lesson_id: uuid.UUID,
     progress_update: LessonProgressUpdate,
+    cohort_id: Optional[uuid.UUID] = Query(None),
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
     # Get lesson info and check enrollment
-    lesson_query = select(Lesson, Enrollment.id.label("enrollment_id")).join(
+    enrollment_query_base = select(Lesson, Enrollment.id.label("enrollment_id")).join(
         Enrollment, Lesson.course_id == Enrollment.course_id
     ).where(
         Lesson.id == lesson_id,
@@ -137,16 +148,27 @@ async def update_lesson_progress(
         Enrollment.status == EnrollmentStatus.active,
         Enrollment.site_id == current_site.id
     )
-    lesson_result = await session.exec(lesson_query)
+    
+    if cohort_id:
+        enrollment_query_base = enrollment_query_base.where(Enrollment.cohort_id == cohort_id)
+        
+    lesson_result = await session.exec(enrollment_query_base)
     row = lesson_result.first()
 
     if not row:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Lesson not found or not enrolled in course"
+            detail="Lesson not found or you are not enrolled in this course/cohort"
         )
     
-    lesson = row[0]
+    lesson, enrollment_id = row
+    
+    # Capture lesson data before it can be expired by session.commit() in other functions
+    lesson_title = lesson.title
+    lesson_type = lesson.type
+    course_id = lesson.course_id
+    user_id = current_user.id
+    site_id = current_site.id
 
     # Check assessment completion status
     assessment_status = await check_lesson_assessment_completion(current_user.id, lesson_id, session, site_id=current_site.id)
@@ -224,29 +246,36 @@ async def update_lesson_progress(
 
     await session.commit()
     await session.refresh(updated_progress)
+    await session.refresh(current_site)
 
     # Award tokens if lesson just completed and rewards are enabled
     if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
         if are_token_rewards_enabled(current_site):
             await award_tokens(
-                user_id=current_user.id,
+                user_id=user_id,
                 amount=10.0,
-                description=f"Completed lesson: {lesson.title}",
+                description=f"Completed lesson: {lesson_title}",
                 session=session,
                 reference_type="lesson_completed",
                 reference_id=lesson_id
             )
 
         # Send completion notification
-        await send_lesson_completion_notification(current_user.id, lesson.title, lesson.course_id, session)
+        await send_lesson_completion_notification(
+            user_id=user_id,
+            lesson_title=lesson_title,
+            course_id=course_id,
+            session=session,
+            site_id=site_id
+        )
 
         # Update course progress
-        await update_course_progress(current_user.id, lesson.course_id, session, current_site)
+        await update_course_progress(user_id, course_id, session, current_site, cohort_id=cohort_id)
 
     # Prepare response from updated_progress
     res_dict = updated_progress.model_dump()
-    res_dict["lesson_title"] = lesson.title
-    res_dict["lesson_type"] = lesson.type
+    res_dict["lesson_title"] = lesson_title
+    res_dict["lesson_type"] = lesson_type
     return res_dict
 
 @router.post("/quiz/attempt", response_model=QuizAttemptResponse)
@@ -383,7 +412,7 @@ async def get_quiz_attempts(
     attempts_result = await session.exec(query)
     return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site: Site):
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site: Site, cohort_id: Optional[uuid.UUID] = None):
     """Update overall course progress based on lesson completions"""
     from models.enrollment import Enrollment, LessonProgress
     from models.lesson import Lesson
@@ -422,6 +451,9 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
         Enrollment.course_id == course_id,
         Enrollment.site_id == site.id
     )
+    
+    if cohort_id:
+        enrollment_query = enrollment_query.where(Enrollment.cohort_id == cohort_id)
     enrollment_result = await session.exec(enrollment_query)
     enrollment = enrollment_result.first()
     

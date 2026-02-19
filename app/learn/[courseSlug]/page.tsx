@@ -26,6 +26,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const searchParams = useSearchParams()
   const courseSlug = params.courseSlug
   const lessonParam = searchParams.get("lesson")
+  const cohortId = searchParams.get("cohort")
 
   const [course, setCourse] = useState<any>(null)
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
@@ -42,12 +43,12 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         // Fetch course lessons, lesson progress, and enrollment progress
         const [lessons, lessonProgress, enrollmentProgress] = await Promise.all([
           courseService.getCourseLessons(courseSlug),
-          progressService.getCourseProgress(courseSlug).catch(() => ({
+          progressService.getCourseProgress(courseSlug, cohortId || undefined).catch(() => ({
             courseId: courseSlug,
             completedLessons: [],
             completedQuizzes: [],
           })),
-          progressService.getEnrollmentProgress(courseSlug).catch(() => ({
+          progressService.getEnrollmentProgress(courseSlug, cohortId || undefined).catch(() => ({
             progress_percentage: 0,
           })),
         ])
@@ -129,7 +130,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     setVideoCompleted(true)
     if (!isLessonCompleted) {
       try {
-        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 })
+        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
         // Update local lesson progress state
         setUserProgress((prev: any) => ({
           ...prev,
@@ -137,7 +138,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         }))
 
         // Fetch updated enrollment progress to update course progress UI
-        const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug)
+        const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug, cohortId || undefined)
         setCourse((prevCourse: any) => ({
           ...prevCourse,
           progressPercentage: updatedEnrollmentProgress.progress_percentage || 0,
@@ -150,6 +151,24 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     // If the lesson has a quiz, show it after video completion
     if (currentLesson.hasQuiz && !isQuizCompleted) {
       setShowQuiz(true)
+    } else if (canNavigateToNext) {
+      // Auto-play next lesson after 2 seconds if no quiz
+      setTimeout(() => {
+        navigateToLesson(currentLessonIndex + 1)
+      }, 2000)
+    }
+  }
+
+  const handleTimeUpdate = async (currentTime: number, progress: number) => {
+    try {
+      // Update backend with current viewing position
+      await progressService.updateLessonProgress(currentLesson.id, {
+        progress_percentage: Math.round(progress),
+        last_position: Math.round(currentTime),
+      }, cohortId || undefined)
+    } catch (error) {
+      // Silently fail progress updates to not disturb user experience
+      console.warn("Failed to update viewing progress:", error)
     }
   }
 
@@ -166,12 +185,16 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           completedQuizzes: [...prev.completedQuizzes, currentLesson.id],
         }))
         setShowQuiz(false)
+
+        // Auto-play next lesson after passing quiz
+        if (canNavigateToNext) {
+          navigateToLesson(currentLessonIndex + 1)
+        }
       } catch (error) {
         console.error("Failed to mark quiz as completed:", error)
       }
     }
   }
-
   const navigateToLesson = (index: number) => {
     // Check if the lesson is accessible
     const targetLesson = course.lessons[index]
@@ -185,7 +208,8 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       setCurrentLessonIndex(index)
       setShowQuiz(false)
       setVideoCompleted(userProgress.completedLessons?.includes(targetLesson.id) || false)
-      router.push(`/learn/${courseSlug}?lesson=${targetLesson.id}`)
+      const url = `/learn/${courseSlug}?lesson=${targetLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+      router.push(url)
     }
   }
 
@@ -258,6 +282,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                     <VideoPlayer
                       videoUrl={currentLesson.videoUrl}
                       onComplete={handleVideoComplete}
+                      onTimeUpdate={handleTimeUpdate}
                       isCompleted={isLessonCompleted}
                     />
                   </CardContent>

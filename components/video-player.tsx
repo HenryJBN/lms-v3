@@ -16,13 +16,17 @@ import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, RotateCcw, Rotate
 interface VideoPlayerProps {
   videoUrl: string
   onComplete: () => void
+  onTimeUpdate?: (currentTime: number, progress: number) => void
   isCompleted?: boolean
+  initialTime?: number
 }
 
 export default function VideoPlayer({
   videoUrl,
   onComplete,
+  onTimeUpdate,
   isCompleted = false,
+  initialTime = 0,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -55,6 +59,11 @@ export default function VideoPlayer({
 
     const handleLoadedMetadata = () => {
       setDuration(video.duration)
+      if (initialTime > 0 && video.currentTime === 0) {
+        video.currentTime = initialTime
+        setCurrentTime(initialTime)
+        setProgress((initialTime / video.duration) * 100)
+      }
     }
 
     const handleEnded = () => {
@@ -75,6 +84,20 @@ export default function VideoPlayer({
       video.removeEventListener("ended", handleEnded)
     }
   }, [hasWatched85Percent, onComplete, isDragging])
+
+  // Periodic progress tracking
+  useEffect(() => {
+    if (!isPlaying || !onTimeUpdate) return
+
+    const interval = setInterval(() => {
+      const video = videoRef.current
+      if (video && video.duration > 0) {
+        onTimeUpdate(video.currentTime, (video.currentTime / video.duration) * 100)
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isPlaying, onTimeUpdate])
 
   // Hide controls after inactivity
   useEffect(() => {
@@ -176,6 +199,13 @@ export default function VideoPlayer({
     const clampedTime = Math.max(0, Math.min(newTime, video.duration))
     
     video.currentTime = clampedTime
+    setCurrentTime(clampedTime)
+    setProgress((clampedTime / video.duration) * 100)
+
+    // Notify parent immediately on skip
+    if (onTimeUpdate) {
+      onTimeUpdate(clampedTime, (clampedTime / video.duration) * 100)
+    }
   }
 
   const handleSpeedChange = (speed: number) => {

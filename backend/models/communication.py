@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON, Column
+from sqlalchemy import Column as SAColumn, Enum as SAEnum
 from models.enums import NotificationType, NotificationPriority
 from models.base import MultiTenantMixin
 
@@ -11,8 +12,12 @@ class Notification(MultiTenantMixin, table=True):
     
     title: str
     message: str
-    type: NotificationType = Field(default=NotificationType.system)
-    priority: NotificationPriority = Field(default=NotificationPriority.medium)
+    type: NotificationType = Field(
+        sa_column=SAColumn(SAEnum(NotificationType, name="notificationtype"), default=NotificationType.system)
+    )
+    priority: NotificationPriority = Field(
+        sa_column=SAColumn(SAEnum(NotificationPriority, name="notificationpriority"), default=NotificationPriority.medium)
+    )
     
     is_read: bool = Field(default=False)
     read_at: Optional[datetime] = None

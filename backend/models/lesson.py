@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON, Column
+from sqlalchemy import Column as SAColumn, Enum as SAEnum
 from models.enums import LessonType, QuizQuestionType
 from models.base import MultiTenantMixin
 
@@ -17,7 +18,9 @@ class Lesson(MultiTenantMixin, table=True):
     video_url: Optional[str] = None
     video_duration: Optional[int] = None
     
-    type: LessonType = Field(default=LessonType.video)
+    type: LessonType = Field(
+        sa_column=SAColumn(SAEnum(LessonType, name="lessontype"), default=LessonType.video)
+    )
     sort_order: int = Field(default=0)
     is_published: bool = Field(default=True)
     is_preview: bool = Field(default=False)
@@ -51,11 +54,15 @@ class Quiz(MultiTenantMixin, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class QuizQuestion(MultiTenantMixin, table=True):
+    __tablename__ = "quiz_questions"
+    
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     quiz_id: uuid.UUID = Field(foreign_key="quiz.id", index=True)
     
     question: str
-    type: QuizQuestionType = Field(default=QuizQuestionType.multiple_choice)
+    type: QuizQuestionType = Field(
+        sa_column=SAColumn(SAEnum(QuizQuestionType, name="quizquestiontype"), default=QuizQuestionType.multiple_choice)
+    )
     options: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     correct_answer: str
     explanation: Optional[str] = None
@@ -66,6 +73,8 @@ class QuizQuestion(MultiTenantMixin, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class QuizAttempt(MultiTenantMixin, table=True):
+    __tablename__ = "quiz_attempts"
+    
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     quiz_id: uuid.UUID = Field(foreign_key="quiz.id", index=True)
@@ -100,6 +109,8 @@ class Assignment(MultiTenantMixin, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class AssignmentSubmission(MultiTenantMixin, table=True):
+    __tablename__ = "assignment_submissions"
+    
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     assignment_id: uuid.UUID = Field(foreign_key="assignment.id", index=True)

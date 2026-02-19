@@ -74,11 +74,16 @@ async def enroll_in_course(
     # Check Existing Enrollment
     existing_query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
-        Enrollment.course_id == course.id
+        Enrollment.course_id == course.id,
+        Enrollment.cohort_id == enrollment_in.cohort_id,
+        Enrollment.status == EnrollmentStatus.active
     )
     existing_result = await session.exec(existing_query)
     if existing_result.first():
-        raise HTTPException(status_code=400, detail="Already enrolled in this course")
+        detail = "Already enrolled in this course"
+        if enrollment_in.cohort_id:
+             detail = "Already enrolled in this cohort"
+        raise HTTPException(status_code=400, detail=detail)
 
     # Check Course Capacity (Global for course, irrespective of cohort? Or only for non-cohort?)
     # Usually Course Limit is total students.
@@ -92,10 +97,18 @@ async def enroll_in_course(
         if current_count >= course.enrollment_limit:
             raise HTTPException(status_code=400, detail="Course enrollment limit reached")
             
+    # Capture necessary data before commit/utilities to avoid MissingGreenlet errors
+    course_title = course.title
+    course_id = course.id
+    course_thumbnail = course.thumbnail_url
+    course_description = course.description
+    course_level = course.level
+    user_id = current_user.id
+
     # Create Enrollment
     new_enrollment = Enrollment(
-        user_id=current_user.id,
-        course_id=course.id,
+        user_id=user_id,
+        course_id=course_id,
         cohort_id=enrollment_in.cohort_id,
         status=EnrollmentStatus.active,
         site_id=current_site.id,
@@ -104,23 +117,21 @@ async def enroll_in_course(
     session.add(new_enrollment)
     
     # Update Course student count (denormalized field)
-    course.total_students += 1 # We renamed enrollment_count to total_students in Model
+    course.total_students += 1
     session.add(course)
     
     await session.commit()
     await session.refresh(new_enrollment)
-    await session.refresh(course)
-    await session.refresh(current_user)
     
     # Award tokens logic (Refactored to utility)
     try:
         await award_tokens(
-            user_id=current_user.id,
+            user_id=user_id,
             amount=25.0,
             description="First course enrollment bonus",
             session=session,
             reference_type="first_course_enrollment",
-            reference_id=course.id
+            reference_id=course_id
         )
     except Exception as e:
         print(f"Failed to award tokens: {e}")
@@ -128,25 +139,22 @@ async def enroll_in_course(
     # Send enrollment notification
     try:
         await send_enrollment_notification(
-            user_id=current_user.id,
-            course_title=course.title,
-            course_id=course.id,
-            session=session
+            user_id=user_id,
+            course_title=course_title,
+            course_id=course_id,
+            session=session,
+            site_id=current_site.id
         )
     except Exception as e:
         print(f"Failed to send enrollment notification: {e}")
              
     # Return response
-    # We need to fetch course info to populate response fields if EnrollmentResponse expects them
-    # EnrollmentResponse has: title, thumbnail_url, etc.
     return EnrollmentResponse(
         **new_enrollment.model_dump(),
-        title=course.title,
-        thumbnail_url=course.thumbnail_url,
-        description=course.description,
-        level=course.level,
-        # Instructor info? Response schema has instructor_first_name...
-        # We need to fetch instructor.
+        title=course_title,
+        thumbnail_url=course_thumbnail,
+        description=course_description,
+        level=course_level,
     )
 
 @router.get("/my-courses", response_model=PaginatedResponse)
@@ -266,6 +274,7 @@ async def drop_course(
 @router.get("/progress/{course_id}")
 async def get_enrollment_progress(
     course_id: uuid.UUID,
+    cohort_id: Optional[uuid.UUID] = Query(None),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
@@ -276,17 +285,22 @@ async def get_enrollment_progress(
         Enrollment.site_id == current_site.id,
         (Enrollment.status == EnrollmentStatus.active) | (Enrollment.status == EnrollmentStatus.completed)
     )
+    
+    if cohort_id:
+        query = query.where(Enrollment.cohort_id == cohort_id)
+        
     result = await session.exec(query)
     enrollment = result.first()
     
     if not enrollment:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course")
+        raise HTTPException(status_code=404, detail="Not enrolled in this course/cohort")
         
     return {"progress_percentage": enrollment.progress_percentage}
 
 @router.get("/progress/slug/{course_slug}")
 async def get_enrollment_progress_by_slug(
     course_slug: str,
+    cohort_id: Optional[uuid.UUID] = Query(None),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
@@ -305,11 +319,15 @@ async def get_enrollment_progress_by_slug(
         Enrollment.course_id == course.id,
         Enrollment.site_id == current_site.id
     )
+    
+    if cohort_id:
+        query = query.where(Enrollment.cohort_id == cohort_id)
+        
     result = await session.exec(query)
     enrollment = result.first()
     
     if not enrollment:
-        raise HTTPException(status_code=404, detail="Not enrolled in this course")
+        raise HTTPException(status_code=404, detail="Not enrolled in this course/cohort")
         
     return {"progress_percentage": enrollment.progress_percentage}
 

@@ -2,7 +2,7 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, JSON
+from sqlalchemy import Column, JSON, Enum as SAEnum
 from models.enums import CourseLevel, CourseStatus
 from models.base import MultiTenantMixin
 
@@ -31,14 +31,18 @@ class Course(MultiTenantMixin, table=True):
     thumbnail_url: Optional[str] = None
     trailer_video_url: Optional[str] = None
     
-    level: CourseLevel = Field(default=CourseLevel.beginner)
+    level: CourseLevel = Field(
+        sa_column=Column(SAEnum(CourseLevel, name="courselevel"), default=CourseLevel.beginner)
+    )
     price: float = Field(default=0.0)
     original_price: Optional[float] = None
     currency: str = Field(default="USD")
     duration_hours: Optional[int] = None
     language: str = Field(default="en")
     
-    status: CourseStatus = Field(default=CourseStatus.draft)
+    status: CourseStatus = Field(
+        sa_column=Column(SAEnum(CourseStatus, name="coursestatus"), default=CourseStatus.draft)
+    )
     
     is_featured: bool = Field(default=False)
     is_free: bool = Field(default=False)

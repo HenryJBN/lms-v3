@@ -494,13 +494,17 @@ class ProgressService {
   /**
    * Get user progress for a course
    */
-  async getCourseProgress(courseIdOrSlug: string): Promise<UserProgress> {
+  async getCourseProgress(courseIdOrSlug: string, cohortId?: string): Promise<UserProgress> {
     try {
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      
+      const params = new URLSearchParams()
+      if (cohortId) params.append("cohort_id", cohortId)
+      
       const endpoint = isUUID
-        ? `${API_ENDPOINTS.progress}/course/${courseIdOrSlug}`
-        : `${API_ENDPOINTS.progress}/course/slug/${courseIdOrSlug}`
+        ? `${API_ENDPOINTS.progress}/course/${courseIdOrSlug}?${params.toString()}`
+        : `${API_ENDPOINTS.progress}/course/slug/${courseIdOrSlug}?${params.toString()}`
 
       // API returns LessonProgressResponse[] - transform to UserProgress format
       const progressRecords = await apiClient.get<any[]>(endpoint)
@@ -538,9 +542,12 @@ class ProgressService {
   /**
    * Update lesson progress
    */
-  async updateLessonProgress(lessonId: string, progress: LessonProgressUpdate): Promise<any> {
+  async updateLessonProgress(lessonId: string, progress: LessonProgressUpdate, cohortId?: string): Promise<any> {
     try {
-      return await apiClient.put(`${API_ENDPOINTS.progress}/lesson/${lessonId}`, progress)
+      const params = new URLSearchParams()
+      if (cohortId) params.append("cohort_id", cohortId)
+      
+      return await apiClient.put(`${API_ENDPOINTS.progress}/lesson/${lessonId}?${params.toString()}`, progress)
     } catch (error) {
       console.error("❌ Failed to update lesson progress:", error)
       throw error
@@ -550,9 +557,9 @@ class ProgressService {
   /**
    * Mark lesson as completed
    */
-  async markLessonCompleted(courseId: string, lessonId: string): Promise<any> {
+  async markLessonCompleted(courseId: string, lessonId: string, cohortId?: string): Promise<any> {
     try {
-      return await this.updateLessonProgress(lessonId, { progress_percentage: 100 })
+      return await this.updateLessonProgress(lessonId, { progress_percentage: 100 }, cohortId)
     } catch (error) {
       console.error("❌ Failed to mark lesson as completed:", error)
       throw error
@@ -577,13 +584,17 @@ class ProgressService {
   /**
    * Get enrollment progress for a course
    */
-  async getEnrollmentProgress(courseIdOrSlug: string): Promise<{ progress_percentage: number }> {
+  async getEnrollmentProgress(courseIdOrSlug: string, cohortId?: string): Promise<{ progress_percentage: number }> {
     try {
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      
+      const params = new URLSearchParams()
+      if (cohortId) params.append("cohort_id", cohortId)
+      
       const endpoint = isUUID
-        ? `${API_ENDPOINTS.enrollments}/progress/${courseIdOrSlug}`
-        : `${API_ENDPOINTS.enrollments}/progress/slug/${courseIdOrSlug}`
+        ? `${API_ENDPOINTS.enrollments}/progress/${courseIdOrSlug}?${params.toString()}`
+        : `${API_ENDPOINTS.enrollments}/progress/slug/${courseIdOrSlug}?${params.toString()}`
 
       return await apiClient.get<{ progress_percentage: number }>(endpoint)
     } catch (error) {
