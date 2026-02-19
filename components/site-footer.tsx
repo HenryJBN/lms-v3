@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
@@ -13,6 +14,7 @@ import {
   Instagram,
   Youtube,
 } from "lucide-react"
+import { useTenantTheme } from "@/components/tenant-theme-provider"
 
 const footerLinks = {
   courses: [
@@ -62,6 +64,8 @@ const socialLinks = [
 ]
 
 export default function SiteFooter() {
+  const { theme } = useTenantTheme()
+
   return (
     <footer className="bg-background border-t">
       <div className="container mx-auto px-4 py-12">
@@ -70,8 +74,18 @@ export default function SiteFooter() {
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <GraduationCap className="h-8 w-8" />
-              <span className="text-2xl font-bold">DCA LMS</span>
+              {theme?.logo_url ? (
+                <Image
+                  src={theme.logo_url}
+                  alt={theme.site_name || "Logo"}
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <GraduationCap className="h-8 w-8" />
+              )}
+              <span className="text-2xl font-bold">{theme?.site_name || "DCA LMS"}</span>
             </Link>
             <p className="text-muted-foreground mb-6 max-w-sm">
               Empowering learners worldwide with blockchain-powered education. Earn certificates,
@@ -205,7 +219,7 @@ export default function SiteFooter() {
         {/* Bottom Footer */}
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} DCA LMS. All rights reserved.
+            © {new Date().getFullYear()} {theme?.site_name || "DCA LMS"}. All rights reserved.
           </div>
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <span>Built with ❤️ for learners worldwide</span>

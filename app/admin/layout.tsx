@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -36,6 +37,7 @@ import {
   User,
 } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useTenantTheme } from "@/components/tenant-theme-provider"
 
 interface SidebarProps {
   className?: string
@@ -52,6 +54,7 @@ function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [openSections, setOpenSections] = useState<string[]>([])
   const { user } = useAuth()
+  const { theme } = useTenantTheme()
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) =>
@@ -153,8 +156,18 @@ function Sidebar({ className }: SidebarProps) {
     <div className={`flex h-full w-full flex-col bg-background ${className}`}>
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
         <Link href={isSystemAdmin ? "/system-admin" : "/admin"} className="flex items-center gap-2 font-semibold text-primary">
-          <Shield className="h-6 w-6" />
-          <span>{isSystemAdmin ? "System Admin" : "LMS Admin"}</span>
+          {!isSystemAdmin && theme?.logo_url ? (
+            <Image
+              src={theme.logo_url}
+              alt={theme.site_name || "Logo"}
+              width={24}
+              height={24}
+              className="h-6 w-auto object-contain"
+            />
+          ) : (
+            <Shield className="h-6 w-6" />
+          )}
+          <span>{isSystemAdmin ? "System Admin" : (theme?.site_name || "LMS Admin")}</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto">

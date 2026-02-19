@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ImageUpload } from "@/components/admin/image-upload"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
+import { useTenantTheme } from "@/components/tenant-theme-provider"
 
 interface SiteSettings {
   name: string
@@ -48,6 +49,7 @@ interface SiteSettings {
 
 export default function AdminSettings() {
   const { toast } = useToast()
+  const { refreshTheme } = useTenantTheme()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isTestingEmail, setIsTestingEmail] = useState(false)
@@ -111,11 +113,15 @@ export default function AdminSettings() {
         support_email: settings.support_email,
         theme_config: settings.theme_config,
       })
-      
+
       setSettings(data)
+
+      // Refresh theme to apply new colors immediately
+      await refreshTheme()
+
       toast({
         title: "Success",
-        description: "Settings saved successfully",
+        description: "Settings saved successfully. Theme colors have been updated.",
       })
     } catch (error) {
       console.error("Failed to save settings:", error)
@@ -445,6 +451,19 @@ export default function AdminSettings() {
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Theme Preview */}
+                  <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+                    <h4 className="text-sm font-medium mb-3">Theme Preview</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="default" size="sm">Primary Button</Button>
+                      <Button variant="secondary" size="sm">Secondary Button</Button>
+                      <Button variant="outline" size="sm">Outline Button</Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Save your changes to see the theme applied across your academy
+                    </p>
                   </div>
                 </CardContent>
               </Card>

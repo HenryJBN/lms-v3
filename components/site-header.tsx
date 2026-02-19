@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
@@ -22,9 +23,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GraduationCap, BookOpen, User, Settings, LogOut, LayoutDashboard } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
+import { useTenantTheme } from "@/components/tenant-theme-provider"
 
 export default function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuth()
+  const { theme } = useTenantTheme()
   const router = useRouter()
 
   const handleLogout = () => {
@@ -44,8 +47,18 @@ export default function SiteHeader() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-6">
           <Link href="/" className="flex items-center space-x-2">
-            <GraduationCap className="h-6 w-6" />
-            <span className="font-bold">DCA LMS</span>
+            {theme?.logo_url ? (
+              <Image
+                src={theme.logo_url}
+                alt={theme.site_name || "Logo"}
+                width={32}
+                height={32}
+                className="h-8 w-auto object-contain"
+              />
+            ) : (
+              <GraduationCap className="h-6 w-6" />
+            )}
+            <span className="font-bold">{theme?.site_name || "DCA LMS"}</span>
           </Link>
 
           <NavigationMenu className="hidden md:flex">

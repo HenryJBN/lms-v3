@@ -68,7 +68,11 @@ export const API_ENDPOINTS = {
 
   // Categories endpoints
   categories: "/api/categories",
-  
+
+  // Site endpoints
+  siteTheme: "/api/site/theme",
+  siteInfo: "/api/site/info",
+
   // System Admin endpoints
   systemAdmin: "/api/system-admin",
   systemAdminSites: "/api/system-admin/sites",
