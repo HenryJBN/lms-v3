@@ -116,9 +116,13 @@ async def enroll_in_course(
     )
     session.add(new_enrollment)
     
-    # Update Course student count (denormalized field)
+    # Update Course and Cohort student counts (denormalized fields)
     course.total_students += 1
     session.add(course)
+    
+    if enrollment_in.cohort_id:
+        cohort.total_students += 1
+        session.add(cohort)
     
     await session.commit()
     await session.refresh(new_enrollment)
@@ -267,6 +271,13 @@ async def drop_course(
     if course:
         course.total_students = max(0, course.total_students - 1)
         session.add(course)
+        
+    # Update cohort count if applicable
+    if enrollment.cohort_id:
+        cohort = await session.get(Cohort, enrollment.cohort_id)
+        if cohort:
+            cohort.total_students = max(0, cohort.total_students - 1)
+            session.add(cohort)
         
     await session.commit()
     return {"message": "Successfully dropped from course"}

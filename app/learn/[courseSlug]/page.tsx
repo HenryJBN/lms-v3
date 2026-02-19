@@ -130,19 +130,26 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     setVideoCompleted(true)
     if (!isLessonCompleted) {
       try {
-        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
         // Update local lesson progress state
         setUserProgress((prev: any) => ({
           ...prev,
           completedLessons: [...prev.completedLessons, currentLesson.id],
         }))
 
-        // Fetch updated enrollment progress to update course progress UI
-        const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug, cohortId || undefined)
-        setCourse((prevCourse: any) => ({
-          ...prevCourse,
-          progressPercentage: updatedEnrollmentProgress.progress_percentage || 0,
-        }))
+        // Use course progress from response if available, otherwise fallback to fetch
+        if (response && response.course_progress_percentage !== undefined) {
+          setCourse((prevCourse: any) => ({
+            ...prevCourse,
+            progressPercentage: response.course_progress_percentage,
+          }))
+        } else {
+          const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug, cohortId || undefined)
+          setCourse((prevCourse: any) => ({
+            ...prevCourse,
+            progressPercentage: updatedEnrollmentProgress.progress_percentage || 0,
+          }))
+        }
       } catch (error) {
         console.error("Failed to mark lesson as completed:", error)
       }
@@ -162,13 +169,20 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const handleTimeUpdate = async (currentTime: number, progress: number) => {
     try {
       // Update backend with current viewing position
-      await progressService.updateLessonProgress(currentLesson.id, {
+      const response = await progressService.updateLessonProgress(currentLesson.id, {
         progress_percentage: Math.round(progress),
         last_position: Math.round(currentTime),
       }, cohortId || undefined)
+
+      // Update course progress real-time from response
+      if (response && response.course_progress_percentage !== undefined) {
+        setCourse((prevCourse: any) => ({
+          ...prevCourse,
+          progressPercentage: response.course_progress_percentage,
+        }))
+      }
     } catch (error) {
-      // Silently fail progress updates to not disturb user experience
-      console.warn("Failed to update viewing progress:", error)
+      console.error("Failed to update time position:", error)
     }
   }
 
@@ -179,11 +193,25 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         if (currentLesson.quiz?.id) {
           await progressService.submitQuizAttempt(currentLesson.quiz.id, {})
         }
+
+        // Re-call progress update to sync completion status now that quiz is passed
+        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+
         // Update local progress state
         setUserProgress((prev: any) => ({
           ...prev,
           completedQuizzes: [...prev.completedQuizzes, currentLesson.id],
+          completedLessons: [...prev.completedLessons, currentLesson.id],
         }))
+
+        // Update course progress real-time from response
+        if (response && response.course_progress_percentage !== undefined) {
+          setCourse((prevCourse: any) => ({
+            ...prevCourse,
+            progressPercentage: response.course_progress_percentage,
+          }))
+        }
+
         setShowQuiz(false)
 
         // Auto-play next lesson after passing quiz

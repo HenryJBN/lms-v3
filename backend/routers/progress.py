@@ -193,17 +193,18 @@ async def update_lesson_progress(
     if video_progress > 0 or assessment_status['has_started']:
         status_enum = CompletionStatus.in_progress
 
-    # Lesson is complete if video is watched AND all assessments are complete
-    if video_progress >= 100 and assessment_complete:
+    # Lesson is complete if video is watched (at least 85%) AND all assessments are complete
+    if video_progress >= 85 and assessment_complete:
         status_enum = CompletionStatus.completed
         final_progress_percentage = 100
-    elif video_progress >= 100 and not assessment_complete:
+    elif video_progress >= 85 and not assessment_complete:
         # Video complete but assessments pending
+        status_enum = CompletionStatus.in_progress
         final_progress_percentage = min(95, video_progress)  # Cap at 95% until assessments done
-    elif assessment_complete and video_progress < 100:
-        # Assessments done but video not complete - allow completion anyway
-        status_enum = CompletionStatus.completed
-        final_progress_percentage = 100
+    elif assessment_complete and video_progress < 85:
+        # Assessments done but video not yet at threshold
+        status_enum = CompletionStatus.in_progress
+        final_progress_percentage = video_progress
 
     if existing_progress:
         # Update existing progress
@@ -269,13 +270,17 @@ async def update_lesson_progress(
             site_id=site_id
         )
 
-        # Update course progress
-        await update_course_progress(user_id, course_id, session, current_site, cohort_id=cohort_id)
+        # Update course progress - MOVED to always update below the block
+        # await update_course_progress(user_id, course_id, session, current_site, cohort_id=cohort_id)
+
+    # Always update overall course progress to reflect granular changes
+    course_progress = await update_course_progress(user_id, course_id, session, site_id, cohort_id=cohort_id)
 
     # Prepare response from updated_progress
     res_dict = updated_progress.model_dump()
     res_dict["lesson_title"] = lesson_title
     res_dict["lesson_type"] = lesson_type
+    res_dict["course_progress_percentage"] = course_progress
     return res_dict
 
 @router.post("/quiz/attempt", response_model=QuizAttemptResponse)
@@ -412,44 +417,43 @@ async def get_quiz_attempts(
     attempts_result = await session.exec(query)
     return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site: Site, cohort_id: Optional[uuid.UUID] = None):
-    """Update overall course progress based on lesson completions"""
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID, cohort_id: Optional[uuid.UUID] = None):
+    """Update overall course progress based on average lesson progress"""
     from models.enrollment import Enrollment, LessonProgress
     from models.lesson import Lesson
-    from models.gamification import TokenTransaction
+    from models.enums import CompletionStatus, EnrollmentStatus
     
-    # Get total lessons and completed lessons
-    # We use a join to ensure we only count published lessons
-    total_query = select(func.count(Lesson.id)).where(
+    # Get all published lessons for the course
+    lessons_query = select(Lesson.id).where(
         Lesson.course_id == course_id,
         Lesson.is_published == True,
-        Lesson.site_id == site.id
+        Lesson.site_id == site_id
     )
-    total_result = await session.exec(total_query)
-    total_lessons = total_result.one()
+    lessons_result = await session.exec(lessons_query)
+    lesson_ids = lessons_result.all()
+    total_lessons = len(lesson_ids)
     
     if total_lessons == 0:
         return
     
-    completed_query = select(func.count(LessonProgress.id)).join(
-        Lesson, LessonProgress.lesson_id == Lesson.id
-    ).where(
+    # Get progress for these specific lessons
+    progress_query = select(LessonProgress.progress_percentage).where(
         LessonProgress.user_id == user_id,
-        LessonProgress.course_id == course_id,
-        LessonProgress.status == CompletionStatus.completed,
-        LessonProgress.site_id == site.id,
-        Lesson.is_published == True
+        LessonProgress.lesson_id.in_(lesson_ids),
+        LessonProgress.site_id == site_id
     )
-    completed_result = await session.exec(completed_query)
-    completed_lessons = completed_result.one()
+    progress_result = await session.exec(progress_query)
+    existing_progress_percentages = progress_result.all()
     
-    progress_percentage = int((completed_lessons / total_lessons) * 100)
+    # Calculate average. Missing lesson progress records count as 0%
+    total_progress_sum = sum(existing_progress_percentages)
+    progress_percentage = int(total_progress_sum / total_lessons)
     
     # Update enrollment progress
     enrollment_query = select(Enrollment).where(
         Enrollment.user_id == user_id,
         Enrollment.course_id == course_id,
-        Enrollment.site_id == site.id
+        Enrollment.site_id == site_id
     )
     
     if cohort_id:
@@ -463,6 +467,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
         enrollment.last_accessed_at = datetime.utcnow()
         enrollment.updated_at = datetime.utcnow()
         
+        # If progress is 100%, consider the course completed
         if progress_percentage >= 100:
             enrollment.status = EnrollmentStatus.completed
             if not enrollment.completed_at:
@@ -470,31 +475,42 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
         
         session.add(enrollment)
         await session.commit()
-    
+        await session.refresh(enrollment)
+        
         # If course completed, award bonus tokens and issue certificate
         if progress_percentage >= 100 and prev_progress < 100:
+            from utils.site_settings import are_token_rewards_enabled
+            from models.site import Site
+            
+            # Fetch site for utilities
+            site = await session.get(Site, site_id)
+            
             # Check if already awarded completion bonus
+            from models.gamification import TokenTransaction
             bonus_query = select(TokenTransaction).where(
                 TokenTransaction.user_id == user_id,
                 TokenTransaction.reference_type == "course_completed",
                 TokenTransaction.reference_id == course_id
             )
             bonus_result = await session.exec(bonus_query)
-            if not bonus_result.first():
+            if not bonus_result.first() and site:
                 # Award course completion bonus if rewards are enabled
                 if are_token_rewards_enabled(site):
-                    reward_amount = get_default_token_reward(site)
+                    from utils.tokens import award_tokens
                     await award_tokens(
                         user_id=user_id,
-                        amount=float(reward_amount),
-                        description="Course completion bonus",
+                        amount=50.0,
+                        description=f"Course completion bonus",
                         session=session,
                         reference_type="course_completed",
                         reference_id=course_id
                     )
-                
-                # Issue certificate
-                await issue_certificate(user_id, course_id, session, site_id=site.id)
+            
+            # Issue certificate
+            await issue_certificate(user_id, course_id, session, site_id)
+            
+        return progress_percentage
+    return 0
 
 async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """

@@ -45,24 +45,31 @@ export default function VideoPlayer({
     if (!video) return
 
     const handleTimeUpdate = () => {
+      if (!video.duration || !isFinite(video.duration)) return
+
       if (!isDragging) {
-        setCurrentTime(video.currentTime)
-        setProgress((video.currentTime / video.duration) * 100)
+        const newTime = video.currentTime
+        const newProgress = (newTime / video.duration) * 100
+        setCurrentTime(newTime)
+        setProgress(newProgress)
       }
 
       // Mark as completed when user has watched 85% of the video
-      if (!hasWatched85Percent && video.currentTime / video.duration >= 0.85) {
+      // Ensure we have a valid duration and we are not already completed
+      if (!hasWatched85Percent && video.duration > 0 && video.currentTime / video.duration >= 0.85) {
         setHasWatched85Percent(true)
         onComplete()
       }
     }
 
     const handleLoadedMetadata = () => {
-      setDuration(video.duration)
-      if (initialTime > 0 && video.currentTime === 0) {
-        video.currentTime = initialTime
-        setCurrentTime(initialTime)
-        setProgress((initialTime / video.duration) * 100)
+      if (video.duration && isFinite(video.duration)) {
+        setDuration(video.duration)
+        if (initialTime > 0 && video.currentTime === 0) {
+          video.currentTime = Math.min(initialTime, video.duration)
+          setCurrentTime(video.currentTime)
+          setProgress((video.currentTime / video.duration) * 100)
+        }
       }
     }
 

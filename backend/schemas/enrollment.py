@@ -46,6 +46,7 @@ class LessonProgressResponse(BaseSchema):
     notes: Optional[str] = None
     lesson_title: Optional[str] = None
     lesson_type: Optional[str] = None
+    course_progress_percentage: Optional[int] = 0
 
 # Certificate schemas
 class CertificateBase(BaseSchema):
