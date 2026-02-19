@@ -109,6 +109,8 @@ async def enroll_in_course(
     
     await session.commit()
     await session.refresh(new_enrollment)
+    await session.refresh(course)
+    await session.refresh(current_user)
     
     # Award tokens logic (Refactored to utility)
     try:
