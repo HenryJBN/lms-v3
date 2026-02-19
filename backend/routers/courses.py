@@ -55,16 +55,19 @@ async def get_courses(
     # Base query: Course + Instructor (User)
     # We select Course and User. We also need Category info potentially.
     # To keep it simple and compatible with SQLModel, we'll start with filtering.
-    
+
     # We need to construct a query that joins User to get instructor names.
     # Since I haven't defined relationship attributes in Course yet, I'll use explicit join.
-    
+
     # Query for counting first
     query_count = select(func.count(Course.id)).where(Course.site_id == current_site.id)
-    
+
     # Filters
+    # Default to published courses only (students should not see drafts)
     if status is not None:
         query_count = query_count.where(Course.status == status)
+    else:
+        query_count = query_count.where(Course.status == CourseStatus.published)
     if category_id:
         query_count = query_count.where(Course.category_id == category_id)
     if level:
@@ -101,10 +104,13 @@ async def get_courses(
     # No, let's use the explicit select.
     
     query = select(Course, User).outerjoin(User, Course.instructor_id == User.id).where(Course.site_id == current_site.id)
-    
+
     # Apply same filters
+    # Default to published courses only (students should not see drafts)
     if status is not None:
         query = query.where(Course.status == status)
+    else:
+        query = query.where(Course.status == CourseStatus.published)
     if category_id:
         query = query.where(Course.category_id == category_id)
     if level:
@@ -161,7 +167,8 @@ async def get_featured_courses(
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.site_id == current_site.id,
-        Course.is_featured == True
+        Course.is_featured == True,
+        Course.status == CourseStatus.published  # Only show published featured courses
     ).order_by(Course.title)
     
     results = await session.exec(query)
@@ -184,7 +191,8 @@ async def get_course(
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.slug == slug,
-        Course.site_id == current_site.id
+        Course.site_id == current_site.id,
+        Course.status == CourseStatus.published  # Only show published courses
     )
     result = await session.exec(query)
     row = result.first()
@@ -226,7 +234,8 @@ async def get_course_by_id(
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.id == course_id,
-        Course.site_id == current_site.id # Strict Site Check!
+        Course.site_id == current_site.id,  # Strict Site Check!
+        Course.status == CourseStatus.published  # Only show published courses
     )
     result = await session.exec(query)
     row = result.first()
