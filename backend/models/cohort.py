@@ -11,7 +11,7 @@ class Cohort(MultiTenantMixin, table=True):
     start_date: datetime
     end_date: Optional[datetime] = None
     max_students: Optional[int] = None
-    total_students: int = Field(default=0)
+    current_enrollment_count: int = Field(default=0)
     registration_open: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

@@ -45,14 +45,14 @@ async def list_all_cohorts(
     for cohort in cohorts:
         count_query = select(func.count(Enrollment.id)).where(
             Enrollment.cohort_id == cohort.id,
-            Enrollment.status == EnrollmentStatus.active
+            Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
         )
         count_result = await session.exec(count_query)
         count = count_result.one()
         
         enriched_cohorts.append(
             CohortResponse(
-                **cohort.model_dump(),
+                **cohort.model_dump(exclude={"current_enrollment_count"}),
                 current_enrollment_count=count
             )
         )
@@ -92,7 +92,7 @@ async def create_cohort(
     await session.commit()
     await session.refresh(new_cohort)
     
-    return CohortResponse(**new_cohort.model_dump(), current_enrollment_count=0)
+    return CohortResponse(**new_cohort.model_dump(exclude={"current_enrollment_count"}), current_enrollment_count=0)
 
 @router.get("/course/{course_id}", response_model=List[CohortResponse])
 async def get_course_cohorts(
@@ -114,14 +114,14 @@ async def get_course_cohorts(
     for cohort in cohorts:
         count_query = select(func.count(Enrollment.id)).where(
             Enrollment.cohort_id == cohort.id,
-            Enrollment.status == EnrollmentStatus.active
+            Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
         )
         count_result = await session.exec(count_query)
         count = count_result.one()
         
         enriched_cohorts.append(
             CohortResponse(
-                **cohort.model_dump(),
+                **cohort.model_dump(exclude={"current_enrollment_count"}),
                 current_enrollment_count=count
             )
         )
@@ -144,12 +144,12 @@ async def get_cohort(
     # Get count
     count_query = select(func.count(Enrollment.id)).where(
         Enrollment.cohort_id == cohort.id,
-        Enrollment.status == EnrollmentStatus.active
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
     )
     count_result = await session.exec(count_query)
     count = count_result.one()
     
-    return CohortResponse(**cohort.model_dump(), current_enrollment_count=count)
+    return CohortResponse(**cohort.model_dump(exclude={"current_enrollment_count"}), current_enrollment_count=count)
 
 @router.put("/{cohort_id}", response_model=CohortResponse)
 async def update_cohort(
@@ -189,12 +189,12 @@ async def update_cohort(
     # Get count
     count_query = select(func.count(Enrollment.id)).where(
         Enrollment.cohort_id == cohort.id,
-        Enrollment.status == EnrollmentStatus.active
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
     )
     count_result = await session.exec(count_query)
     count = count_result.one()
     
-    return CohortResponse(**cohort.model_dump(), current_enrollment_count=count)
+    return CohortResponse(**cohort.model_dump(exclude={"current_enrollment_count"}), current_enrollment_count=count)
 
 @router.delete("/{cohort_id}")
 async def delete_cohort(
@@ -218,7 +218,7 @@ async def delete_cohort(
     # Check if there are active enrollments
     count_query = select(func.count(Enrollment.id)).where(
         Enrollment.cohort_id == cohort.id,
-        Enrollment.status == EnrollmentStatus.active
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
     )
     count_result = await session.exec(count_query)
     if count_result.one() > 0:

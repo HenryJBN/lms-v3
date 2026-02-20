@@ -34,10 +34,10 @@ async def reset_user_data(email: str):
         # Reset Cohort counts (This is messy if multiple users, but for testing we can just recount)
         await session.execute(text("""
             UPDATE cohort c
-            SET total_students = (
+            SET current_enrollment_count = (
                 SELECT count(*) 
                 FROM enrollment e 
-                WHERE e.cohort_id = c.id AND e.status = 'active'
+                WHERE e.cohort_id = c.id AND e.status IN ('active', 'completed', 'suspended')
             )
         """))
 

@@ -57,7 +57,7 @@ async def enroll_in_course(
         # We need to count active enrollments for this cohort
         count_query = select(func.count(Enrollment.id)).where(
             Enrollment.cohort_id == cohort.id,
-            Enrollment.status == EnrollmentStatus.active
+            Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed, EnrollmentStatus.suspended])
         )
         count_result = await session.exec(count_query)
         current_cohort_count = count_result.one()
@@ -121,7 +121,7 @@ async def enroll_in_course(
     session.add(course)
     
     if enrollment_in.cohort_id:
-        cohort.total_students += 1
+        cohort.current_enrollment_count += 1
         session.add(cohort)
     
     await session.commit()
@@ -276,7 +276,7 @@ async def drop_course(
     if enrollment.cohort_id:
         cohort = await session.get(Cohort, enrollment.cohort_id)
         if cohort:
-            cohort.total_students = max(0, cohort.total_students - 1)
+            cohort.current_enrollment_count = max(0, cohort.current_enrollment_count - 1)
             session.add(cohort)
         
     await session.commit()
