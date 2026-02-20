@@ -21896,3 +21896,1391 @@ WHERE enrollment.cohort_id = $1::UUID AND enrollment.status IN ($2::enrollmentst
 2026-02-20 02:02:51,052 - sqlalchemy.engine.Engine - INFO - [cached since 0.03224s ago] (UUID('4d2edcbc-4c52-4829-9449-1711a2e71796'), 'active', 'completed', 'suspended')
 2026-02-20 02:02:51,057 - sqlalchemy.engine.Engine - INFO - ROLLBACK
 2026-02-20 02:02:51,066 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:17:04,237 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:17:04,237 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:17:04,238 - sqlalchemy.engine.Engine - INFO - [cached since 853.7s ago] ('yappi',)
+2026-02-20 02:17:04,242 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:17:04,242 - sqlalchemy.engine.Engine - INFO - [cached since 853.6s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 02:17:04,248 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:17:04,248 - sqlalchemy.engine.Engine - INFO - [cached since 853.7s ago] ('admin',)
+2026-02-20 02:17:04,252 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:17:04,264 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:17:04,265 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:17:04,266 - sqlalchemy.engine.Engine - INFO - [cached since 853.7s ago] ('yappi',)
+2026-02-20 02:17:04,268 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:17:04,271 - sqlalchemy.engine.Engine - INFO - [cached since 853.6s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 02:17:04,273 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:17:04,274 - sqlalchemy.engine.Engine - INFO - [cached since 853.7s ago] ('admin',)
+2026-02-20 02:17:04,285 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,768 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,771 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,771 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,775 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,778 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,778 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,779 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,780 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,780 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,780 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,782 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:42:20,782 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 02:42:20,784 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,786 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,786 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('admin',)
+2026-02-20 02:42:20,788 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,792 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,792 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,793 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,796 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:42:20,796 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 02:42:20,797 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,798 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,798 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,799 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,799 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('admin',)
+2026-02-20 02:42:20,801 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:42:20,801 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 02:42:20,803 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,807 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,807 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('admin',)
+2026-02-20 02:42:20,811 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 02:42:20,811 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] (UUID('56cb56a7-0f1f-490b-8c6f-ca09d15a1010'), UUID('45683d86-c1dd-400a-b82c-dae4a18b01e1'))
+2026-02-20 02:42:20,814 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:20,818 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:20,818 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,819 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('yappi',)
+2026-02-20 02:42:20,821 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 02:42:20,822 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 02:42:20,823 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:20,823 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] ('admin',)
+2026-02-20 02:42:20,824 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 02:42:20,825 - sqlalchemy.engine.Engine - INFO - [cached since 2370s ago] (UUID('56cb56a7-0f1f-490b-8c6f-ca09d15a1010'), UUID('45683d86-c1dd-400a-b82c-dae4a18b01e1'))
+2026-02-20 02:42:20,827 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:56,098 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:56,099 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:56,099 - sqlalchemy.engine.Engine - INFO - [cached since 2406s ago] ('yappi',)
+2026-02-20 02:42:56,105 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 02:42:56,106 - sqlalchemy.engine.Engine - INFO - [generated in 0.00164s] (UUID('45683d86-c1dd-400a-b82c-dae4a18b01e1'), 'published')
+2026-02-20 02:42:56,114 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:42:56,124 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:42:56,124 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 02:42:56,124 - sqlalchemy.engine.Engine - INFO - [cached since 2406s ago] ('yappi',)
+2026-02-20 02:42:56,130 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 02:42:56,132 - sqlalchemy.engine.Engine - INFO - [cached since 0.02687s ago] (UUID('45683d86-c1dd-400a-b82c-dae4a18b01e1'), 'published')
+2026-02-20 02:42:56,137 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 02:43:37,137 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-02-20 02:43:37,138 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:43:37,140 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-02-20 02:43:37,140 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:43:37,142 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-02-20 02:43:37,142 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:43:37,143 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:43:37,147 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,147 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('site', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,152 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,152 - sqlalchemy.engine.Engine - INFO - [cached since 0.00551s ago] ('category', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,153 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,153 - sqlalchemy.engine.Engine - INFO - [cached since 0.006814s ago] ('course', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,155 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,155 - sqlalchemy.engine.Engine - INFO - [cached since 0.008064s ago] ('section', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,156 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,156 - sqlalchemy.engine.Engine - INFO - [cached since 0.009122s ago] ('course_reviews', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,157 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,157 - sqlalchemy.engine.Engine - INFO - [cached since 0.01008s ago] ('cohort', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,158 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,158 - sqlalchemy.engine.Engine - INFO - [cached since 0.01111s ago] ('enrollment', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,159 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,159 - sqlalchemy.engine.Engine - INFO - [cached since 0.01203s ago] ('lesson_progress', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,159 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,159 - sqlalchemy.engine.Engine - INFO - [cached since 0.01275s ago] ('certificate', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,160 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,160 - sqlalchemy.engine.Engine - INFO - [cached since 0.01332s ago] ('lesson', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,160 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,161 - sqlalchemy.engine.Engine - INFO - [cached since 0.01388s ago] ('quiz', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,161 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,161 - sqlalchemy.engine.Engine - INFO - [cached since 0.01452s ago] ('quiz_questions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,162 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,162 - sqlalchemy.engine.Engine - INFO - [cached since 0.01503s ago] ('quiz_attempts', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,162 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,162 - sqlalchemy.engine.Engine - INFO - [cached since 0.01549s ago] ('assignment', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,163 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,163 - sqlalchemy.engine.Engine - INFO - [cached since 0.01629s ago] ('assignment_submissions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,163 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,164 - sqlalchemy.engine.Engine - INFO - [cached since 0.01691s ago] ('token_balances', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,164 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,164 - sqlalchemy.engine.Engine - INFO - [cached since 0.01752s ago] ('token_transactions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,165 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,165 - sqlalchemy.engine.Engine - INFO - [cached since 0.01815s ago] ('notification', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,165 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,166 - sqlalchemy.engine.Engine - INFO - [cached since 0.01896s ago] ('notification_settings', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,166 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,166 - sqlalchemy.engine.Engine - INFO - [cached since 0.01961s ago] ('revenue_records', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,167 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,167 - sqlalchemy.engine.Engine - INFO - [cached since 0.02009s ago] ('admin_audit_log', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,167 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,167 - sqlalchemy.engine.Engine - INFO - [cached since 0.02063s ago] ('system_config', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,168 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,168 - sqlalchemy.engine.Engine - INFO - [cached since 0.02151s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,169 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,169 - sqlalchemy.engine.Engine - INFO - [cached since 0.02241s ago] ('user_profiles', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,170 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,170 - sqlalchemy.engine.Engine - INFO - [cached since 0.02315s ago] ('password_reset_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,171 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:43:37,171 - sqlalchemy.engine.Engine - INFO - [cached since 0.02414s ago] ('email_verification_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:43:37,173 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,173 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] ('courselevel', 'pg_catalog')
+2026-02-20 02:43:37,175 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,175 - sqlalchemy.engine.Engine - INFO - [cached since 0.00229s ago] ('coursestatus', 'pg_catalog')
+2026-02-20 02:43:37,176 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,177 - sqlalchemy.engine.Engine - INFO - [cached since 0.003793s ago] ('enrollmentstatus', 'pg_catalog')
+2026-02-20 02:43:37,178 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,178 - sqlalchemy.engine.Engine - INFO - [cached since 0.005187s ago] ('completion_status', 'pg_catalog')
+2026-02-20 02:43:37,179 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,179 - sqlalchemy.engine.Engine - INFO - [cached since 0.006451s ago] ('lessontype', 'pg_catalog')
+2026-02-20 02:43:37,180 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,181 - sqlalchemy.engine.Engine - INFO - [cached since 0.007937s ago] ('quizquestiontype', 'pg_catalog')
+2026-02-20 02:43:37,182 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,182 - sqlalchemy.engine.Engine - INFO - [cached since 0.009289s ago] ('notificationtype', 'pg_catalog')
+2026-02-20 02:43:37,184 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,184 - sqlalchemy.engine.Engine - INFO - [cached since 0.01105s ago] ('notificationpriority', 'pg_catalog')
+2026-02-20 02:43:37,185 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,185 - sqlalchemy.engine.Engine - INFO - [cached since 0.01223s ago] ('user_role', 'pg_catalog')
+2026-02-20 02:43:37,186 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:43:37,186 - sqlalchemy.engine.Engine - INFO - [cached since 0.01362s ago] ('user_status', 'pg_catalog')
+2026-02-20 02:43:37,187 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-02-20 02:59:56,142 - sqlalchemy.engine.Engine - INFO - select pg_catalog.version()
+2026-02-20 02:59:56,142 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:59:56,145 - sqlalchemy.engine.Engine - INFO - select current_schema()
+2026-02-20 02:59:56,146 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:59:56,148 - sqlalchemy.engine.Engine - INFO - show standard_conforming_strings
+2026-02-20 02:59:56,149 - sqlalchemy.engine.Engine - INFO - [raw sql] ()
+2026-02-20 02:59:56,152 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 02:59:56,160 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,160 - sqlalchemy.engine.Engine - INFO - [generated in 0.00048s] ('site', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,168 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,168 - sqlalchemy.engine.Engine - INFO - [cached since 0.008177s ago] ('category', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,170 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,170 - sqlalchemy.engine.Engine - INFO - [cached since 0.01005s ago] ('course', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,172 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,172 - sqlalchemy.engine.Engine - INFO - [cached since 0.01211s ago] ('section', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,174 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,174 - sqlalchemy.engine.Engine - INFO - [cached since 0.01419s ago] ('course_reviews', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,176 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,177 - sqlalchemy.engine.Engine - INFO - [cached since 0.01672s ago] ('cohort', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,178 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,178 - sqlalchemy.engine.Engine - INFO - [cached since 0.01841s ago] ('enrollment', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,179 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,180 - sqlalchemy.engine.Engine - INFO - [cached since 0.01977s ago] ('lesson_progress', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,181 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,182 - sqlalchemy.engine.Engine - INFO - [cached since 0.02181s ago] ('certificate', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,183 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,183 - sqlalchemy.engine.Engine - INFO - [cached since 0.02351s ago] ('lesson', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,184 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,184 - sqlalchemy.engine.Engine - INFO - [cached since 0.02464s ago] ('quiz', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,186 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,186 - sqlalchemy.engine.Engine - INFO - [cached since 0.02598s ago] ('quiz_questions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,188 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,188 - sqlalchemy.engine.Engine - INFO - [cached since 0.02802s ago] ('quiz_attempts', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,189 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,190 - sqlalchemy.engine.Engine - INFO - [cached since 0.0297s ago] ('assignment', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,191 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,191 - sqlalchemy.engine.Engine - INFO - [cached since 0.03113s ago] ('assignment_submissions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,192 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,193 - sqlalchemy.engine.Engine - INFO - [cached since 0.03276s ago] ('token_balances', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,196 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,196 - sqlalchemy.engine.Engine - INFO - [cached since 0.03613s ago] ('token_transactions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,197 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,197 - sqlalchemy.engine.Engine - INFO - [cached since 0.03764s ago] ('notification', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,199 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,200 - sqlalchemy.engine.Engine - INFO - [cached since 0.03978s ago] ('notification_settings', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,201 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,202 - sqlalchemy.engine.Engine - INFO - [cached since 0.04185s ago] ('revenue_records', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,203 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,203 - sqlalchemy.engine.Engine - INFO - [cached since 0.04346s ago] ('admin_audit_log', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,205 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,205 - sqlalchemy.engine.Engine - INFO - [cached since 0.04519s ago] ('system_config', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,206 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,207 - sqlalchemy.engine.Engine - INFO - [cached since 0.0469s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,208 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,208 - sqlalchemy.engine.Engine - INFO - [cached since 0.04822s ago] ('user_profiles', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,210 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,210 - sqlalchemy.engine.Engine - INFO - [cached since 0.04995s ago] ('password_reset_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,211 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2026-02-20 02:59:56,211 - sqlalchemy.engine.Engine - INFO - [cached since 0.05121s ago] ('email_verification_tokens', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2026-02-20 02:59:56,214 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,214 - sqlalchemy.engine.Engine - INFO - [generated in 0.00056s] ('courselevel', 'pg_catalog')
+2026-02-20 02:59:56,218 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,218 - sqlalchemy.engine.Engine - INFO - [cached since 0.004393s ago] ('coursestatus', 'pg_catalog')
+2026-02-20 02:59:56,220 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,220 - sqlalchemy.engine.Engine - INFO - [cached since 0.006654s ago] ('enrollmentstatus', 'pg_catalog')
+2026-02-20 02:59:56,224 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,224 - sqlalchemy.engine.Engine - INFO - [cached since 0.009952s ago] ('completion_status', 'pg_catalog')
+2026-02-20 02:59:56,225 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,226 - sqlalchemy.engine.Engine - INFO - [cached since 0.01178s ago] ('lessontype', 'pg_catalog')
+2026-02-20 02:59:56,228 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,228 - sqlalchemy.engine.Engine - INFO - [cached since 0.0144s ago] ('quizquestiontype', 'pg_catalog')
+2026-02-20 02:59:56,230 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,231 - sqlalchemy.engine.Engine - INFO - [cached since 0.01687s ago] ('notificationtype', 'pg_catalog')
+2026-02-20 02:59:56,232 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,233 - sqlalchemy.engine.Engine - INFO - [cached since 0.01893s ago] ('notificationpriority', 'pg_catalog')
+2026-02-20 02:59:56,235 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,236 - sqlalchemy.engine.Engine - INFO - [cached since 0.02173s ago] ('user_role', 'pg_catalog')
+2026-02-20 02:59:56,238 - sqlalchemy.engine.Engine - INFO - SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2026-02-20 02:59:56,238 - sqlalchemy.engine.Engine - INFO - [cached since 0.024s ago] ('user_status', 'pg_catalog')
+2026-02-20 02:59:56,239 - sqlalchemy.engine.Engine - INFO - COMMIT
+2026-02-20 03:00:05,966 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,006 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,007 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] ('yappi',)
+2026-02-20 03:00:06,016 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,016 - sqlalchemy.engine.Engine - INFO - [generated in 0.00031s] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,055 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,055 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,056 - sqlalchemy.engine.Engine - INFO - [cached since 0.04932s ago] ('yappi',)
+2026-02-20 03:00:06,061 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,061 - sqlalchemy.engine.Engine - INFO - [cached since 0.04562s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,068 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,068 - sqlalchemy.engine.Engine - INFO - [cached since 0.06198s ago] ('admin',)
+2026-02-20 03:00:06,076 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,086 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,087 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,087 - sqlalchemy.engine.Engine - INFO - [cached since 0.08039s ago] ('yappi',)
+2026-02-20 03:00:06,088 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,088 - sqlalchemy.engine.Engine - INFO - [cached since 0.08187s ago] ('admin',)
+2026-02-20 03:00:06,091 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,091 - sqlalchemy.engine.Engine - INFO - [cached since 0.07565s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,093 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,129 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,129 - sqlalchemy.engine.Engine - INFO - [cached since 0.123s ago] ('admin',)
+2026-02-20 03:00:06,130 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,131 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,131 - sqlalchemy.engine.Engine - INFO - [cached since 0.1246s ago] ('yappi',)
+2026-02-20 03:00:06,133 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,133 - sqlalchemy.engine.Engine - INFO - [generated in 0.00028s] ('99d7272c-d238-4e74-9d1d-e120b1cabef4', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,138 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,138 - sqlalchemy.engine.Engine - INFO - [cached since 0.1227s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,140 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,142 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,142 - sqlalchemy.engine.Engine - INFO - [cached since 0.1358s ago] ('admin',)
+2026-02-20 03:00:06,145 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,184 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,185 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,185 - sqlalchemy.engine.Engine - INFO - [cached since 0.1785s ago] ('yappi',)
+2026-02-20 03:00:06,189 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,190 - sqlalchemy.engine.Engine - INFO - [cached since 0.1741s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,193 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,193 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,194 - sqlalchemy.engine.Engine - INFO - [cached since 0.1873s ago] ('yappi',)
+2026-02-20 03:00:06,196 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,197 - sqlalchemy.engine.Engine - INFO - [cached since 0.1811s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,200 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,200 - sqlalchemy.engine.Engine - INFO - [cached since 0.194s ago] ('admin',)
+2026-02-20 03:00:06,201 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,202 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,203 - sqlalchemy.engine.Engine - INFO - [cached since 0.1963s ago] ('yappi',)
+2026-02-20 03:00:06,204 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,207 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,208 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,208 - sqlalchemy.engine.Engine - INFO - [cached since 0.2017s ago] ('yappi',)
+2026-02-20 03:00:06,211 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,211 - sqlalchemy.engine.Engine - INFO - [cached since 0.1953s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,212 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,213 - sqlalchemy.engine.Engine - INFO - [cached since 0.1972s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,214 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,214 - sqlalchemy.engine.Engine - INFO - [cached since 0.2081s ago] ('admin',)
+2026-02-20 03:00:06,217 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,225 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,226 - sqlalchemy.engine.Engine - INFO - [cached since 0.2195s ago] ('admin',)
+2026-02-20 03:00:06,229 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,242 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,242 - sqlalchemy.engine.Engine - INFO - [cached since 0.2359s ago] ('admin',)
+2026-02-20 03:00:06,244 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,244 - sqlalchemy.engine.Engine - INFO - [cached since 0.111s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,247 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,255 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,257 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,257 - sqlalchemy.engine.Engine - INFO - [cached since 0.2505s ago] ('yappi',)
+2026-02-20 03:00:06,258 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,258 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,258 - sqlalchemy.engine.Engine - INFO - [cached since 0.2521s ago] ('yappi',)
+2026-02-20 03:00:06,260 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,260 - sqlalchemy.engine.Engine - INFO - [cached since 0.2446s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,262 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,262 - sqlalchemy.engine.Engine - INFO - [cached since 0.2466s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:06,264 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,264 - sqlalchemy.engine.Engine - INFO - [cached since 0.2577s ago] ('admin',)
+2026-02-20 03:00:06,265 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,265 - sqlalchemy.engine.Engine - INFO - [cached since 0.2592s ago] ('admin',)
+2026-02-20 03:00:06,267 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,267 - sqlalchemy.engine.Engine - INFO - [cached since 0.1338s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,268 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,269 - sqlalchemy.engine.Engine - INFO - [cached since 0.1355s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,270 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,273 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,332 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,333 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,333 - sqlalchemy.engine.Engine - INFO - [cached since 0.3267s ago] ('yappi',)
+2026-02-20 03:00:06,337 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,337 - sqlalchemy.engine.Engine - INFO - [cached since 0.3219s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,345 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,346 - sqlalchemy.engine.Engine - INFO - [cached since 0.3397s ago] ('admin',)
+2026-02-20 03:00:06,356 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,356 - sqlalchemy.engine.Engine - INFO - [cached since 0.2234s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,358 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,359 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,359 - sqlalchemy.engine.Engine - INFO - [cached since 0.353s ago] ('yappi',)
+2026-02-20 03:00:06,362 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,362 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,363 - sqlalchemy.engine.Engine - INFO - [cached since 0.3563s ago] ('yappi',)
+2026-02-20 03:00:06,364 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,364 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,364 - sqlalchemy.engine.Engine - INFO - [cached since 0.3578s ago] ('yappi',)
+2026-02-20 03:00:06,365 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,368 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,368 - sqlalchemy.engine.Engine - INFO - [cached since 0.3523s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,371 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,372 - sqlalchemy.engine.Engine - INFO - [cached since 0.356s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,378 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,379 - sqlalchemy.engine.Engine - INFO - [cached since 0.3724s ago] ('admin',)
+2026-02-20 03:00:06,381 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,381 - sqlalchemy.engine.Engine - INFO - [cached since 0.3657s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,382 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,383 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,383 - sqlalchemy.engine.Engine - INFO - [cached since 0.3767s ago] ('yappi',)
+2026-02-20 03:00:06,387 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,388 - sqlalchemy.engine.Engine - INFO - [generated in 0.00048s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:06,390 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,390 - sqlalchemy.engine.Engine - INFO - [cached since 0.3837s ago] ('admin',)
+2026-02-20 03:00:06,391 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,392 - sqlalchemy.engine.Engine - INFO - [cached since 0.3855s ago] ('admin',)
+2026-02-20 03:00:06,394 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,395 - sqlalchemy.engine.Engine - INFO - [cached since 0.007387s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:06,397 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,398 - sqlalchemy.engine.Engine - INFO - [cached since 0.01076s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:06,405 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 03:00:06,406 - sqlalchemy.engine.Engine - INFO - [generated in 0.00052s] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:06,455 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:06,455 - sqlalchemy.engine.Engine - INFO - [generated in 0.00059s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 20, 0)
+2026-02-20 03:00:06,456 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:06,457 - sqlalchemy.engine.Engine - INFO - [cached since 0.002441s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', 20, 0)
+2026-02-20 03:00:06,458 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,459 - sqlalchemy.engine.Engine - INFO - [cached since 0.07159s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:06,460 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,467 - sqlalchemy.engine.Engine - INFO - SELECT count(certificate.id) AS count_1 
+FROM certificate 
+WHERE certificate.user_id = $1::UUID AND certificate.site_id = $2::UUID
+2026-02-20 03:00:06,467 - sqlalchemy.engine.Engine - INFO - [generated in 0.00050s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,472 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,472 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,472 - sqlalchemy.engine.Engine - INFO - [cached since 0.466s ago] ('yappi',)
+2026-02-20 03:00:06,476 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.balance 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,476 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,479 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus
+2026-02-20 03:00:06,480 - sqlalchemy.engine.Engine - INFO - [generated in 0.00033s] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:06,480 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,480 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,481 - sqlalchemy.engine.Engine - INFO - [cached since 0.4745s ago] ('yappi',)
+2026-02-20 03:00:06,484 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.status, lesson_progress.updated_at, lesson.title AS lesson_title, course.title AS course_title, course.slug AS course_slug 
+FROM lesson_progress JOIN lesson ON lesson_progress.lesson_id = lesson.id JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:06,484 - sqlalchemy.engine.Engine - INFO - [generated in 0.00034s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 5)
+2026-02-20 03:00:06,519 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,520 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,523 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON course.instructor_id = users.id 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus ORDER BY course.created_at DESC 
+ LIMIT $3::INTEGER OFFSET $4::INTEGER
+2026-02-20 03:00:06,523 - sqlalchemy.engine.Engine - INFO - [generated in 0.00060s] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published', 20, 0)
+2026-02-20 03:00:06,525 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,526 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,526 - sqlalchemy.engine.Engine - INFO - [cached since 0.5196s ago] ('yappi',)
+2026-02-20 03:00:06,527 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,527 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,527 - sqlalchemy.engine.Engine - INFO - [cached since 0.5208s ago] ('yappi',)
+2026-02-20 03:00:06,529 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,530 - sqlalchemy.engine.Engine - INFO - [cached since 0.5143s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,531 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,531 - sqlalchemy.engine.Engine - INFO - [cached since 0.516s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,533 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,533 - sqlalchemy.engine.Engine - INFO - [cached since 0.5174s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,535 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,537 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,537 - sqlalchemy.engine.Engine - INFO - [cached since 0.531s ago] ('admin',)
+2026-02-20 03:00:06,538 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,539 - sqlalchemy.engine.Engine - INFO - [cached since 0.5324s ago] ('admin',)
+2026-02-20 03:00:06,542 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,543 - sqlalchemy.engine.Engine - INFO - [cached since 0.1552s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:06,546 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,546 - sqlalchemy.engine.Engine - INFO - [cached since 0.1593s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:06,550 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:06,550 - sqlalchemy.engine.Engine - INFO - [cached since 0.0957s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 20, 0)
+2026-02-20 03:00:06,551 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,551 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,551 - sqlalchemy.engine.Engine - INFO - [cached since 0.545s ago] ('yappi',)
+2026-02-20 03:00:06,552 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:06,552 - sqlalchemy.engine.Engine - INFO - [cached since 0.0979s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', 20, 0)
+2026-02-20 03:00:06,554 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,558 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.updated_at) AS date, count(lesson_progress.id) AS count 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID AND lesson_progress.status = $3::completion_status AND lesson_progress.updated_at >= $4::TIMESTAMP WITHOUT TIME ZONE GROUP BY date(lesson_progress.updated_at) ORDER BY date
+2026-02-20 03:00:06,558 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', datetime.datetime(2026, 2, 13, 2, 0, 6, 555508))
+2026-02-20 03:00:06,560 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,564 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 03:00:06,565 - sqlalchemy.engine.Engine - INFO - [cached since 0.1597s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:06,567 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.progress_percentage, course.title, course.slug, course.thumbnail_url, course.id AS course_id 
+FROM enrollment JOIN course ON enrollment.course_id = course.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.last_accessed_at DESC 
+ LIMIT $4::INTEGER
+2026-02-20 03:00:06,567 - sqlalchemy.engine.Engine - INFO - [generated in 0.00027s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 4)
+2026-02-20 03:00:06,571 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id, lesson_progress.course_id, course.slug AS course_slug 
+FROM lesson_progress JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:06,571 - sqlalchemy.engine.Engine - INFO - [generated in 0.00032s] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 1)
+2026-02-20 03:00:06,574 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,576 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,577 - sqlalchemy.engine.Engine - INFO - [cached since 0.5706s ago] ('admin',)
+2026-02-20 03:00:06,579 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,579 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,579 - sqlalchemy.engine.Engine - INFO - [cached since 0.573s ago] ('yappi',)
+2026-02-20 03:00:06,581 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,581 - sqlalchemy.engine.Engine - INFO - [cached since 0.4477s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,583 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,583 - sqlalchemy.engine.Engine - INFO - [cached since 0.5675s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,585 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,585 - sqlalchemy.engine.Engine - INFO - [cached since 0.5788s ago] ('admin',)
+2026-02-20 03:00:06,587 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,589 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,589 - sqlalchemy.engine.Engine - INFO - [cached since 0.2023s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:06,591 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,591 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,591 - sqlalchemy.engine.Engine - INFO - [cached since 0.5852s ago] ('yappi',)
+2026-02-20 03:00:06,593 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,594 - sqlalchemy.engine.Engine - INFO - [cached since 0.5782s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,597 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,597 - sqlalchemy.engine.Engine - INFO - [cached since 0.5906s ago] ('admin',)
+2026-02-20 03:00:06,599 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,599 - sqlalchemy.engine.Engine - INFO - [cached since 0.4661s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,600 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,603 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,605 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,606 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,606 - sqlalchemy.engine.Engine - INFO - [cached since 0.5999s ago] ('yappi',)
+2026-02-20 03:00:06,608 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:06,608 - sqlalchemy.engine.Engine - INFO - [cached since 0.2207s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:06,610 - sqlalchemy.engine.Engine - INFO - SELECT count(certificate.id) AS count_1 
+FROM certificate 
+WHERE certificate.user_id = $1::UUID AND certificate.site_id = $2::UUID
+2026-02-20 03:00:06,610 - sqlalchemy.engine.Engine - INFO - [cached since 0.1434s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,611 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:06,612 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,612 - sqlalchemy.engine.Engine - INFO - [cached since 0.6057s ago] ('yappi',)
+2026-02-20 03:00:06,613 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:06,613 - sqlalchemy.engine.Engine - INFO - [cached since 0.5975s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:06,614 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:06,615 - sqlalchemy.engine.Engine - INFO - [cached since 0.6084s ago] ('admin',)
+2026-02-20 03:00:06,616 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus
+2026-02-20 03:00:06,616 - sqlalchemy.engine.Engine - INFO - [cached since 0.137s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:06,617 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.balance 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,617 - sqlalchemy.engine.Engine - INFO - [cached since 0.1415s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,618 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:06,618 - sqlalchemy.engine.Engine - INFO - [cached since 0.4855s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:06,620 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,622 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.status, lesson_progress.updated_at, lesson.title AS lesson_title, course.title AS course_title, course.slug AS course_slug 
+FROM lesson_progress JOIN lesson ON lesson_progress.lesson_id = lesson.id JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:06,623 - sqlalchemy.engine.Engine - INFO - [cached since 0.1389s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 5)
+2026-02-20 03:00:06,628 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON course.instructor_id = users.id 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus ORDER BY course.created_at DESC 
+ LIMIT $3::INTEGER OFFSET $4::INTEGER
+2026-02-20 03:00:06,628 - sqlalchemy.engine.Engine - INFO - [cached since 0.1057s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published', 20, 0)
+2026-02-20 03:00:06,634 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.updated_at) AS date, count(lesson_progress.id) AS count 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID AND lesson_progress.status = $3::completion_status AND lesson_progress.updated_at >= $4::TIMESTAMP WITHOUT TIME ZONE GROUP BY date(lesson_progress.updated_at) ORDER BY date
+2026-02-20 03:00:06,634 - sqlalchemy.engine.Engine - INFO - [cached since 0.0763s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', datetime.datetime(2026, 2, 13, 2, 0, 6, 633437))
+2026-02-20 03:00:06,637 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.progress_percentage, course.title, course.slug, course.thumbnail_url, course.id AS course_id 
+FROM enrollment JOIN course ON enrollment.course_id = course.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.last_accessed_at DESC 
+ LIMIT $4::INTEGER
+2026-02-20 03:00:06,637 - sqlalchemy.engine.Engine - INFO - [cached since 0.07026s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 4)
+2026-02-20 03:00:06,639 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:06,643 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id, lesson_progress.course_id, course.slug AS course_slug 
+FROM lesson_progress JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:06,643 - sqlalchemy.engine.Engine - INFO - [cached since 0.07239s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 1)
+2026-02-20 03:00:06,645 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:16,052 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:16,053 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:16,054 - sqlalchemy.engine.Engine - INFO - [cached since 10.05s ago] ('yappi',)
+2026-02-20 03:00:16,060 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:16,064 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:16,065 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:16,065 - sqlalchemy.engine.Engine - INFO - [cached since 10.06s ago] ('yappi',)
+2026-02-20 03:00:16,078 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:19,807 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:19,809 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:19,812 - sqlalchemy.engine.Engine - INFO - [cached since 13.81s ago] ('yappi',)
+2026-02-20 03:00:19,831 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:19,836 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:19,836 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:19,836 - sqlalchemy.engine.Engine - INFO - [cached since 13.83s ago] ('yappi',)
+2026-02-20 03:00:19,844 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,123 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,124 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,125 - sqlalchemy.engine.Engine - INFO - [cached since 17.12s ago] ('yappi',)
+2026-02-20 03:00:23,127 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,128 - sqlalchemy.engine.Engine - INFO - [cached since 17.11s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,130 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,130 - sqlalchemy.engine.Engine - INFO - [cached since 17.13s ago] ('admin',)
+2026-02-20 03:00:23,135 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,141 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,142 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,142 - sqlalchemy.engine.Engine - INFO - [cached since 17.14s ago] ('yappi',)
+2026-02-20 03:00:23,143 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,143 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,144 - sqlalchemy.engine.Engine - INFO - [cached since 17.14s ago] ('yappi',)
+2026-02-20 03:00:23,146 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,147 - sqlalchemy.engine.Engine - INFO - [cached since 17.13s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,148 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,149 - sqlalchemy.engine.Engine - INFO - [cached since 17.14s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,151 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,151 - sqlalchemy.engine.Engine - INFO - [cached since 17.15s ago] ('admin',)
+2026-02-20 03:00:23,153 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,154 - sqlalchemy.engine.Engine - INFO - [cached since 17.15s ago] ('admin',)
+2026-02-20 03:00:23,155 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,155 - sqlalchemy.engine.Engine - INFO - [cached since 17.02s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,157 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,161 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,165 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,165 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,165 - sqlalchemy.engine.Engine - INFO - [cached since 17.16s ago] ('yappi',)
+2026-02-20 03:00:23,168 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,168 - sqlalchemy.engine.Engine - INFO - [cached since 17.16s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,173 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,174 - sqlalchemy.engine.Engine - INFO - [cached since 17.17s ago] ('admin',)
+2026-02-20 03:00:23,175 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,175 - sqlalchemy.engine.Engine - INFO - [cached since 17.04s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,178 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,263 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,263 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,264 - sqlalchemy.engine.Engine - INFO - [cached since 17.26s ago] ('yappi',)
+2026-02-20 03:00:23,266 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,266 - sqlalchemy.engine.Engine - INFO - [cached since 17.25s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,267 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,267 - sqlalchemy.engine.Engine - INFO - [cached since 17.26s ago] ('admin',)
+2026-02-20 03:00:23,268 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,269 - sqlalchemy.engine.Engine - INFO - [cached since 17.14s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,270 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,274 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,275 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,276 - sqlalchemy.engine.Engine - INFO - [cached since 17.27s ago] ('yappi',)
+2026-02-20 03:00:23,279 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,279 - sqlalchemy.engine.Engine - INFO - [cached since 17.27s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,283 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,284 - sqlalchemy.engine.Engine - INFO - [cached since 17.28s ago] ('admin',)
+2026-02-20 03:00:23,287 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,288 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,288 - sqlalchemy.engine.Engine - INFO - [cached since 17.28s ago] ('yappi',)
+2026-02-20 03:00:23,290 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,291 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,291 - sqlalchemy.engine.Engine - INFO - [cached since 17.29s ago] ('yappi',)
+2026-02-20 03:00:23,292 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,292 - sqlalchemy.engine.Engine - INFO - [cached since 17.16s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,293 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,294 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,294 - sqlalchemy.engine.Engine - INFO - [cached since 17.29s ago] ('yappi',)
+2026-02-20 03:00:23,297 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,300 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,300 - sqlalchemy.engine.Engine - INFO - [cached since 17.29s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,302 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,302 - sqlalchemy.engine.Engine - INFO - [cached since 17.29s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,303 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,303 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,303 - sqlalchemy.engine.Engine - INFO - [cached since 17.3s ago] ('yappi',)
+2026-02-20 03:00:23,305 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,305 - sqlalchemy.engine.Engine - INFO - [cached since 17.29s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,313 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,313 - sqlalchemy.engine.Engine - INFO - [cached since 17.31s ago] ('admin',)
+2026-02-20 03:00:23,315 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,315 - sqlalchemy.engine.Engine - INFO - [cached since 17.31s ago] ('admin',)
+2026-02-20 03:00:23,316 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,317 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,317 - sqlalchemy.engine.Engine - INFO - [cached since 17.31s ago] ('yappi',)
+2026-02-20 03:00:23,318 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,318 - sqlalchemy.engine.Engine - INFO - [cached since 16.93s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:23,320 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,320 - sqlalchemy.engine.Engine - INFO - [cached since 17.32s ago] ('admin',)
+2026-02-20 03:00:23,322 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,322 - sqlalchemy.engine.Engine - INFO - [cached since 16.94s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:23,324 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,324 - sqlalchemy.engine.Engine - INFO - [cached since 17.31s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,327 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,327 - sqlalchemy.engine.Engine - INFO - [cached since 16.94s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:23,328 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,328 - sqlalchemy.engine.Engine - INFO - [cached since 17.32s ago] ('admin',)
+2026-02-20 03:00:23,330 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:23,331 - sqlalchemy.engine.Engine - INFO - [cached since 16.88s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 20, 0)
+2026-02-20 03:00:23,332 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 03:00:23,333 - sqlalchemy.engine.Engine - INFO - [cached since 16.93s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:23,334 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,335 - sqlalchemy.engine.Engine - INFO - [cached since 17.2s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,336 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,340 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,343 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,345 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,346 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,346 - sqlalchemy.engine.Engine - INFO - [cached since 17.34s ago] ('yappi',)
+2026-02-20 03:00:23,348 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,349 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,350 - sqlalchemy.engine.Engine - INFO - [cached since 17.35s ago] ('yappi',)
+2026-02-20 03:00:23,353 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,354 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,354 - sqlalchemy.engine.Engine - INFO - [cached since 17.35s ago] ('yappi',)
+2026-02-20 03:00:23,356 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,356 - sqlalchemy.engine.Engine - INFO - [cached since 17.34s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,359 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON users.id = course.instructor_id 
+WHERE course.site_id = $1::UUID AND course.is_featured = true AND course.status = $2::coursestatus ORDER BY course.title
+2026-02-20 03:00:23,359 - sqlalchemy.engine.Engine - INFO - [cached since 16.96s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:23,361 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,361 - sqlalchemy.engine.Engine - INFO - [cached since 17.36s ago] ('admin',)
+2026-02-20 03:00:23,362 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:23,363 - sqlalchemy.engine.Engine - INFO - [cached since 16.91s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', 20, 0)
+2026-02-20 03:00:23,364 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,364 - sqlalchemy.engine.Engine - INFO - [cached since 16.98s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:23,365 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,366 - sqlalchemy.engine.Engine - INFO - [cached since 17.35s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,369 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,370 - sqlalchemy.engine.Engine - INFO - [cached since 17.24s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,370 - sqlalchemy.engine.Engine - INFO - SELECT count(certificate.id) AS count_1 
+FROM certificate 
+WHERE certificate.user_id = $1::UUID AND certificate.site_id = $2::UUID
+2026-02-20 03:00:23,371 - sqlalchemy.engine.Engine - INFO - [cached since 16.91s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,372 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,372 - sqlalchemy.engine.Engine - INFO - [cached since 17.37s ago] ('admin',)
+2026-02-20 03:00:23,374 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,380 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,383 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,384 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,385 - sqlalchemy.engine.Engine - INFO - [cached since 17s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:23,386 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.balance 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,386 - sqlalchemy.engine.Engine - INFO - [cached since 16.91s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,391 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:23,394 - sqlalchemy.engine.Engine - INFO - [cached since 16.94s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 20, 0)
+2026-02-20 03:00:23,397 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,398 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,400 - sqlalchemy.engine.Engine - INFO - [cached since 17.4s ago] ('yappi',)
+2026-02-20 03:00:23,403 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.status, lesson_progress.updated_at, lesson.title AS lesson_title, course.title AS course_title, course.slug AS course_slug 
+FROM lesson_progress JOIN lesson ON lesson_progress.lesson_id = lesson.id JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:23,404 - sqlalchemy.engine.Engine - INFO - [cached since 16.92s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 5)
+2026-02-20 03:00:23,407 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,407 - sqlalchemy.engine.Engine - INFO - [cached since 17.39s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,442 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,443 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,443 - sqlalchemy.engine.Engine - INFO - [cached since 17.44s ago] ('admin',)
+2026-02-20 03:00:23,445 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,445 - sqlalchemy.engine.Engine - INFO - [cached since 17.06s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:23,446 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.site_id, enrollment.id, enrollment.user_id, enrollment.course_id, enrollment.cohort_id, enrollment.status, enrollment.enrolled_at, enrollment.completed_at, enrollment.last_accessed_at, enrollment.progress_percentage, enrollment.certificate_issued_at, enrollment.created_at, enrollment.updated_at, course.site_id AS site_id_1, course.id AS id_1, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status AS status_1, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at AS created_at_1, course.updated_at AS updated_at_1, users.site_id AS site_id_2, users.id AS id_2, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_2, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_2, users.updated_at AS updated_at_2 
+FROM enrollment JOIN course ON enrollment.course_id = course.id JOIN users ON course.instructor_id = users.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.enrolled_at DESC 
+ LIMIT $4::INTEGER OFFSET $5::INTEGER
+2026-02-20 03:00:23,447 - sqlalchemy.engine.Engine - INFO - [cached since 16.99s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', 20, 0)
+2026-02-20 03:00:23,450 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,453 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,453 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,453 - sqlalchemy.engine.Engine - INFO - [cached since 17.45s ago] ('yappi',)
+2026-02-20 03:00:23,458 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.updated_at) AS date, count(lesson_progress.id) AS count 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID AND lesson_progress.status = $3::completion_status AND lesson_progress.updated_at >= $4::TIMESTAMP WITHOUT TIME ZONE GROUP BY date(lesson_progress.updated_at) ORDER BY date
+2026-02-20 03:00:23,458 - sqlalchemy.engine.Engine - INFO - [cached since 16.9s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', datetime.datetime(2026, 2, 13, 2, 0, 23, 457541))
+2026-02-20 03:00:23,459 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus
+2026-02-20 03:00:23,460 - sqlalchemy.engine.Engine - INFO - [cached since 16.98s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:23,461 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.progress_percentage, course.title, course.slug, course.thumbnail_url, course.id AS course_id 
+FROM enrollment JOIN course ON enrollment.course_id = course.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.last_accessed_at DESC 
+ LIMIT $4::INTEGER
+2026-02-20 03:00:23,462 - sqlalchemy.engine.Engine - INFO - [cached since 16.9s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 4)
+2026-02-20 03:00:23,465 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id, lesson_progress.course_id, course.slug AS course_slug 
+FROM lesson_progress JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:23,465 - sqlalchemy.engine.Engine - INFO - [cached since 16.9s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 1)
+2026-02-20 03:00:23,468 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,470 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,471 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,471 - sqlalchemy.engine.Engine - INFO - [cached since 17.47s ago] ('yappi',)
+2026-02-20 03:00:23,474 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:23,474 - sqlalchemy.engine.Engine - INFO - [cached since 17.46s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010',)
+2026-02-20 03:00:23,476 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,476 - sqlalchemy.engine.Engine - INFO - [cached since 17.47s ago] ('admin',)
+2026-02-20 03:00:23,477 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,477 - sqlalchemy.engine.Engine - INFO - [cached since 17.09s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed')
+2026-02-20 03:00:23,479 - sqlalchemy.engine.Engine - INFO - SELECT count(enrollment.id) AS count_1 
+FROM enrollment 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus
+2026-02-20 03:00:23,479 - sqlalchemy.engine.Engine - INFO - [cached since 17.09s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active')
+2026-02-20 03:00:23,481 - sqlalchemy.engine.Engine - INFO - SELECT count(certificate.id) AS count_1 
+FROM certificate 
+WHERE certificate.user_id = $1::UUID AND certificate.site_id = $2::UUID
+2026-02-20 03:00:23,481 - sqlalchemy.engine.Engine - INFO - [cached since 17.02s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,485 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.balance 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:23,485 - sqlalchemy.engine.Engine - INFO - [cached since 17.01s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:23,487 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.status, lesson_progress.updated_at, lesson.title AS lesson_title, course.title AS course_title, course.slug AS course_slug 
+FROM lesson_progress JOIN lesson ON lesson_progress.lesson_id = lesson.id JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:23,488 - sqlalchemy.engine.Engine - INFO - [cached since 17.01s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 5)
+2026-02-20 03:00:23,490 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON course.instructor_id = users.id 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus ORDER BY course.created_at DESC 
+ LIMIT $3::INTEGER OFFSET $4::INTEGER
+2026-02-20 03:00:23,491 - sqlalchemy.engine.Engine - INFO - [cached since 16.97s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published', 20, 0)
+2026-02-20 03:00:23,501 - sqlalchemy.engine.Engine - INFO - SELECT date(lesson_progress.updated_at) AS date, count(lesson_progress.id) AS count 
+FROM lesson_progress 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID AND lesson_progress.status = $3::completion_status AND lesson_progress.updated_at >= $4::TIMESTAMP WITHOUT TIME ZONE GROUP BY date(lesson_progress.updated_at) ORDER BY date
+2026-02-20 03:00:23,501 - sqlalchemy.engine.Engine - INFO - [cached since 16.95s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'completed', datetime.datetime(2026, 2, 13, 2, 0, 23, 500235))
+2026-02-20 03:00:23,503 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,507 - sqlalchemy.engine.Engine - INFO - SELECT enrollment.progress_percentage, course.title, course.slug, course.thumbnail_url, course.id AS course_id 
+FROM enrollment JOIN course ON enrollment.course_id = course.id 
+WHERE enrollment.user_id = $1::UUID AND enrollment.site_id = $2::UUID AND enrollment.status = $3::enrollmentstatus ORDER BY enrollment.last_accessed_at DESC 
+ LIMIT $4::INTEGER
+2026-02-20 03:00:23,508 - sqlalchemy.engine.Engine - INFO - [cached since 16.94s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 'active', 4)
+2026-02-20 03:00:23,509 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:23,510 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:23,510 - sqlalchemy.engine.Engine - INFO - [cached since 17.51s ago] ('yappi',)
+2026-02-20 03:00:23,513 - sqlalchemy.engine.Engine - INFO - SELECT count(course.id) AS count_1 
+FROM course 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus
+2026-02-20 03:00:23,514 - sqlalchemy.engine.Engine - INFO - [cached since 17.04s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published')
+2026-02-20 03:00:23,515 - sqlalchemy.engine.Engine - INFO - SELECT lesson_progress.lesson_id, lesson_progress.course_id, course.slug AS course_slug 
+FROM lesson_progress JOIN course ON lesson_progress.course_id = course.id 
+WHERE lesson_progress.user_id = $1::UUID AND lesson_progress.site_id = $2::UUID ORDER BY lesson_progress.updated_at DESC 
+ LIMIT $3::INTEGER
+2026-02-20 03:00:23,515 - sqlalchemy.engine.Engine - INFO - [cached since 16.95s ago] ('56cb56a7-0f1f-490b-8c6f-ca09d15a1010', '45683d86-c1dd-400a-b82c-dae4a18b01e1', 1)
+2026-02-20 03:00:23,518 - sqlalchemy.engine.Engine - INFO - SELECT course.site_id, course.id, course.instructor_id, course.category_id, course.title, course.slug, course.description, course.short_description, course.thumbnail_url, course.trailer_video_url, course.level, course.price, course.original_price, course.currency, course.duration_hours, course.language, course.status, course.is_featured, course.is_free, course.enrollment_limit, course.total_students, course.rating, course.token_reward, course.requirements, course.learning_outcomes, course.target_audience, course.tags, course.created_at, course.updated_at, users.site_id AS site_id_1, users.id AS id_1, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status AS status_1, users.avatar_url, users.bio, users.phone, users.timezone, users.language AS language_1, users.email_verified, users.last_login_at, users.created_at AS created_at_1, users.updated_at AS updated_at_1 
+FROM course LEFT OUTER JOIN users ON course.instructor_id = users.id 
+WHERE course.site_id = $1::UUID AND course.status = $2::coursestatus ORDER BY course.created_at DESC 
+ LIMIT $3::INTEGER OFFSET $4::INTEGER
+2026-02-20 03:00:23,518 - sqlalchemy.engine.Engine - INFO - [cached since 17s ago] ('45683d86-c1dd-400a-b82c-dae4a18b01e1', 'published', 20, 0)
+2026-02-20 03:00:23,520 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:23,525 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,740 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,741 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,741 - sqlalchemy.engine.Engine - INFO - [cached since 23.74s ago] ('yappi',)
+2026-02-20 03:00:29,744 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,744 - sqlalchemy.engine.Engine - INFO - [cached since 23.73s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,746 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,746 - sqlalchemy.engine.Engine - INFO - [cached since 23.74s ago] ('admin',)
+2026-02-20 03:00:29,749 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,754 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,755 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,755 - sqlalchemy.engine.Engine - INFO - [cached since 23.75s ago] ('yappi',)
+2026-02-20 03:00:29,756 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,757 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,757 - sqlalchemy.engine.Engine - INFO - [cached since 23.75s ago] ('yappi',)
+2026-02-20 03:00:29,758 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,759 - sqlalchemy.engine.Engine - INFO - [cached since 23.75s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,760 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,761 - sqlalchemy.engine.Engine - INFO - [cached since 23.75s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,762 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,762 - sqlalchemy.engine.Engine - INFO - [cached since 23.76s ago] ('admin',)
+2026-02-20 03:00:29,763 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,763 - sqlalchemy.engine.Engine - INFO - [cached since 23.76s ago] ('admin',)
+2026-02-20 03:00:29,765 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,768 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:29,768 - sqlalchemy.engine.Engine - INFO - [cached since 23.64s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:29,770 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,772 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,773 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,773 - sqlalchemy.engine.Engine - INFO - [cached since 23.77s ago] ('yappi',)
+2026-02-20 03:00:29,775 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,776 - sqlalchemy.engine.Engine - INFO - [cached since 23.76s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,778 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,778 - sqlalchemy.engine.Engine - INFO - [cached since 23.77s ago] ('admin',)
+2026-02-20 03:00:29,780 - sqlalchemy.engine.Engine - INFO - SELECT token_balances.site_id, token_balances.id, token_balances.user_id, token_balances.balance, token_balances.updated_at 
+FROM token_balances 
+WHERE token_balances.user_id = $1::UUID AND token_balances.site_id = $2::UUID
+2026-02-20 03:00:29,780 - sqlalchemy.engine.Engine - INFO - [cached since 23.65s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4', '45683d86-c1dd-400a-b82c-dae4a18b01e1')
+2026-02-20 03:00:29,783 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,826 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,827 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,827 - sqlalchemy.engine.Engine - INFO - [cached since 23.82s ago] ('yappi',)
+2026-02-20 03:00:29,829 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,829 - sqlalchemy.engine.Engine - INFO - [cached since 23.82s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,831 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,831 - sqlalchemy.engine.Engine - INFO - [cached since 23.83s ago] ('admin',)
+2026-02-20 03:00:29,833 - sqlalchemy.engine.Engine - INFO - ROLLBACK
+2026-02-20 03:00:29,836 - sqlalchemy.engine.Engine - INFO - BEGIN (implicit)
+2026-02-20 03:00:29,837 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,841 - sqlalchemy.engine.Engine - INFO - [cached since 23.84s ago] ('yappi',)
+2026-02-20 03:00:29,844 - sqlalchemy.engine.Engine - INFO - SELECT users.site_id, users.id, users.email, users.username, users.password_hash, users.first_name, users.last_name, users.role, users.status, users.avatar_url, users.bio, users.phone, users.timezone, users.language, users.email_verified, users.last_login_at, users.created_at, users.updated_at 
+FROM users 
+WHERE users.id = $1::UUID
+2026-02-20 03:00:29,844 - sqlalchemy.engine.Engine - INFO - [cached since 23.83s ago] ('99d7272c-d238-4e74-9d1d-e120b1cabef4',)
+2026-02-20 03:00:29,846 - sqlalchemy.engine.Engine - INFO - SELECT site.id, site.subdomain, site.custom_domain, site.name, site.logo_url, site.theme_config, site.owner_id, site.is_active, site.created_at, site.updated_at 
+FROM site 
+WHERE site.subdomain = $1::VARCHAR
+2026-02-20 03:00:29,846 - sqlalchemy.engine.Engine - INFO - [cached since 23.84s ago] ('admin',)
+2026-02-20 03:00:29,849 - sqlalchemy.engine.Engine - INFO - ROLLBACK

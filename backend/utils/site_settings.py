@@ -81,6 +81,33 @@ def get_default_token_reward(site: Site) -> int:
     return int(get_site_setting(site, "default_token_reward", 25))
 
 
+def get_lesson_token_reward(site: Site) -> int:
+    """
+    Get the token reward amount for completing a lesson.
+    
+    Default: 10 tokens
+    """
+    return int(get_site_setting(site, "lesson_token_reward", 10))
+
+
+def get_quiz_token_reward(site: Site) -> int:
+    """
+    Get the token reward amount for passing a quiz.
+    
+    Default: 15 tokens
+    """
+    return int(get_site_setting(site, "quiz_token_reward", 15))
+
+
+def get_signup_token_reward(site: Site) -> int:
+    """
+    Get the token reward amount for new user registration.
+    
+    Default: 25 tokens
+    """
+    return int(get_site_setting(site, "signup_token_reward", 25))
+
+
 def are_notifications_enabled(site: Site) -> bool:
     """
     Check if email notifications are enabled.

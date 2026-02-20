@@ -18,7 +18,14 @@ from schemas.lesson import QuizAttemptCreate, QuizAttemptResponse
 from middleware.auth import get_current_active_user
 from utils.tokens import award_tokens
 from utils.notifications import send_lesson_completion_notification
-from utils.site_settings import are_token_rewards_enabled, get_default_token_reward
+from utils.site_settings import (
+    are_token_rewards_enabled, 
+    get_default_token_reward,
+    get_lesson_token_reward,
+    get_quiz_token_reward
+)
+from utils.certificate_generator import generate_pdf_certificate
+from utils.file_upload import file_upload_service
 
 router = APIRouter()
 
@@ -252,9 +259,10 @@ async def update_lesson_progress(
     # Award tokens if lesson just completed and rewards are enabled
     if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
         if are_token_rewards_enabled(current_site):
+            amount = get_lesson_token_reward(current_site)
             await award_tokens(
                 user_id=user_id,
-                amount=10.0,
+                amount=float(amount),
                 description=f"Completed lesson: {lesson_title}",
                 session=session,
                 reference_type="lesson_completed",
@@ -369,9 +377,10 @@ async def submit_quiz_attempt(
     
     # Award tokens if passed and rewards are enabled
     if passed and are_token_rewards_enabled(current_site):
+        amount = get_quiz_token_reward(current_site)
         await award_tokens(
             user_id=current_user.id,
-            amount=15.0,
+            amount=float(amount),
             description=f"Passed quiz: {quiz.title} ({score}%)",
             session=session,
             reference_type="quiz_passed",
@@ -496,10 +505,11 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
             if not bonus_result.first() and site:
                 # Award course completion bonus if rewards are enabled
                 if are_token_rewards_enabled(site):
+                    amount = get_default_token_reward(site)
                     from utils.tokens import award_tokens
                     await award_tokens(
                         user_id=user_id,
-                        amount=50.0,
+                        amount=float(amount),
                         description=f"Course completion bonus",
                         session=session,
                         reference_type="course_completed",
@@ -587,16 +597,22 @@ async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid
     }
 
 async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
-    """Issue NFT certificate for course completion"""
+    """Issue PDF certificate for course completion"""
     from models.course import Course
     from models.enrollment import Enrollment, Certificate
+    from models.user import User
 
-    # Get course info
+    # Get course and user info
     course_query = select(Course).where(Course.id == course_id, Course.site_id == site_id)
+    user_query = select(User).where(User.id == user_id, User.site_id == site_id)
+    
     course_result = await session.exec(course_query)
+    user_result = await session.exec(user_query)
+    
     course = course_result.first()
+    user = user_result.first()
 
-    if not course:
+    if not course or not user:
         return
 
     # Check if certificate already exists
@@ -610,14 +626,49 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
     if existing_cert_result.first():
         return
 
+    # Generate PDF certificate
+    student_name = f"{user.first_name} {user.last_name}"
+    academy_name = course.site.name if hasattr(course, 'site') and course.site else "Learning Academy"
+    
+    # If site is not prefetched, try to get it
+    if academy_name == "Learning Academy":
+        from models.site import Site
+        site = await session.get(Site, site_id)
+        if site:
+            academy_name = site.name
+
+    certificate_id = str(uuid.uuid4())
+    
+    try:
+        pdf_bytes = generate_pdf_certificate(
+            student_name=student_name,
+            course_title=course.title,
+            completion_date=datetime.utcnow(),
+            certificate_id=certificate_id,
+            academy_name=academy_name
+        )
+        
+        # Upload PDF to storage
+        filename = f"certificates/{user_id}/{course_id}_{certificate_id}.pdf"
+        certificate_url = await file_upload_service.provider.upload_file_content(
+            pdf_bytes, 
+            filename, 
+            "application/pdf"
+        )
+    except Exception as e:
+        print(f"Failed to generate/upload certificate: {e}")
+        certificate_url = None
+
     # Create certificate record
     new_cert = Certificate(
+        id=uuid.UUID(certificate_id) if certificate_id else uuid.uuid4(),
         user_id=user_id,
         course_id=course_id,
         title=f"Certificate of Completion - {course.title}",
-        description=f"This certificate verifies that the holder has successfully completed the course: {course.title}",
-        status="pending",
-        blockchain_network="polygon",
+        description=f"This certificate verifies that {student_name} has successfully completed the course: {course.title}",
+        certificate_url=certificate_url,
+        status="issued",
+        blockchain_network=None, # For future use
         site_id=site_id,
         issued_at=datetime.utcnow()
     )

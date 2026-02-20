@@ -107,6 +107,18 @@ async def register(
         except Exception as e:
             print(f"Failed to queue verification email: {e}")
 
+    # Award tokens if rewards are enabled and no verification is required
+    if not requires_verification and are_token_rewards_enabled(current_site):
+        from utils.tokens import award_tokens
+        from utils.site_settings import get_signup_token_reward
+        await award_tokens(
+            user_id=new_user.id,
+            amount=float(get_signup_token_reward(current_site)),
+            description="Welcome bonus for joining our academy!",
+            session=session,
+            reference_type="signup_bonus"
+        )
+
     return {
         "message": "Registration successful. Please check your email for verification code." if requires_verification else "Registration successful. You can now log in.",
         "user_id": str(new_user.id),
@@ -296,6 +308,18 @@ async def verify_email_code(
     record.verified_at = datetime.utcnow()
     session.add(record)
     await session.commit()
+
+    # Award tokens if rewards are enabled
+    if are_token_rewards_enabled(current_site):
+        from utils.tokens import award_tokens
+        from utils.site_settings import get_signup_token_reward
+        await award_tokens(
+            user_id=user.id,
+            amount=float(get_signup_token_reward(current_site)),
+            description="Welcome bonus for verifying your email!",
+            session=session,
+            reference_type="signup_bonus"
+        )
 
     # Issue tokens
     access_token = create_access_token(data={"sub": str(user.id)})

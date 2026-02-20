@@ -33,6 +33,9 @@ interface SiteSettings {
     auto_approve_courses?: boolean
     enable_token_rewards?: boolean
     default_token_reward?: number
+    lesson_token_reward?: number
+    quiz_token_reward?: number
+    signup_token_reward?: number
     enable_notifications?: boolean
     maintenance_mode?: boolean
     [key: string]: any  // Allow additional dynamic properties
@@ -709,21 +712,70 @@ export default function AdminSettings() {
                       }
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultTokenReward">Default Token Reward</Label>
-                    <Input
-                      id="defaultTokenReward"
-                      type="number"
-                      min="0"
-                      value={settings.theme_config.default_token_reward || 25}
-                      onChange={(e) =>
-                        updateThemeColor("default_token_reward", Number.parseInt(e.target.value))
-                      }
-                    />
-                    <div className="text-sm text-muted-foreground">
-                      Number of L-tokens awarded for completing a course (lessons: 10, quizzes: 15).
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="defaultTokenReward">Course Completion Reward</Label>
+                          <Input
+                            id="defaultTokenReward"
+                            type="number"
+                            min="0"
+                            value={settings.theme_config.default_token_reward || 50}
+                            onChange={(e) =>
+                              updateThemeColor("default_token_reward", Number.parseInt(e.target.value))
+                            }
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Tokens for course completion.
+                          </div>
+                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="signupTokenReward">Signup Reward</Label>
+                          <Input
+                            id="signupTokenReward"
+                            type="number"
+                            min="0"
+                            value={settings.theme_config.signup_token_reward || 25}
+                            onChange={(e) =>
+                              updateThemeColor("signup_token_reward", Number.parseInt(e.target.value))
+                            }
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Welcome bonus for new students.
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="lessonTokenReward">Lesson Reward</Label>
+                          <Input
+                            id="lessonTokenReward"
+                            type="number"
+                            min="0"
+                            value={settings.theme_config.lesson_token_reward || 10}
+                            onChange={(e) =>
+                              updateThemeColor("lesson_token_reward", Number.parseInt(e.target.value))
+                            }
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Tokens per lesson completion.
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="quizTokenReward">Quiz Reward</Label>
+                          <Input
+                            id="quizTokenReward"
+                            type="number"
+                            min="0"
+                            value={settings.theme_config.quiz_token_reward || 15}
+                            onChange={(e) =>
+                              updateThemeColor("quiz_token_reward", Number.parseInt(e.target.value))
+                            }
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Tokens per quiz passed.
+                          </div>
+                        </div>
+                      </div>
                 </CardContent>
               </Card>
             </TabsContent>
