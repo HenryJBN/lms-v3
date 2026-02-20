@@ -13,11 +13,12 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { ChevronLeft, ChevronRight, Lock, CheckCircle, Play, AlertCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, Lock, CheckCircle, Play, AlertCircle, Trophy, Award } from "lucide-react"
 import VideoPlayer from "@/components/video-player"
 import LessonQuiz from "@/components/lesson-quiz"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
+import Link from "next/link"
 import { courseService, progressService } from "@/lib/services/courses"
 import { formatDuration } from "@/lib/utils"
 
@@ -34,6 +35,27 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const [showQuiz, setShowQuiz] = useState(false)
   const [videoCompleted, setVideoCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Define navigateToLesson function first to avoid reference errors
+  const navigateToLesson = (index: number) => {
+    if (!course || !userProgress) return
+
+    // Check if the lesson is accessible
+    const targetLesson = course.lessons[index]
+    const isAccessible =
+      !targetLesson.prerequisites ||
+      targetLesson.prerequisites.every(
+        (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
+      )
+
+    if (isAccessible) {
+      setCurrentLessonIndex(index)
+      setShowQuiz(false)
+      setVideoCompleted(userProgress.completedLessons?.includes(targetLesson.id) || false)
+      const url = `/learn/${courseSlug}?lesson=${targetLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+      router.push(url)
+    }
+  }
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -83,12 +105,40 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         setUserProgress(lessonProgress)
 
         // If there's a lesson ID in the URL, set the current lesson
+        let targetLessonIndex = 0
         if (lessonParam) {
           const lessonIndex = transformedLessons.findIndex(
             (lesson: any) => lesson.id === lessonParam
           )
           if (lessonIndex !== -1) {
-            setCurrentLessonIndex(lessonIndex)
+            targetLessonIndex = lessonIndex
+          }
+        }
+        
+        setCurrentLessonIndex(targetLessonIndex)
+        const initialLesson = transformedLessons[targetLessonIndex]
+        setVideoCompleted(lessonProgress.completedLessons?.includes(initialLesson.id) || false)
+
+        // Check if we should auto-play the next lesson for already-completed current lesson
+        const currentLesson = transformedLessons[targetLessonIndex]
+        const nextLesson = targetLessonIndex < transformedLessons.length - 1 ? transformedLessons[targetLessonIndex + 1] : null
+        
+        if (currentLesson && nextLesson) {
+          const isCurrentLessonCompleted = lessonProgress.completedLessons?.includes(currentLesson.id) || false
+          const isCurrentQuizCompleted = currentLesson.hasQuiz
+            ? lessonProgress.completedQuizzes?.includes(currentLesson.id) || false
+            : true
+          const canGoNext = !nextLesson.prerequisites ||
+            nextLesson.prerequisites.every(
+              (prereqId: string) => lessonProgress.completedLessons?.includes(prereqId) || false
+            )
+
+          // If current lesson is completed and we can go to next, auto-play after a short delay
+          if (isCurrentLessonCompleted && isCurrentQuizCompleted && canGoNext) {
+            setTimeout(() => {
+              const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+              router.push(url)
+            }, 2000)
           }
         }
 
@@ -100,7 +150,23 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     }
 
     fetchCourseData()
-  }, [courseSlug, lessonParam, router])
+  }, [courseSlug, cohortId, router])
+
+  useEffect(() => {
+    if (!course || !lessonParam) return
+
+    const lessonIndex = course.lessons.findIndex(
+      (lesson: any) => lesson.id === lessonParam
+    )
+
+    if (lessonIndex !== -1 && lessonIndex !== currentLessonIndex) {
+      setCurrentLessonIndex(lessonIndex)
+      setShowQuiz(false)
+      if (userProgress) {
+        setVideoCompleted(userProgress.completedLessons?.includes(course.lessons[lessonIndex].id) || false)
+      }
+    }
+  }, [lessonParam, course, userProgress])
 
   // Early return for loading state
   if (loading || !course || !userProgress) {
@@ -128,13 +194,18 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
   const handleVideoComplete = async () => {
     setVideoCompleted(true)
+    
+    let updatedCompletedLessons: string[] = userProgress.completedLessons || []
+
+    // Always check if we need to mark the lesson as completed
     if (!isLessonCompleted) {
       try {
         const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
         // Update local lesson progress state
+        updatedCompletedLessons = [...updatedCompletedLessons, currentLesson.id]
         setUserProgress((prev: any) => ({
           ...prev,
-          completedLessons: [...prev.completedLessons, currentLesson.id],
+          completedLessons: updatedCompletedLessons,
         }))
 
         // Use course progress from response if available, otherwise fallback to fetch
@@ -155,34 +226,22 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       }
     }
 
-    // If the lesson has a quiz, show it after video completion
+    // Auto-navigate logic - this should work for both new and already-completed lessons
     if (currentLesson.hasQuiz && !isQuizCompleted) {
       setShowQuiz(true)
-    } else if (canNavigateToNext) {
-      // Auto-play next lesson after 2 seconds if no quiz
-      setTimeout(() => {
-        navigateToLesson(currentLessonIndex + 1)
-      }, 2000)
-    }
-  }
-
-  const handleTimeUpdate = async (currentTime: number, progress: number) => {
-    try {
-      // Update backend with current viewing position
-      const response = await progressService.updateLessonProgress(currentLesson.id, {
-        progress_percentage: Math.round(progress),
-        last_position: Math.round(currentTime),
-      }, cohortId || undefined)
-
-      // Update course progress real-time from response
-      if (response && response.course_progress_percentage !== undefined) {
-        setCourse((prevCourse: any) => ({
-          ...prevCourse,
-          progressPercentage: response.course_progress_percentage,
-        }))
+    } else if (nextLesson) {
+      // Check if next lesson is accessible with current progress
+      const canGoNext = !nextLesson.prerequisites ||
+        nextLesson.prerequisites.every(
+          (prereqId: string) => updatedCompletedLessons.includes(prereqId)
+        )
+      
+      if (canGoNext) {
+        setTimeout(() => {
+          const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+          router.push(url)
+        }, 2000)
       }
-    } catch (error) {
-      console.error("Failed to update time position:", error)
     }
   }
 
@@ -198,10 +257,16 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
 
         // Update local progress state
+        const updatedCompletedQuizzes: string[] = [...(userProgress.completedQuizzes || []), currentLesson.id]
+        const updatedCompletedLessons: string[] = [...(userProgress.completedLessons || [])]
+        if (!updatedCompletedLessons.includes(currentLesson.id)) {
+          updatedCompletedLessons.push(currentLesson.id)
+        }
+
         setUserProgress((prev: any) => ({
           ...prev,
-          completedQuizzes: [...prev.completedQuizzes, currentLesson.id],
-          completedLessons: [...prev.completedLessons, currentLesson.id],
+          completedQuizzes: updatedCompletedQuizzes,
+          completedLessons: updatedCompletedLessons,
         }))
 
         // Update course progress real-time from response
@@ -215,29 +280,22 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         setShowQuiz(false)
 
         // Auto-play next lesson after passing quiz
-        if (canNavigateToNext) {
-          navigateToLesson(currentLessonIndex + 1)
+        if (nextLesson) {
+          const canGoNext = !nextLesson.prerequisites ||
+            nextLesson.prerequisites.every(
+              (prereqId: string) => updatedCompletedLessons.includes(prereqId)
+            )
+
+          if (canGoNext) {
+            setTimeout(() => {
+              const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+              router.push(url)
+            }, 1500)
+          }
         }
       } catch (error) {
         console.error("Failed to mark quiz as completed:", error)
       }
-    }
-  }
-  const navigateToLesson = (index: number) => {
-    // Check if the lesson is accessible
-    const targetLesson = course.lessons[index]
-    const isAccessible =
-      !targetLesson.prerequisites ||
-      targetLesson.prerequisites.every(
-        (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
-      )
-
-    if (isAccessible) {
-      setCurrentLessonIndex(index)
-      setShowQuiz(false)
-      setVideoCompleted(userProgress.completedLessons?.includes(targetLesson.id) || false)
-      const url = `/learn/${courseSlug}?lesson=${targetLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
-      router.push(url)
     }
   }
 
@@ -262,6 +320,36 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           </div>
           <Progress value={course.progressPercentage} className="h-2 mt-2" />
         </div>
+
+        {/* Course Completion Banner */}
+        {course.progressPercentage >= 100 && (
+          <div className="mb-6 rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 dark:border-green-800 p-5">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                <Trophy className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">🎉 Course Completed!</h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                  Congratulations! You've completed all lessons in this course.
+                </p>
+                <div className="flex gap-3 mt-3">
+                  <Link href="/certificates">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                      <Award className="mr-2 h-4 w-4" />
+                      View Certificates
+                    </Button>
+                  </Link>
+                  <Link href="/dashboard">
+                    <Button size="sm" variant="outline" className="border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900">
+                      Back to Dashboard
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-[3fr_1fr]">
           <div className="space-y-6">
@@ -310,7 +398,6 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                     <VideoPlayer
                       videoUrl={currentLesson.videoUrl}
                       onComplete={handleVideoComplete}
-                      onTimeUpdate={handleTimeUpdate}
                       isCompleted={isLessonCompleted}
                     />
                   </CardContent>

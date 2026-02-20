@@ -41,6 +41,12 @@ async def migrate():
         except Exception as e:
             print(f"Error adding course.target_audience: {e}")
 
+        try:
+            await conn.execute(text("ALTER TABLE course ADD COLUMN IF NOT EXISTS certificate_enabled BOOLEAN DEFAULT TRUE"))
+            print("Successfully checked/added course.certificate_enabled")
+        except Exception as e:
+            print(f"Error adding course.certificate_enabled: {e}")
+
         print("Migration completed.")
 
 if __name__ == "__main__":

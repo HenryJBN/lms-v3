@@ -145,14 +145,15 @@ async def update_lesson_progress(
     session: AsyncSession = Depends(get_session),
     current_site: Site = Depends(get_current_site)
 ):
-    # Get lesson info and check enrollment
+    # Get lesson info and check enrollment (allow both active and completed enrollments
+    # so students can progress on newly added lessons after course completion)
     enrollment_query_base = select(Lesson, Enrollment.id.label("enrollment_id")).join(
         Enrollment, Lesson.course_id == Enrollment.course_id
     ).where(
         Lesson.id == lesson_id,
         Lesson.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed]),
         Enrollment.site_id == current_site.id
     )
     
@@ -265,6 +266,7 @@ async def update_lesson_progress(
                 amount=float(amount),
                 description=f"Completed lesson: {lesson_title}",
                 session=session,
+                site_id=site_id,
                 reference_type="lesson_completed",
                 reference_id=lesson_id
             )
@@ -383,6 +385,7 @@ async def submit_quiz_attempt(
             amount=float(amount),
             description=f"Passed quiz: {quiz.title} ({score}%)",
             session=session,
+            site_id=current_site.id,
             reference_type="quiz_passed",
             reference_id=attempt.quiz_id
         )
@@ -443,19 +446,35 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     total_lessons = len(lesson_ids)
     
     if total_lessons == 0:
-        return
+        return 0
+
+    # Get course info for rewards and certificate settings
+    from models.course import Course
+    course_query = select(Course).where(Course.id == course_id)
+    course_result = await session.exec(course_query)
+    course = course_result.first()
     
+    if not course:
+        return 0
+
     # Get progress for these specific lessons
-    progress_query = select(LessonProgress.progress_percentage).where(
+    progress_query = select(LessonProgress.progress_percentage, LessonProgress.status).where(
         LessonProgress.user_id == user_id,
         LessonProgress.lesson_id.in_(lesson_ids),
         LessonProgress.site_id == site_id
     )
     progress_result = await session.exec(progress_query)
-    existing_progress_percentages = progress_result.all()
+    existing_progress_data = progress_result.all()
     
     # Calculate average. Missing lesson progress records count as 0%
-    total_progress_sum = sum(existing_progress_percentages)
+    # If a lesson is marked 'completed', it counts as 100% regardless of actual video percentage
+    total_progress_sum = 0
+    for percentage, status_val in existing_progress_data:
+        if status_val == CompletionStatus.completed:
+            total_progress_sum += 100
+        else:
+            total_progress_sum += percentage
+            
     progress_percentage = int(total_progress_sum / total_lessons)
     
     # Update enrollment progress
@@ -505,22 +524,62 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
             if not bonus_result.first() and site:
                 # Award course completion bonus if rewards are enabled
                 if are_token_rewards_enabled(site):
-                    amount = get_default_token_reward(site)
+                    # Use course-specific reward if set, otherwise fallback to site default
+                    amount = course.token_reward if course.token_reward > 0 else get_default_token_reward(site)
                     from utils.tokens import award_tokens
                     await award_tokens(
                         user_id=user_id,
                         amount=float(amount),
-                        description=f"Course completion bonus",
+                        description=f"Course completion bonus: {course.title}",
                         session=session,
+                        site_id=site_id,
                         reference_type="course_completed",
                         reference_id=course_id
                     )
             
-            # Issue certificate
-            await issue_certificate(user_id, course_id, session, site_id)
+            # Issue certificate if enabled for this course
+            if course.certificate_enabled:
+                await issue_certificate(user_id, course_id, session, site_id)
             
         return progress_percentage
     return 0
+
+async def recalculate_course_progress_all_users(course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
+    """Recalculate course progress for ALL enrolled users.
+    Called when lessons are added, removed, or published/unpublished.
+    If progress drops below 100%, reverts completed enrollments back to active."""
+    from models.enrollment import Enrollment
+    from models.enums import EnrollmentStatus
+    
+    # Get all enrollments for this course (active + completed)
+    enrollments_query = select(Enrollment).where(
+        Enrollment.course_id == course_id,
+        Enrollment.site_id == site_id,
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed])
+    )
+    enrollments_result = await session.exec(enrollments_query)
+    enrollments = enrollments_result.all()
+    
+    for enrollment in enrollments:
+        new_progress = await update_course_progress(
+            user_id=enrollment.user_id,
+            course_id=course_id,
+            session=session,
+            site_id=site_id,
+            cohort_id=enrollment.cohort_id
+        )
+        
+        # If progress dropped below 100% and enrollment was completed, revert to active
+        if new_progress < 100 and enrollment.status == EnrollmentStatus.completed:
+            # Re-fetch enrollment since update_course_progress may have committed
+            refreshed_query = select(Enrollment).where(Enrollment.id == enrollment.id)
+            refreshed_result = await session.exec(refreshed_query)
+            refreshed_enrollment = refreshed_result.first()
+            if refreshed_enrollment and refreshed_enrollment.status == EnrollmentStatus.completed:
+                refreshed_enrollment.status = EnrollmentStatus.active
+                refreshed_enrollment.completed_at = None
+                session.add(refreshed_enrollment)
+                await session.commit()
 
 async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """

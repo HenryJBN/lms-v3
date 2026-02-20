@@ -15,6 +15,7 @@ from models.course import Course, Section
 from models.user import User
 from models.enrollment import Enrollment, LessonProgress
 from models.enums import LessonType, UserRole
+from routers.progress import recalculate_course_progress_all_users
 from schemas.lesson import (
     LessonCreate, LessonUpdate, LessonResponse,
     QuizCreate, QuizUpdate, QuizResponse,
@@ -355,6 +356,10 @@ async def create_lesson(
         # Update course duration
         await update_course_duration(lesson_in.course_id, session)
 
+        # Recalculate progress for all enrolled users if lesson is published
+        if new_lesson.is_published:
+            await recalculate_course_progress_all_users(lesson_in.course_id, session, current_site.id)
+
         return new_lesson
     except Exception as e:
         if "unique constraint" in str(e).lower() and "slug" in str(e).lower():
@@ -411,6 +416,9 @@ async def update_lesson(
     
     update_data = lesson_update.dict(exclude_unset=True)
 
+    # Track if is_published changed to trigger recalculation
+    publish_changed = 'is_published' in update_data and update_data['is_published'] != lesson.is_published
+
     for key, value in update_data.items():
         setattr(lesson, key, value)
         
@@ -421,6 +429,10 @@ async def update_lesson(
     
     # Update course duration
     await update_course_duration(lesson.course_id, session)
+
+    # Recalculate progress for all enrolled users if publish status changed
+    if publish_changed:
+        await recalculate_course_progress_all_users(lesson.course_id, session, current_site.id)
     
     return lesson
 
@@ -453,11 +465,15 @@ async def delete_lesson(
         )
     
     course_id = lesson.course_id
+    site_id = lesson.site_id
     await session.delete(lesson)
     await session.commit()
     
     # Update course duration
     await update_course_duration(course_id, session)
+
+    # Recalculate progress for all enrolled users
+    await recalculate_course_progress_all_users(course_id, session, site_id)
     
     return {"message": "Lesson deleted successfully"}
 

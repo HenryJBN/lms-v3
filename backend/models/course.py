@@ -51,6 +51,7 @@ class Course(MultiTenantMixin, table=True):
     total_students: int = Field(default=0)
     rating: float = Field(default=0.0)
     token_reward: int = Field(default=0)
+    certificate_enabled: bool = Field(default=True)
     
     # Content fields
     requirements: List[str] = Field(default=[], sa_column=Column(JSON))

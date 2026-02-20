@@ -11,19 +11,26 @@ async def award_tokens(
     amount: float,
     description: str,
     session: AsyncSession,
+    site_id: uuid.UUID,
     reference_type: Optional[str] = None,
     reference_id: Optional[uuid.UUID] = None,
     metadata: Optional[dict] = None
 ) -> dict:
+    import logging
+    logger = logging.getLogger(__name__)
     """Award tokens to a user and create transaction record"""
     try:
+        logger.info(f"AWARDING TOKENS: {amount} to {user_id} site {site_id}")
         # Get or create balance
-        query = select(TokenBalance).where(TokenBalance.user_id == user_id)
+        query = select(TokenBalance).where(
+            TokenBalance.user_id == user_id,
+            TokenBalance.site_id == site_id
+        )
         result = await session.exec(query)
         balance = result.first()
         
         if not balance:
-            balance = TokenBalance(user_id=user_id, balance=0.0)
+            balance = TokenBalance(user_id=user_id, balance=0.0, site_id=site_id)
             session.add(balance)
         
         balance.balance += amount
@@ -35,14 +42,17 @@ async def award_tokens(
             user_id=user_id,
             amount=amount,
             transaction_type="credit",
+            balance_after=balance.balance,
             description=description,
             reference_type=reference_type,
-            reference_id=reference_id
+            reference_id=reference_id,
+            site_id=site_id,
+            metadata_json=metadata or {}
         )
         session.add(transaction)
-        await session.commit()
+        await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
         await session.refresh(transaction)
-        
+        logger.info(f"DEBUG: TOKEN OP SUCCESS {balance.balance}")        
         return {
             "success": True,
             "transaction_id": transaction.id,
@@ -53,7 +63,8 @@ async def award_tokens(
         
     except Exception as e:
         await session.rollback()
-        print(f"Token award failed: {e}")
+        import sys
+        logger.error(f"CRITICAL TOKEN AWARD FAILURE: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -64,6 +75,7 @@ async def spend_tokens(
     amount: float,
     description: str,
     session: AsyncSession,
+    site_id: uuid.UUID,
     reference_type: Optional[str] = None,
     reference_id: Optional[uuid.UUID] = None,
     metadata: Optional[dict] = None
@@ -71,7 +83,10 @@ async def spend_tokens(
     """Spend tokens from user balance"""
     try:
         # Get balance
-        query = select(TokenBalance).where(TokenBalance.user_id == user_id)
+        query = select(TokenBalance).where(
+            TokenBalance.user_id == user_id,
+            TokenBalance.site_id == site_id
+        )
         result = await session.exec(query)
         balance = result.first()
         
@@ -90,14 +105,17 @@ async def spend_tokens(
             user_id=user_id,
             amount=-amount,
             transaction_type="debit",
+            balance_after=balance.balance,
             description=description,
             reference_type=reference_type,
-            reference_id=reference_id
+            reference_id=reference_id,
+            site_id=site_id,
+            metadata_json=metadata or {}
         )
         session.add(transaction)
-        await session.commit()
+        await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
         await session.refresh(transaction)
-        
+        logger.info(f"DEBUG: TOKEN OP SUCCESS {balance.balance}")        
         return {
             "success": True,
             "transaction_id": transaction.id,
@@ -114,17 +132,20 @@ async def spend_tokens(
             "error": str(e)
         }
 
-async def get_token_balance(user_id: uuid.UUID, session: AsyncSession) -> dict:
+async def get_token_balance(user_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID) -> dict:
     """Get user's current token balance"""
     try:
-        query = select(TokenBalance).where(TokenBalance.user_id == user_id)
+        query = select(TokenBalance).where(
+            TokenBalance.user_id == user_id,
+            TokenBalance.site_id == site_id
+        )
         result = await session.exec(query)
         balance = result.first()
         
         if not balance:
-            balance = TokenBalance(user_id=user_id, balance=0.0)
+            balance = TokenBalance(user_id=user_id, balance=0.0, site_id=site_id)
             session.add(balance)
-            await session.commit()
+            await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
             await session.refresh(balance)
         
         return {
@@ -144,7 +165,8 @@ async def transfer_tokens(
     to_user_id: uuid.UUID,
     amount: float,
     description: str,
-    session: AsyncSession
+    session: AsyncSession,
+    site_id: uuid.UUID
 ) -> dict:
     """Transfer tokens between users"""
     try:
@@ -154,6 +176,7 @@ async def transfer_tokens(
             amount=amount,
             description=f"Transfer to user: {description}",
             session=session,
+            site_id=site_id,
             reference_type="transfer_out",
             reference_id=to_user_id
         )
@@ -167,6 +190,7 @@ async def transfer_tokens(
             amount=amount,
             description=f"Transfer from user: {description}",
             session=session,
+            site_id=site_id,
             reference_type="transfer_in",
             reference_id=from_user_id
         )
@@ -178,6 +202,7 @@ async def transfer_tokens(
                 amount=amount,
                 description=f"Rollback failed transfer: {description}",
                 session=session,
+                site_id=site_id,
                 reference_type="transfer_rollback"
             )
             return award_result

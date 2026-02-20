@@ -134,6 +134,7 @@ async def enroll_in_course(
             amount=25.0,
             description="First course enrollment bonus",
             session=session,
+            site_id=current_site.id,
             reference_type="first_course_enrollment",
             reference_id=course_id
         )

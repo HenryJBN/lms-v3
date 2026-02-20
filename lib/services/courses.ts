@@ -514,8 +514,9 @@ class ProgressService {
       const completedQuizzes: string[] = []
 
       progressRecords.forEach((record: any) => {
-        // If lesson status is 'completed', add to completedLessons
-        if (record.status === "completed") {
+        // Check both status === "completed" AND progress_percentage === 100
+        // to handle the API response structure properly
+        if (record.status === "completed" || record.progress_percentage === 100) {
           completedLessons.push(record.lesson_id)
         }
         // Note: quiz completion logic would need to be added here if needed
