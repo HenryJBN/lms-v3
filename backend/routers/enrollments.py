@@ -105,14 +105,16 @@ async def enroll_in_course(
     course_level = course.level
     user_id = current_user.id
 
-    # Create Enrollment
+    # Create Enrollment - capture values that will be needed for response
+    now = datetime.utcnow()
     new_enrollment = Enrollment(
         user_id=user_id,
         course_id=course_id,
         cohort_id=enrollment_in.cohort_id,
         status=EnrollmentStatus.active,
         site_id=current_site.id,
-        enrolled_at=datetime.utcnow()
+        enrolled_at=now,
+        progress_percentage=0  # Default value
     )
     session.add(new_enrollment)
     
@@ -125,7 +127,14 @@ async def enroll_in_course(
         session.add(cohort)
     
     await session.commit()
-    await session.refresh(new_enrollment)
+    
+    # Capture enrollment data immediately after commit, before any async operations
+    enrollment_id = new_enrollment.id
+    enrollment_user_id = new_enrollment.user_id
+    enrollment_course_id = new_enrollment.course_id
+    enrollment_status = new_enrollment.status
+    enrollment_enrolled_at = new_enrollment.enrolled_at
+    enrollment_progress = new_enrollment.progress_percentage
     
     # Award tokens logic (Refactored to utility)
     try:
@@ -153,9 +162,17 @@ async def enroll_in_course(
     except Exception as e:
         print(f"Failed to send enrollment notification: {e}")
              
-    # Return response
+    # Return response - use captured local variables to avoid MissingGreenlet
     return EnrollmentResponse(
-        **new_enrollment.model_dump(),
+        id=enrollment_id,
+        user_id=enrollment_user_id,
+        course_id=enrollment_course_id,
+        status=enrollment_status,
+        enrolled_at=enrollment_enrolled_at,
+        progress_percentage=enrollment_progress,
+        completed_at=None,
+        last_accessed_at=None,
+        certificate_issued_at=None,
         title=course_title,
         thumbnail_url=course_thumbnail,
         description=course_description,
