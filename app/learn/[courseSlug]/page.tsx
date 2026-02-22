@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +22,8 @@ import Link from "next/link"
 import { courseService, progressService } from "@/lib/services/courses"
 import { formatDuration } from "@/lib/utils"
 
+const PLAYBACK_RATE_STORAGE_KEY = "lms-playback-rate"
+
 export default function CourseLessonPage({ params }: { params: { courseSlug: string } }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -35,6 +37,47 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const [showQuiz, setShowQuiz] = useState(false)
   const [videoCompleted, setVideoCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [autoPlayNext, setAutoPlayNext] = useState(false)
+  const [savedPlaybackRate, setSavedPlaybackRate] = useState(1)
+  const prevLessonCompletedRef = useRef(false)
+
+  // Load saved playback rate from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+      if (storedRate) {
+        setSavedPlaybackRate(parseFloat(storedRate))
+      }
+    }
+  }, [])
+
+  // Track when previous lesson was completed to trigger autoplay
+  useEffect(() => {
+    if (lessonParam && userProgress && course) {
+      const currentLesson = course.lessons.find((l: any) => l.id === lessonParam)
+      if (currentLesson) {
+        const isCompleted = userProgress.completedLessons?.includes(currentLesson.id) || false
+        
+        // If lesson was already completed before this page load, trigger autoplay
+        if (isCompleted && !prevLessonCompletedRef.current) {
+          setAutoPlayNext(true)
+        }
+        
+        // Update ref for next comparison
+        prevLessonCompletedRef.current = isCompleted
+      }
+    }
+  }, [lessonParam, userProgress, course])
+
+  // Reset autoplay after it's been used
+  useEffect(() => {
+    if (autoPlayNext) {
+      const timer = setTimeout(() => {
+        setAutoPlayNext(false)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [autoPlayNext])
 
   // Define navigateToLesson function first to avoid reference errors
   const navigateToLesson = (index: number) => {
@@ -396,9 +439,12 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                   </CardHeader>
                   <CardContent>
                     <VideoPlayer
+                      key={currentLesson.id}
                       videoUrl={currentLesson.videoUrl}
                       onComplete={handleVideoComplete}
                       isCompleted={isLessonCompleted}
+                      initialPlaybackRate={savedPlaybackRate}
+                      autoPlay={autoPlayNext}
                     />
                   </CardContent>
                   <CardFooter className="flex justify-between">

@@ -81,10 +81,10 @@ async def get_course_progress_by_slug(
     progress_list = []
     
     for lp, title, ltype in progress_result.all():
-        p_dict = lp.model_dump()
-        p_dict["lesson_title"] = title
-        p_dict["lesson_type"] = ltype
-        progress_list.append(p_dict)
+        p_schema = LessonProgressResponse.model_validate(lp)
+        p_schema.lesson_title = title
+        p_schema.lesson_type = ltype
+        progress_list.append(p_schema)
 
     return progress_list
 
@@ -129,7 +129,7 @@ async def get_course_progress(
     progress_list = []
     
     for lp, title, ltype in progress_result.all():
-        p_dict = lp.model_dump()
+        p_dict = lp.model_dump(mode="python")
         p_dict["lesson_title"] = title
         p_dict["lesson_type"] = ltype
         progress_list.append(p_dict)
@@ -286,12 +286,16 @@ async def update_lesson_progress(
     # Always update overall course progress to reflect granular changes
     course_progress = await update_course_progress(user_id, course_id, session, site_id, cohort_id=cohort_id)
 
-    # Prepare response from updated_progress
-    res_dict = updated_progress.model_dump()
-    res_dict["lesson_title"] = lesson_title
-    res_dict["lesson_type"] = lesson_type
-    res_dict["course_progress_percentage"] = course_progress
-    return res_dict
+    # Refresh the progress object because update_course_progress might have committed and expired it
+    await session.refresh(updated_progress)
+
+    # Prepare response from updated_progress - ensure all required fields are included
+    res_schema = LessonProgressResponse.model_validate(updated_progress)
+    res_schema.lesson_title = lesson_title
+    res_schema.lesson_type = lesson_type
+    res_schema.course_progress_percentage = course_progress
+    
+    return res_schema
 
 @router.post("/quiz/attempt", response_model=QuizAttemptResponse)
 async def submit_quiz_attempt(
@@ -457,6 +461,11 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
     if not course:
         return 0
 
+    # Capture course attributes BEFORE any commit/refresh operations to avoid lazy loading issues
+    certificate_enabled = course.certificate_enabled
+    course_title = course.title
+    course_token_reward = course.token_reward
+
     # Get progress for these specific lessons
     progress_query = select(LessonProgress.progress_percentage, LessonProgress.status).where(
         LessonProgress.user_id == user_id,
@@ -525,12 +534,12 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                 # Award course completion bonus if rewards are enabled
                 if are_token_rewards_enabled(site):
                     # Use course-specific reward if set, otherwise fallback to site default
-                    amount = course.token_reward if course.token_reward > 0 else get_default_token_reward(site)
+                    amount = course_token_reward if course_token_reward > 0 else get_default_token_reward(site)
                     from utils.tokens import award_tokens
                     await award_tokens(
                         user_id=user_id,
                         amount=float(amount),
-                        description=f"Course completion bonus: {course.title}",
+                        description=f"Course completion bonus: {course_title}",
                         session=session,
                         site_id=site_id,
                         reference_type="course_completed",
@@ -538,7 +547,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                     )
             
             # Issue certificate if enabled for this course
-            if course.certificate_enabled:
+            if certificate_enabled:
                 await issue_certificate(user_id, course_id, session, site_id)
             
         return progress_percentage

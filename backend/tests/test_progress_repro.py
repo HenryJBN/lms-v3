@@ -10,7 +10,8 @@ import random
 # Add backend to path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from database.connection import database
+from database.session import engine
+from sqlmodel import Session, text
 # Import from middleware.auth instead of passlib directly
 from middleware.auth import get_password_hash
 
@@ -19,16 +20,13 @@ TEST_EMAIL = f"student_{uuid.uuid4()}@test.com"
 TEST_PASS = "student123"
 
 async def seed_user():
-    await database.connect()
-    
     user_id = str(uuid.uuid4())
     hashed = get_password_hash(TEST_PASS)
     
-    query = """
+    query = text("""
         INSERT INTO users (id, email, username, password_hash, first_name, last_name, role, status, email_verified, email_verified_at)
         VALUES (:id, :email, :username, :password_hash, 'Test', 'Student', 'student', 'active', true, NOW())
-        RETURNING id
-    """
+    """)
     
     values = {
         "id": user_id,
@@ -38,15 +36,19 @@ async def seed_user():
     }
     
     try:
-        await database.execute(query, values=values)
-        print(f"Seeded user: {TEST_EMAIL}")
+        with Session(engine.sync_engine if hasattr(engine, 'sync_engine') else engine) as session:
+            # Wait, engine is async in session.py. I should use sync_engine or just use execute on engine.
+            pass
         
-        # Profile
-        await database.execute("INSERT INTO user_profiles (user_id) VALUES (:user_id)", values={"user_id": user_id})
+        # Actually session.py has sync_engine
+        from database.session import sync_engine
+        with Session(sync_engine) as session:
+            session.execute(query, values)
+            session.execute(text("INSERT INTO user_profiles (user_id) VALUES (:user_id)"), {"user_id": user_id})
+            session.commit()
+            print(f"Seeded user: {TEST_EMAIL}")
     except Exception as e:
         print(f"Seed failed: {e}")
-    finally:
-        await database.disconnect()
 
 def get_token():
     login_data = {"email": TEST_EMAIL, "password": TEST_PASS}
@@ -74,16 +76,14 @@ def create_course(token):
     return resp.json()
 
 async def seed_instructor():
-    await database.connect()
-    
     user_id = str(uuid.uuid4())
     pass_hash = get_password_hash("instructor123")
     email = f"instructor_{uuid.uuid4()}@test.com"
     
-    query = """
+    query = text("""
         INSERT INTO users (id, email, username, password_hash, first_name, last_name, role, status, email_verified, email_verified_at)
         VALUES (:id, :email, :username, :password_hash, 'Test', 'Instructor', 'instructor', 'active', true, NOW())
-    """
+    """)
     values = {
         "id": user_id,
         "email": email,
@@ -91,12 +91,15 @@ async def seed_instructor():
         "password_hash": pass_hash
     }
     try:
-         await database.execute(query, values=values)
-         await database.execute("INSERT INTO user_profiles (user_id) VALUES (:user_id)", values={"user_id": user_id})
+        from database.session import sync_engine
+        with Session(sync_engine) as session:
+            session.execute(query, values)
+            session.execute(text("INSERT INTO user_profiles (user_id) VALUES (:user_id)"), {"user_id": user_id})
+            session.commit()
+            print(f"Seeded instructor: {email}")
     except Exception as e:
          print(f"Seed instructor failed: {e}")
          
-    await database.disconnect()
     return email
 
 def login_user(email, password):

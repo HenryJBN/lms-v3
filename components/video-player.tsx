@@ -19,7 +19,11 @@ interface VideoPlayerProps {
   onTimeUpdate?: (currentTime: number, progress: number) => void
   isCompleted?: boolean
   initialTime?: number
+  initialPlaybackRate?: number
+  autoPlay?: boolean
 }
+
+const PLAYBACK_RATE_STORAGE_KEY = "lms-playback-rate"
 
 export default function VideoPlayer({
   videoUrl,
@@ -27,6 +31,8 @@ export default function VideoPlayer({
   onTimeUpdate,
   isCompleted = false,
   initialTime = 0,
+  initialPlaybackRate,
+  autoPlay = false,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -38,6 +44,22 @@ export default function VideoPlayer({
   const [hasWatched85Percent, setHasWatched85Percent] = useState(isCompleted)
   const [playbackRate, setPlaybackRate] = useState(1)
   const [isDragging, setIsDragging] = useState(false)
+
+  // Initialize playback rate - will be applied when video loads
+  useEffect(() => {
+    const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+    const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
+    setPlaybackRate(rate)
+  }, [initialPlaybackRate])
+
+  // Apply playback rate when video is ready
+  const applyPlaybackRate = () => {
+    if (videoRef.current) {
+      const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+      const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
+      videoRef.current.playbackRate = rate
+    }
+  }
 
   // Handle video events
   useEffect(() => {
@@ -70,6 +92,12 @@ export default function VideoPlayer({
           setCurrentTime(video.currentTime)
           setProgress((video.currentTime / video.duration) * 100)
         }
+        
+        // Apply saved playback rate when video loads
+        const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+        const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
+        video.playbackRate = rate
+        setPlaybackRate(rate)
       }
     }
 
@@ -215,13 +243,56 @@ export default function VideoPlayer({
     }
   }
 
+  // Handle playback rate changes and persist to localStorage
   const handleSpeedChange = (speed: number) => {
     const video = videoRef.current
     if (!video) return
 
     video.playbackRate = speed
     setPlaybackRate(speed)
+    
+    // Save to localStorage for persistence across lessons
+    localStorage.setItem(PLAYBACK_RATE_STORAGE_KEY, String(speed))
   }
+
+  // Handle autoplay when autoPlay prop is true - with proper timing
+  useEffect(() => {
+    if (autoPlay && !isPlaying) {
+      // Wait for video to be ready by checking videoRef
+      const tryPlay = () => {
+        if (videoRef.current) {
+          // Apply playback rate first
+          const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+          const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
+          videoRef.current.playbackRate = rate
+          
+          videoRef.current.play()
+            .then(() => {
+              setIsPlaying(true)
+            })
+            .catch((error) => {
+              console.error("Error auto-playing video:", error)
+            })
+        }
+      }
+      
+      // If video is already loaded, play now
+      if (videoRef.current && videoRef.current.readyState >= 2) {
+        tryPlay()
+      } else {
+        // Wait for loadedmetadata event
+        const handleCanPlay = () => {
+          tryPlay()
+          videoRef.current?.removeEventListener('loadedmetadata', handleCanPlay)
+        }
+        videoRef.current?.addEventListener('loadedmetadata', handleCanPlay)
+        
+        return () => {
+          videoRef.current?.removeEventListener('loadedmetadata', handleCanPlay)
+        }
+      }
+    }
+  }, [autoPlay, initialPlaybackRate])
 
   const toggleFullscreen = () => {
     const videoContainer = document.getElementById("video-container")
