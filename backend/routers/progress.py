@@ -11,9 +11,9 @@ from database.session import get_session
 from dependencies import get_current_site
 from models.site import Site
 from models.course import Course
-from models.enrollment import Enrollment, LessonProgress
+from models.enrollment import Enrollment, LessonProgress, Certificate
 from models.lesson import Lesson, QuizAttempt
-from models.enums import CompletionStatus, EnrollmentStatus, UserRole
+from models.enums import CompletionStatus, EnrollmentStatus, UserRole, CertificateStatus
 from schemas.enrollment import LessonProgressResponse, LessonProgressUpdate
 from schemas.lesson import QuizAttemptCreate, QuizAttemptResponse
 from middleware.auth import get_current_active_user
@@ -753,7 +753,7 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
         title=f"Certificate of Completion - {course.title}",
         description=f"This certificate verifies that {student_name} has successfully completed the course: {course.title}",
         certificate_url=certificate_url,
-        status="issued",
+        status=CertificateStatus.issued,
         blockchain_network=None, # For future use
         site_id=site_id,
         issued_at=datetime.utcnow()

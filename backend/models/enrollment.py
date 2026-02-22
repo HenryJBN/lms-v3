@@ -1,9 +1,9 @@
 from typing import Optional
 from datetime import datetime
 import uuid
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, JSON
 from sqlalchemy import Column, Enum as SAEnum
-from models.enums import EnrollmentStatus, CompletionStatus
+from models.enums import EnrollmentStatus, CompletionStatus, CertificateStatus
 from models.base import MultiTenantMixin
 
 class Enrollment(MultiTenantMixin, table=True):

@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 import uuid
 from schemas.common import BaseSchema
+from pydantic import Field
 from models.enums import EnrollmentStatus, CompletionStatus, CertificateStatus
 
 class EnrollmentCreate(BaseSchema):
@@ -53,7 +54,7 @@ class CertificateBase(BaseSchema):
     title: str
     description: Optional[str] = None
     status: CertificateStatus = CertificateStatus.pending
-    blockchain_network: str = "polygon"
+    blockchain_network: Optional[str] = None
 
 class CertificateCreate(BaseSchema):
     user_id: uuid.UUID
@@ -73,11 +74,11 @@ class CertificateResponse(BaseSchema):
     title: str
     description: Optional[str] = None
     status: CertificateStatus
-    blockchain_network: str
+    blockchain_network: Optional[str] = None
     contract_address: Optional[str] = None
     token_id: Optional[str] = None
     token_uri: Optional[str] = None
-    transaction_hash: Optional[str] = None
+    transaction_hash: Optional[str] = Field(default=None, validation_alias="blockchain_hash")
     image_url: Optional[str] = None
     metadata: Optional[dict] = None
     issued_at: datetime

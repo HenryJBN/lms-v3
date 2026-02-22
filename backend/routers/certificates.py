@@ -197,12 +197,12 @@ async def mint_certificate(
         )
         
         # Update certificate with blockchain info
-        cert.token_id = mint_result["token_id"]
-        cert.contract_address = mint_result["contract_address"]
-        cert.transaction_hash = mint_result["transaction_hash"]
-        cert.blockchain_network = mint_result["network"]
+        cert.token_id = mint_result.get("token_id")
+        # cert.contract_address = mint_result.get("contract_address") # Not in DB schema yet
+        cert.blockchain_hash = mint_result.get("transaction_hash")
+        cert.blockchain_network = mint_result.get("network")
         cert.status = 'minted'
-        cert.updated_at = datetime.utcnow()
+        # cert.updated_at = datetime.utcnow() # Not in DB schema yet
         
         session.add(cert)
         await session.commit()
