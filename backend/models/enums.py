@@ -71,3 +71,11 @@ class QuizQuestionType(str, Enum):
     short_answer = "short_answer"
     essay = "essay"
     fill_blank = "fill_blank"
+
+class TokenTransactionType(str, Enum):
+    credit = "credit"
+    debit = "debit"
+    transfer = "transfer"
+    reward = "reward"
+    purchase = "purchase"
+    refund = "refund"

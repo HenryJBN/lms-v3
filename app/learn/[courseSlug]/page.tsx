@@ -101,19 +101,29 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   }
 
   useEffect(() => {
+    const abortController = new AbortController()
+    let navTimer: NodeJS.Timeout | null = null
+
     const fetchCourseData = async () => {
+      // Avoid redundant fetches if we already have the course for this slug/cohort
+      if (course && course.id === courseSlug && currentLessonIndex !== -1) {
+          // If we just need to update the lesson index because lessonParam changed, 
+          // we handle that in the other useEffect or here if it's the first load
+          return
+      }
+
       try {
         setLoading(true)
 
         // Fetch course lessons, lesson progress, and enrollment progress
         const [lessons, lessonProgress, enrollmentProgress] = await Promise.all([
-          courseService.getCourseLessons(courseSlug),
-          progressService.getCourseProgress(courseSlug, cohortId || undefined).catch(() => ({
+          courseService.getCourseLessons(courseSlug, { signal: abortController.signal }),
+          progressService.getCourseProgress(courseSlug, cohortId || undefined, { signal: abortController.signal }).catch(() => ({
             courseId: courseSlug,
             completedLessons: [],
             completedQuizzes: [],
           })),
-          progressService.getEnrollmentProgress(courseSlug, cohortId || undefined).catch(() => ({
+          progressService.getEnrollmentProgress(courseSlug, cohortId || undefined, { signal: abortController.signal }).catch(() => ({
             progress_percentage: 0,
           })),
         ])
@@ -144,9 +154,6 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           progressPercentage: enrollmentProgress.progress_percentage || 0,
         }
 
-        setCourse(courseData)
-        setUserProgress(lessonProgress)
-
         // If there's a lesson ID in the URL, set the current lesson
         let targetLessonIndex = 0
         if (lessonParam) {
@@ -158,27 +165,32 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           }
         }
         
-        setCurrentLessonIndex(targetLessonIndex)
         const initialLesson = transformedLessons[targetLessonIndex]
-        setVideoCompleted(lessonProgress.completedLessons?.includes(initialLesson.id) || false)
+        const isCurrentVideoCompleted = (lessonProgress.completedLessons as string[])?.includes(initialLesson.id) || false
+
+        // Batch initial state updates
+        setCourse(courseData)
+        setUserProgress(lessonProgress)
+        setCurrentLessonIndex(targetLessonIndex)
+        setVideoCompleted(isCurrentVideoCompleted)
 
         // Check if we should auto-play the next lesson for already-completed current lesson
         const currentLesson = transformedLessons[targetLessonIndex]
         const nextLesson = targetLessonIndex < transformedLessons.length - 1 ? transformedLessons[targetLessonIndex + 1] : null
         
         if (currentLesson && nextLesson) {
-          const isCurrentLessonCompleted = lessonProgress.completedLessons?.includes(currentLesson.id) || false
+          const isCurrentLessonCompleted = (lessonProgress.completedLessons as string[])?.includes(currentLesson.id) || false
           const isCurrentQuizCompleted = currentLesson.hasQuiz
-            ? lessonProgress.completedQuizzes?.includes(currentLesson.id) || false
+            ? (lessonProgress.completedQuizzes as string[])?.includes(currentLesson.id) || false
             : true
           const canGoNext = !nextLesson.prerequisites ||
             nextLesson.prerequisites.every(
-              (prereqId: string) => lessonProgress.completedLessons?.includes(prereqId) || false
+              (prereqId: string) => (lessonProgress.completedLessons as string[])?.includes(prereqId) || false
             )
 
           // If current lesson is completed and we can go to next, auto-play after a short delay
           if (isCurrentLessonCompleted && isCurrentQuizCompleted && canGoNext) {
-            setTimeout(() => {
+            navTimer = setTimeout(() => {
               const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
               router.push(url)
             }, 2000)
@@ -187,13 +199,21 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
         setLoading(false)
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+           return
+        }
         console.error("Failed to load course data:", error)
         router.push("/learn")
       }
     }
 
     fetchCourseData()
-  }, [courseSlug, cohortId, router])
+
+    return () => {
+      abortController.abort()
+      if (navTimer) clearTimeout(navTimer)
+    }
+  }, [courseSlug, cohortId, router]) // Removed lessonParam
 
   useEffect(() => {
     if (!course || !lessonParam) return

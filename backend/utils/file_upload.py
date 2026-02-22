@@ -1,4 +1,5 @@
 import os
+import asyncio
 import uuid
 import aiofiles
 from typing import Optional, Dict, Any, Protocol
@@ -114,7 +115,8 @@ class AWSS3Provider(FileUploadProvider):
         try:
             file_content = await file.read()
 
-            self.s3_client.put_object(
+            await asyncio.to_thread(
+                self.s3_client.put_object,
                 Bucket=self.bucket_name,
                 Key=filename,
                 Body=file_content,
@@ -136,7 +138,8 @@ class AWSS3Provider(FileUploadProvider):
     async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
         """Upload file content to AWS S3"""
         try:
-            self.s3_client.put_object(
+            await asyncio.to_thread(
+                self.s3_client.put_object,
                 Bucket=self.bucket_name,
                 Key=filename,
                 Body=content,
@@ -164,7 +167,7 @@ class AWSS3Provider(FileUploadProvider):
             else:
                 key = file_path.split(f"{self.bucket_name}.s3.{self.region}.amazonaws.com/")[1]
 
-            self.s3_client.delete_object(Bucket=self.bucket_name, Key=key)
+            await asyncio.to_thread(self.s3_client.delete_object, Bucket=self.bucket_name, Key=key)
             return True
 
         except Exception as e:
@@ -200,7 +203,8 @@ class DigitalOceanProvider(FileUploadProvider):
         try:
             file_content = await file.read()
 
-            self.s3_client.put_object(
+            await asyncio.to_thread(
+                self.s3_client.put_object,
                 Bucket=self.space_name,
                 Key=filename,
                 Body=file_content,
@@ -222,7 +226,8 @@ class DigitalOceanProvider(FileUploadProvider):
     async def upload_file_content(self, content: bytes, filename: str, content_type: str) -> str:
         """Upload file content to DigitalOcean Spaces"""
         try:
-            self.s3_client.put_object(
+            await asyncio.to_thread(
+                self.s3_client.put_object,
                 Bucket=self.space_name,
                 Key=filename,
                 Body=content,
@@ -250,7 +255,7 @@ class DigitalOceanProvider(FileUploadProvider):
             else:
                 key = file_path.split(f"{self.space_name}.{self.region}.digitaloceanspaces.com/")[1]
 
-            self.s3_client.delete_object(Bucket=self.space_name, Key=key)
+            await asyncio.to_thread(self.s3_client.delete_object, Bucket=self.space_name, Key=key)
             return True
 
         except Exception as e:
@@ -291,8 +296,8 @@ class LocalFileProvider(FileUploadProvider):
             directory = os.path.dirname(file_path)
             os.makedirs(directory, exist_ok=True)
 
-            with open(file_path, 'wb') as f:
-                f.write(content)
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(content)
 
             # Return full URL
             return f"{BACKEND_URL}/uploads/{filename}"
@@ -520,21 +525,27 @@ class FileUploadService:
                 await f.write(content)
 
             # Generate thumbnail
-            with Image.open(temp_path) as img:
-                img.thumbnail((300, 300), Image.Resampling.LANCZOS)
-                thumbnail_path = f"/tmp/{uuid.uuid4()}_thumb.jpg"
-                img.save(thumbnail_path, "JPEG", quality=85)
+            def _process_image():
+                with Image.open(temp_path) as img:
+                    img.thumbnail((300, 300), Image.Resampling.LANCZOS)
+                    th_path = f"/tmp/{uuid.uuid4()}_thumb.jpg"
+                    img.save(th_path, "JPEG", quality=85)
+                    return th_path
+
+            thumbnail_path = await asyncio.to_thread(_process_image)
 
             # Upload thumbnail using provider directly
-            with open(thumbnail_path, 'rb') as thumb_file:
+            async with aiofiles.open(thumbnail_path, 'rb') as thumb_file:
                 thumbnail_filename = self.generate_filename("thumbnail.jpg", f"{prefix}/thumbnails")
-                thumb_content = thumb_file.read()
+                thumb_content = await thumb_file.read()
 
                 # For cloud providers, upload directly
                 if hasattr(self.provider, 's3_client'):
                     # AWS S3 or DigitalOcean Spaces
-                    self.provider.s3_client.put_object(
-                        Bucket=self.provider.bucket_name if hasattr(self.provider, 'bucket_name') else self.provider.space_name,
+                    bucket = self.provider.bucket_name if hasattr(self.provider, 'bucket_name') else self.provider.space_name
+                    await asyncio.to_thread(
+                        self.provider.s3_client.put_object,
+                        Bucket=bucket,
                         Key=thumbnail_filename,
                         Body=thumb_content,
                         ContentType="image/jpeg",
@@ -546,16 +557,13 @@ class FileUploadService:
                     elif hasattr(self.provider, 'cdn_domain') and self.provider.cdn_domain:
                         thumbnail_url = f"https://{self.provider.cdn_domain}/{thumbnail_filename}"
                     else:
-                        base_domain = (
-                            self.provider.bucket_name if hasattr(self.provider, 'bucket_name')
-                            else self.provider.space_name
-                        )
+                        base_domain = bucket
                         region = (
                             self.provider.region if hasattr(self.provider, 'region')
                             else 'nyc3'
                         )
                         domain_suffix = (
-                            f".s3.{self.provider.region}.amazonaws.com" if hasattr(self.provider, 'bucket_name')
+                            f".s3.{region}.amazonaws.com" if hasattr(self.provider, 'bucket_name')
                             else f".{region}.digitaloceanspaces.com"
                         )
                         thumbnail_url = f"https://{base_domain}{domain_suffix}/{thumbnail_filename}"
@@ -565,14 +573,14 @@ class FileUploadService:
                     directory = os.path.dirname(file_path)
                     os.makedirs(directory, exist_ok=True)
 
-                    with open(file_path, 'wb') as local_file:
-                        local_file.write(thumb_content)
+                    async with aiofiles.open(file_path, 'wb') as local_file:
+                        await local_file.write(thumb_content)
 
                     thumbnail_url = f"{BACKEND_URL}/uploads/{thumbnail_filename}"
 
             # Clean up temp files
-            os.remove(temp_path)
-            os.remove(thumbnail_path)
+            await asyncio.to_thread(os.remove, temp_path)
+            await asyncio.to_thread(os.remove, thumbnail_path)
 
             return thumbnail_url
 
@@ -595,7 +603,7 @@ class FileUploadService:
                 '-show_format', '-show_streams', temp_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True)
             
             if result.returncode == 0:
                 import json

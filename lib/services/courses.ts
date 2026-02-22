@@ -78,7 +78,7 @@ class CourseService {
   /**
    * ✅ Fetch paginated courses with optional filters
    */
-  async getCourses(filters?: CourseFilters): Promise<GetCoursesResponse> {
+  async getCourses(filters?: CourseFilters, options?: RequestInit): Promise<GetCoursesResponse> {
     try {
       const params = new URLSearchParams()
 
@@ -92,7 +92,7 @@ class CourseService {
 
       const endpoint = `${API_ENDPOINTS.courses}${params.toString() ? `?${params.toString()}` : ""}`
 
-      const response = await apiClient.get<GetCoursesResponse>(endpoint)
+      const response = await apiClient.get<GetCoursesResponse>(endpoint, options)
 
       // Ensure consistent structure if API returns array instead of paginated object
       if (!("items" in response)) {
@@ -178,9 +178,9 @@ class CourseService {
   /**
    * ✅ Fetch single course details by slug
    */
-  async getCourse(courseSlug: string): Promise<CourseReponse> {
+  async getCourse(courseSlug: string, options?: RequestInit): Promise<CourseReponse> {
     try {
-      return await apiClient.get<CourseReponse>(`${API_ENDPOINTS.courses}/slug/${courseSlug}`)
+      return await apiClient.get<CourseReponse>(`${API_ENDPOINTS.courses}/slug/${courseSlug}`, options)
     } catch (error) {
       console.error("❌ Failed to get course:", error)
       throw error
@@ -356,7 +356,7 @@ class CourseService {
   /**
    * ✅ Fetch course lessons for learning
    */
-  async getCourseLessons(courseIdOrSlug: string): Promise<any[]> {
+  async getCourseLessons(courseIdOrSlug: string, options?: RequestInit): Promise<any[]> {
     try {
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
@@ -364,7 +364,7 @@ class CourseService {
         ? `${API_ENDPOINTS.courses}/course/${courseIdOrSlug}/lessons`
         : `${API_ENDPOINTS.courseLessons}/course/slug/${courseIdOrSlug}`
 
-      return await apiClient.get(endpoint)
+      return await apiClient.get(endpoint, options)
     } catch (error) {
       console.error("❌ Failed to get course lessons:", error)
       throw error
@@ -494,7 +494,7 @@ class ProgressService {
   /**
    * Get user progress for a course
    */
-  async getCourseProgress(courseIdOrSlug: string, cohortId?: string): Promise<UserProgress> {
+  async getCourseProgress(courseIdOrSlug: string, cohortId?: string, options?: RequestInit): Promise<UserProgress> {
     try {
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
@@ -507,7 +507,7 @@ class ProgressService {
         : `${API_ENDPOINTS.progress}/course/slug/${courseIdOrSlug}?${params.toString()}`
 
       // API returns LessonProgressResponse[] - transform to UserProgress format
-      const progressRecords = await apiClient.get<any[]>(endpoint)
+      const progressRecords = await apiClient.get<any[]>(endpoint, options)
 
       // Transform API response to expected UserProgress format
       const completedLessons: string[] = []
@@ -585,7 +585,7 @@ class ProgressService {
   /**
    * Get enrollment progress for a course
    */
-  async getEnrollmentProgress(courseIdOrSlug: string, cohortId?: string): Promise<{ progress_percentage: number }> {
+  async getEnrollmentProgress(courseIdOrSlug: string, cohortId?: string, options?: RequestInit): Promise<{ progress_percentage: number }> {
     try {
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
@@ -597,7 +597,7 @@ class ProgressService {
         ? `${API_ENDPOINTS.enrollments}/progress/${courseIdOrSlug}?${params.toString()}`
         : `${API_ENDPOINTS.enrollments}/progress/slug/${courseIdOrSlug}?${params.toString()}`
 
-      return await apiClient.get<{ progress_percentage: number }>(endpoint)
+      return await apiClient.get<{ progress_percentage: number }>(endpoint, options)
     } catch (error) {
       console.error("❌ Failed to get enrollment progress:", error)
       // Return default on error

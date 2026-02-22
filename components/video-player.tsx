@@ -45,40 +45,23 @@ export default function VideoPlayer({
   const [playbackRate, setPlaybackRate] = useState(1)
   const [isDragging, setIsDragging] = useState(false)
 
-  // Initialize playback rate - will be applied when video loads
-  useEffect(() => {
-    const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
-    const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
-    setPlaybackRate(rate)
-  }, [initialPlaybackRate])
-
-  // Apply playback rate when video is ready
-  const applyPlaybackRate = () => {
-    if (videoRef.current) {
-      const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
-      const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
-      videoRef.current.playbackRate = rate
-    }
-  }
-
-  // Handle video events
+  // Consolidate initialization and event handlers
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
+    // Get initial playback rate once
+    const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
+    const initialRate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
+    setPlaybackRate(initialRate)
+
     const handleTimeUpdate = () => {
       if (!video.duration || !isFinite(video.duration)) return
-
       if (!isDragging) {
-        const newTime = video.currentTime
-        const newProgress = (newTime / video.duration) * 100
-        setCurrentTime(newTime)
-        setProgress(newProgress)
+        setCurrentTime(video.currentTime)
+        setProgress((video.currentTime / video.duration) * 100)
       }
-
-      // Mark as completed when user has watched 85% of the video
-      // Ensure we have a valid duration and we are not already completed
-      if (!hasWatched85Percent && video.duration > 0 && video.currentTime / video.duration >= 0.85) {
+      if (!hasWatched85Percent && video.currentTime / video.duration >= 0.85) {
         setHasWatched85Percent(true)
         onComplete()
       }
@@ -87,17 +70,12 @@ export default function VideoPlayer({
     const handleLoadedMetadata = () => {
       if (video.duration && isFinite(video.duration)) {
         setDuration(video.duration)
+        video.playbackRate = initialRate
         if (initialTime > 0 && video.currentTime === 0) {
           video.currentTime = Math.min(initialTime, video.duration)
           setCurrentTime(video.currentTime)
           setProgress((video.currentTime / video.duration) * 100)
         }
-        
-        // Apply saved playback rate when video loads
-        const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
-        const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
-        video.playbackRate = rate
-        setPlaybackRate(rate)
       }
     }
 
@@ -113,12 +91,15 @@ export default function VideoPlayer({
     video.addEventListener("loadedmetadata", handleLoadedMetadata)
     video.addEventListener("ended", handleEnded)
 
+    // Handle initial state if video is already ready
+    if (video.readyState >= 1) handleLoadedMetadata()
+
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate)
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
       video.removeEventListener("ended", handleEnded)
     }
-  }, [hasWatched85Percent, onComplete, isDragging])
+  }, [initialPlaybackRate, initialTime, onComplete, isDragging, hasWatched85Percent])
 
   // Periodic progress tracking
   useEffect(() => {

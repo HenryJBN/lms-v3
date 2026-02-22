@@ -50,11 +50,19 @@ class BlockchainService:
     def __init__(self):
         self.w3 = w3
         self.contract = None
-        if CERTIFICATE_CONTRACT_ADDRESS and w3.is_connected():
-            self.contract = w3.eth.contract(
-                address=CERTIFICATE_CONTRACT_ADDRESS,
-                abi=CERTIFICATE_ABI
-            )
+
+    async def get_contract(self):
+        """Lazily initialize the contract"""
+        if self.contract:
+            return self.contract
+        if CERTIFICATE_CONTRACT_ADDRESS:
+            connected = await asyncio.to_thread(self.w3.is_connected)
+            if connected:
+                self.contract = self.w3.eth.contract(
+                    address=CERTIFICATE_CONTRACT_ADDRESS,
+                    abi=CERTIFICATE_ABI
+                )
+        return self.contract
     
     async def upload_to_ipfs(self, metadata: Dict[str, Any]) -> str:
         """Upload certificate metadata to IPFS"""
@@ -99,7 +107,8 @@ class BlockchainService:
     ) -> Dict[str, Any]:
         """Mint a certificate as NFT on Polygon"""
         try:
-            if not self.contract or not PRIVATE_KEY:
+            contract = await self.get_contract()
+            if not contract or not PRIVATE_KEY:
                 raise Exception("Blockchain not properly configured")
             
             # Create metadata
@@ -137,31 +146,34 @@ class BlockchainService:
             
             # Prepare transaction
             account = Account.from_key(PRIVATE_KEY)
-            nonce = self.w3.eth.get_transaction_count(account.address)
+            nonce = await asyncio.to_thread(self.w3.eth.get_transaction_count, account.address)
             
             # Build transaction
-            transaction = self.contract.functions.mintCertificate(
-                recipient_address,
-                token_uri
-            ).build_transaction({
-                'from': account.address,
-                'nonce': nonce,
-                'gas': 200000,
-                'gasPrice': self.w3.to_wei('30', 'gwei')
-            })
+            transaction = await asyncio.to_thread(
+                contract.functions.mintCertificate(
+                    recipient_address,
+                    token_uri
+                ).build_transaction,
+                {
+                    'from': account.address,
+                    'nonce': nonce,
+                    'gas': 200000,
+                    'gasPrice': self.w3.to_wei('30', 'gwei')
+                }
+            )
             
             # Sign and send transaction
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, PRIVATE_KEY)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            signed_txn = await asyncio.to_thread(self.w3.eth.account.sign_transaction, transaction, PRIVATE_KEY)
+            tx_hash = await asyncio.to_thread(self.w3.eth.send_raw_transaction, signed_txn.rawTransaction)
             
             # Wait for transaction receipt
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            receipt = await asyncio.to_thread(self.w3.eth.wait_for_transaction_receipt, tx_hash)
             
             # Extract token ID from logs
             token_id = None
             for log in receipt.logs:
                 try:
-                    decoded_log = self.contract.events.Transfer().process_log(log)
+                    decoded_log = await asyncio.to_thread(contract.events.Transfer().process_log, log)
                     token_id = decoded_log['args']['tokenId']
                     break
                 except:
@@ -195,11 +207,12 @@ class BlockchainService:
     ) -> bool:
         """Verify certificate exists on blockchain"""
         try:
-            if not self.contract:
+            contract = await self.get_contract()
+            if not contract:
                 return False
             
             # Check if token exists by trying to get its URI
-            token_uri = self.contract.functions.tokenURI(int(token_id)).call()
+            token_uri = await asyncio.to_thread(contract.functions.tokenURI(int(token_id)).call)
             return bool(token_uri)
             
         except Exception as e:
@@ -213,10 +226,11 @@ class BlockchainService:
     ) -> Optional[str]:
         """Get the owner of a certificate NFT"""
         try:
-            if not self.contract:
+            contract = await self.get_contract()
+            if not contract:
                 return None
             
-            owner = self.contract.functions.ownerOf(int(token_id)).call()
+            owner = await asyncio.to_thread(contract.functions.ownerOf(int(token_id)).call)
             return owner
             
         except Exception as e:

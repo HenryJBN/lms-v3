@@ -1,6 +1,6 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-export const REQUEST_TIMEOUT = 10000
+export const REQUEST_TIMEOUT = 30000
 
 export const COOKIE_NAMES = {
   userId: "user_id",

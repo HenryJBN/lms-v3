@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+import asyncio
 from typing import List, Optional
 import uuid
 from datetime import datetime
@@ -143,7 +144,8 @@ async def update_lesson_progress(
     cohort_id: Optional[uuid.UUID] = Query(None),
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: Site = Depends(get_current_site),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     # Get lesson info and check enrollment (allow both active and completed enrollments
     # so students can progress on newly added lessons after course completion)
@@ -259,32 +261,33 @@ async def update_lesson_progress(
 
     # Award tokens if lesson just completed and rewards are enabled
     if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
+        # Award tokens if lesson just completed and rewards are enabled in background
         if are_token_rewards_enabled(current_site):
             amount = get_lesson_token_reward(current_site)
-            await award_tokens(
-                user_id=user_id,
-                amount=float(amount),
-                description=f"Completed lesson: {lesson_title}",
-                session=session,
-                site_id=site_id,
-                reference_type="lesson_completed",
-                reference_id=lesson_id
+            background_tasks.add_task(
+                award_tokens_background,
+                user_id,
+                float(amount),
+                f"Completed lesson: {lesson_title}",
+                site_id,
+                "lesson_completed",
+                lesson_id
             )
 
-        # Send completion notification
-        await send_lesson_completion_notification(
-            user_id=user_id,
-            lesson_title=lesson_title,
-            course_id=course_id,
-            session=session,
-            site_id=site_id
+        # Send completion notification in background
+        background_tasks.add_task(
+            send_lesson_completion_notification_background,
+            user_id,
+            lesson_title,
+            course_id,
+            site_id
         )
 
         # Update course progress - MOVED to always update below the block
         # await update_course_progress(user_id, course_id, session, current_site, cohort_id=cohort_id)
 
     # Always update overall course progress to reflect granular changes
-    course_progress = await update_course_progress(user_id, course_id, session, site_id, cohort_id=cohort_id)
+    course_progress = await update_course_progress(user_id, course_id, session, site_id, background_tasks=background_tasks, cohort_id=cohort_id)
 
     # Refresh the progress object because update_course_progress might have committed and expired it
     await session.refresh(updated_progress)
@@ -302,7 +305,8 @@ async def submit_quiz_attempt(
     attempt: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: Site = Depends(get_current_site),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     from models.lesson import Quiz, QuizQuestion, QuizAttempt
     # Get quiz info and check enrollment
@@ -381,17 +385,17 @@ async def submit_quiz_attempt(
     await session.commit()
     await session.refresh(new_attempt)
     
-    # Award tokens if passed and rewards are enabled
+    # Award tokens if passed and rewards are enabled in background
     if passed and are_token_rewards_enabled(current_site):
         amount = get_quiz_token_reward(current_site)
-        await award_tokens(
-            user_id=current_user.id,
-            amount=float(amount),
-            description=f"Passed quiz: {quiz.title} ({score}%)",
-            session=session,
-            site_id=current_site.id,
-            reference_type="quiz_passed",
-            reference_id=attempt.quiz_id
+        background_tasks.add_task(
+            award_tokens_background,
+            current_user.id,
+            float(amount),
+            f"Passed quiz: {quiz.title} ({score}%)",
+            current_site.id,
+            "quiz_passed",
+            attempt.quiz_id
         )
     
     return new_attempt
@@ -433,7 +437,7 @@ async def get_quiz_attempts(
     attempts_result = await session.exec(query)
     return attempts_result.all()
 
-async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID, cohort_id: Optional[uuid.UUID] = None):
+async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID, background_tasks: Optional[BackgroundTasks] = None, cohort_id: Optional[uuid.UUID] = None):
     """Update overall course progress based on average lesson progress"""
     from models.enrollment import Enrollment, LessonProgress
     from models.lesson import Lesson
@@ -535,20 +539,34 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                 if are_token_rewards_enabled(site):
                     # Use course-specific reward if set, otherwise fallback to site default
                     amount = course_token_reward if course_token_reward > 0 else get_default_token_reward(site)
-                    from utils.tokens import award_tokens
-                    await award_tokens(
-                        user_id=user_id,
-                        amount=float(amount),
-                        description=f"Course completion bonus: {course_title}",
-                        session=session,
-                        site_id=site_id,
-                        reference_type="course_completed",
-                        reference_id=course_id
-                    )
+                    if background_tasks:
+                        background_tasks.add_task(
+                            award_tokens_background,
+                            user_id,
+                            float(amount),
+                            f"Course completion bonus: {course_title}",
+                            site_id,
+                            "course_completed",
+                            course_id
+                        )
+                    else:
+                        from utils.tokens import award_tokens
+                        await award_tokens(
+                            user_id=user_id,
+                            amount=float(amount),
+                            description=f"Course completion bonus: {course_title}",
+                            session=session,
+                            site_id=site_id,
+                            reference_type="course_completed",
+                            reference_id=course_id
+                        )
             
             # Issue certificate if enabled for this course
             if certificate_enabled:
-                await issue_certificate(user_id, course_id, session, site_id)
+                if background_tasks:
+                    background_tasks.add_task(issue_certificate_background, user_id, course_id, site_id)
+                else:
+                    await issue_certificate(user_id, course_id, session, site_id)
             
         return progress_percentage
     return 0
@@ -696,19 +714,19 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
 
     # Generate PDF certificate
     student_name = f"{user.first_name} {user.last_name}"
-    academy_name = course.site.name if hasattr(course, 'site') and course.site else "Learning Academy"
     
-    # If site is not prefetched, try to get it
-    if academy_name == "Learning Academy":
-        from models.site import Site
-        site = await session.get(Site, site_id)
-        if site:
-            academy_name = site.name
+    # Fetch site info explicitly to avoid lazy-loading issues
+    academy_name = "Learning Academy"
+    from models.site import Site
+    site = await session.get(Site, site_id)
+    if site:
+        academy_name = site.name
 
     certificate_id = str(uuid.uuid4())
     
     try:
-        pdf_bytes = generate_pdf_certificate(
+        pdf_bytes = await asyncio.to_thread(
+            generate_pdf_certificate,
             student_name=student_name,
             course_title=course.title,
             completion_date=datetime.utcnow(),
@@ -756,3 +774,49 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
         session.add(enrollment)
     
     await session.commit()
+
+async def issue_certificate_background(user_id: uuid.UUID, course_id: uuid.UUID, site_id: uuid.UUID):
+    """Wrapper for issue_certificate to be used with BackgroundTasks"""
+    from database.session import engine
+    from sqlmodel.ext.asyncio.session import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        await issue_certificate(user_id, course_id, session, site_id)
+
+async def award_tokens_background(user_id: uuid.UUID, amount: float, description: str, site_id: uuid.UUID, reference_type: str, reference_id: uuid.UUID):
+    """Wrapper for award_tokens to be used with BackgroundTasks"""
+    from database.session import engine
+    from sqlmodel.ext.asyncio.session import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    from utils.tokens import award_tokens
+    
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        await award_tokens(
+            user_id=user_id,
+            amount=amount,
+            description=description,
+            session=session,
+            site_id=site_id,
+            reference_type=reference_type,
+            reference_id=reference_id
+        )
+
+async def send_lesson_completion_notification_background(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID, site_id: uuid.UUID):
+    """Wrapper for send_lesson_completion_notification to be used with BackgroundTasks"""
+    from database.session import engine
+    from sqlmodel.ext.asyncio.session import AsyncSession
+    from sqlalchemy.orm import sessionmaker
+    from utils.notifications import send_lesson_completion_notification
+    
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with async_session() as session:
+        await send_lesson_completion_notification(
+            user_id=user_id,
+            lesson_title=lesson_title,
+            course_id=course_id,
+            session=session,
+            site_id=site_id
+        )

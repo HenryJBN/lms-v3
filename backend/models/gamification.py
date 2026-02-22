@@ -3,6 +3,7 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON
 from models.base import MultiTenantMixin
+from models.enums import TokenTransactionType
 
 class TokenBalance(MultiTenantMixin, table=True):
     __tablename__ = "token_balances"
@@ -21,7 +22,7 @@ class TokenTransaction(MultiTenantMixin, table=True):
     
     amount: float = Field(default=0.0)
     # Map transaction_type to 'type' column in DB
-    transaction_type: str = Field(sa_column_kwargs={"name": "type"}) 
+    transaction_type: TokenTransactionType = Field(sa_column_kwargs={"name": "type"}) 
     balance_after: float = Field(default=0.0)
     description: str
     

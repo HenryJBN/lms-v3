@@ -126,6 +126,11 @@ class ApiClient {
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+    
+    // Merge user-provided signal with our timeout signal
+    if (options.signal) {
+      options.signal.addEventListener("abort", () => controller.abort())
+    }
     config.signal = controller.signal
 
     try {
@@ -171,6 +176,11 @@ class ApiClient {
         throw error
       }
       if (error instanceof DOMException && error.name === "AbortError") {
+        // If it was a user-initiated abort, we log it but don't throw a public error
+        if (options.signal?.aborted) {
+            console.log("Request intentionally aborted:", url)
+            return new Promise(() => {}) // Return a never-resolving promise to stop the chain
+        }
         throw new ApiError(408, "Request timeout")
       }
       throw new ApiError(500, "Network error occurred")
@@ -251,84 +261,15 @@ class ApiClient {
   }
 
   async postFormData<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<T> {
-    const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
-
-    const headers: Record<string, string> = {
-      ...Object.fromEntries(
-        Object.entries(options?.headers || {}).map(([k, v]) => [k, String(v)])
-      ),
-    }
-
-    if (typeof window !== "undefined") {
-      const tenantDomain = window.location.host
-      if (tenantDomain) {
-        headers["X-Tenant-Domain"] = tenantDomain
-      }
-    }
-
-    if (this.token) {
-      headers["Authorization"] = `Bearer ${this.token}`
-    }
-
-    const config: RequestInit = {
+    return this.request<T>(endpoint, {
       ...options,
       method: "POST",
-      headers,
       body: formData,
-      credentials: "include",
-    }
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-    config.signal = controller.signal
-
-    try {
-      const response = await fetch(url, config)
-      clearTimeout(timeoutId)
-
-      // Handle 401 - Try to refresh token
-      if (response.status === 401) {
-        const refreshed = await this.refreshAccessToken()
-        if (refreshed) {
-          // Retry the request with new token
-          config.headers = {
-            ...config.headers,
-            Authorization: `Bearer ${this.token}`,
-          }
-          const retryResponse = await fetch(url, config)
-          if (retryResponse.ok) {
-            return await retryResponse.json()
-          }
-        }
-        // If refresh failed, throw error
-        throw new ApiError(401, "Authentication failed")
-      }
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
-        throw new ApiError(
-          response.status,
-          error.detail || error.message || "An error occurred",
-          error
-        )
-      }
-
-      const contentType = response.headers.get("content-type")
-      if (contentType && contentType.includes("application/json")) {
-        return await response.json()
-      }
-
-      return {} as T
-    } catch (error) {
-      clearTimeout(timeoutId)
-      if (error instanceof ApiError) {
-        throw error
-      }
-      if (error instanceof DOMException && error.name === "AbortError") {
-        throw new ApiError(408, "Request timeout")
-      }
-      throw new ApiError(500, "Network error occurred")
-    }
+      headers: {
+          // Fetch will set the correct Boundary for FormData if Content-Type is NOT set
+          ...options?.headers,
+      } as any
+    })
   }
 
   async downloadFile(endpoint: string, options?: RequestInit): Promise<Blob> {
@@ -345,8 +286,18 @@ class ApiClient {
       ...options,
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
+    
+    if (options?.signal) {
+      options.signal.addEventListener("abort", () => controller.abort())
+    }
+    config.signal = controller.signal
+
     try {
       const response = await fetch(url, config)
+      clearTimeout(timeoutId)
+      
       if (!response.ok) {
         const errorText = await response.text()
         console.log("Error response:", errorText)
@@ -365,6 +316,12 @@ class ApiClient {
 
       return await response.blob()
     } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof DOMException && error.name === "AbortError") {
+          if (options?.signal?.aborted) {
+              return new Promise(() => {})
+          }
+      }
       console.error("Download error:", error)
       throw error
     }
