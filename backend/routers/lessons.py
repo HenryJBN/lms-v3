@@ -101,11 +101,12 @@ async def get_all_lessons(
     
     transformed_lessons = []
     for lesson, course_title, section_title, author_first_name, author_last_name, author_id in results.all():
-        # Convert video_duration to MM:SS
+        # Convert duration to MM:SS
         duration_str = "00:00"
-        if lesson.video_duration:
-            minutes = lesson.video_duration // 60
-            seconds = lesson.video_duration % 60
+        lesson_duration = lesson.estimated_duration or lesson.video_duration or 0
+        if lesson_duration:
+            minutes = lesson_duration // 60
+            seconds = lesson_duration % 60
             duration_str = f"{minutes:02d}:{seconds:02d}"
 
         transformed_lesson = {

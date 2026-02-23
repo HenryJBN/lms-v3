@@ -113,10 +113,18 @@ export default function LessonsManagement() {
       if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus === "published" ? "published" : "draft")
       if (searchTerm.trim()) params.append("search", searchTerm.trim())
       const response: { items: any[] } = await apiClient.get(`/api/lessons?${params.toString()}`)
-      return response.items || []
+      return (response.items || []).map((lesson: any) => {
+        console.log(lesson,'lesson')
+        
+        return {
+          ...lesson,
+        };
+      });
     },
   })
   const lessons = lessonsData ?? []
+
+  console.log(lessons, 'lezzzz')
 
   // Fetch sections for a specific course (on-demand, not useQuery)
   const fetchSectionsForCourse = async (courseId: string) => {
@@ -467,9 +475,9 @@ export default function LessonsManagement() {
 
     // Convert duration from seconds to MM:SS format
     let durationStr = ""
-    if (lesson.video_duration) {
-      const minutes = Math.floor(lesson.video_duration / 60)
-      const seconds = lesson.video_duration % 60
+    if (lesson.video_duration || lesson.estimated_duration) {
+      const minutes = Math.floor((lesson.video_duration || lesson.estimated_duration) / 60)
+      const seconds = (lesson.video_duration || lesson.estimated_duration) % 60
       durationStr = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
     }
 

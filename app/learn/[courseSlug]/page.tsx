@@ -67,7 +67,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       title: lesson.title,
       description: lesson.description || lesson.content || "",
       videoUrl: lesson.video_url || "",
-      duration: formatDuration(lesson.video_duration || 0),
+      duration: formatDuration(lesson.estimated_duration || lesson.video_duration || 0),
       hasQuiz: lesson.has_quiz || false,
       prerequisites: lesson.prerequisites || [],
       quiz: lesson.quiz || null,
