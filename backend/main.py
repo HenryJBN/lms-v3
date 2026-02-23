@@ -9,7 +9,7 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 
-from database.session import init_db
+from database.session import init_db, warmup_connections
 import models  # Register SQLModel tables
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
@@ -28,6 +28,8 @@ setup_logging()
 async def lifespan(app: FastAPI):
     # Startup - Initialize SQLModel tables
     await init_db()
+    # Pre-warm database connection pool
+    await warmup_connections()
     yield
     # Shutdown
     pass

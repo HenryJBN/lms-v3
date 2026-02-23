@@ -301,3 +301,61 @@ def check_redis_connection() -> bool:
         print(f"[Redis] Connection check failed: {e}")
         return False
 
+
+# Cache utilities for API responses
+class CacheManager:
+    """Manager for caching API responses"""
+    
+    def __init__(self, client: redis.Redis):
+        self.client = client
+    
+    def get(self, key: str) -> Optional[str]:
+        """Get cached value by key"""
+        try:
+            return self.client.get(f"cache:{key}")
+        except Exception as e:
+            print(f"[Cache] Error getting key {key}: {e}")
+            return None
+    
+    def set(self, key: str, value: str, expiry_seconds: int = 300) -> bool:
+        """Set cached value with expiration"""
+        try:
+            self.client.setex(f"cache:{key}", expiry_seconds, value)
+            return True
+        except Exception as e:
+            print(f"[Cache] Error setting key {key}: {e}")
+            return False
+    
+    def delete(self, key: str) -> bool:
+        """Delete cached value"""
+        try:
+            self.client.delete(f"cache:{key}")
+            return True
+        except Exception as e:
+            print(f"[Cache] Error deleting key {key}: {e}")
+            return False
+    
+    def get_json(self, key: str) -> Optional[Dict[str, Any]]:
+        """Get cached JSON value"""
+        try:
+            data = self.get(key)
+            if data:
+                return json.loads(data)
+            return None
+        except Exception as e:
+            print(f"[Cache] Error getting JSON key {key}: {e}")
+            return None
+    
+    def set_json(self, key: str, value: Dict[str, Any], expiry_seconds: int = 300) -> bool:
+        """Set cached JSON value"""
+        try:
+            json_data = json.dumps(value)
+            return self.set(key, json_data, expiry_seconds)
+        except Exception as e:
+            print(f"[Cache] Error setting JSON key {key}: {e}")
+            return False
+
+
+# Initialize cache manager
+cache_manager = CacheManager(redis_client)
+

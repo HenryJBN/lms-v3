@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from sqlmodel import select, col, text, func, and_
 from sqlmodel.ext.asyncio.session import AsyncSession
+import json
 
 from database.session import get_session
 from dependencies import get_current_site
@@ -36,6 +37,7 @@ from models.cohort import Cohort
 from middleware.auth import get_current_active_user, require_instructor_or_admin
 from utils.file_upload import upload_image, upload_video
 from utils.site_settings import are_courses_auto_approved
+from utils.redis_client import cache_manager
 
 router = APIRouter()
 
@@ -164,6 +166,12 @@ async def get_courses(
 async def get_global_featured_courses(
     session: AsyncSession = Depends(get_session)
 ):
+    # Check cache first (cache for 5 minutes)
+    cache_key = "global_featured_courses"
+    cached = cache_manager.get_json(cache_key)
+    if cached:
+        return [CourseResponse(**item) for item in cached]
+    
     # Fetch 6 random courses across ALL tenants, joining the Site to get the tenant name
     query = select(Course, User, Site).outerjoin(User, Course.instructor_id == User.id).join(Site, Course.site_id == Site.id).where(
         Course.status == CourseStatus.published
@@ -182,6 +190,11 @@ async def get_global_featured_courses(
             tenant_domain=site.subdomain
         )
         items.append(item)
+    
+    # Cache the result for 5 minutes (300 seconds)
+    cache_data = [item.model_dump() for item in items]
+    cache_manager.set_json(cache_key, cache_data, 300)
+    
     return items
 
 @router.get("/featured", response_model=List[CourseResponse])

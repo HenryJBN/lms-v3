@@ -9,6 +9,7 @@ from models.course import Course
 from models.enrollment import Enrollment, Certificate
 from models.system import SystemConfig
 from utils.site_settings import get_theme_colors
+from utils.redis_client import cache_manager
 from sqlmodel import select, func
 
 router = APIRouter()
@@ -54,18 +55,29 @@ async def get_global_theme(session: AsyncSession = Depends(get_session)):
     Public endpoint to get the global platform theme and settings.
     No authentication required.
     """
+    # Check cache first (cache for 1 hour - theme doesn't change often)
+    cache_key = "global_theme"
+    cached = cache_manager.get_json(cache_key)
+    if cached:
+        return cached
+    
     # Fetch platform name from SystemConfig
     result = await session.exec(select(SystemConfig).where(SystemConfig.key == "site_name"))
     site_name_config = result.first()
     site_name = site_name_config.value if site_name_config else "DCA LMS"
     
-    return {
+    response_data = {
         "site_name": site_name,
         "logo_url": None, # Could be fetched from config if available
         "primary_color": "#A40100", # Red 500
         "secondary_color": "#000000", # Black
         "accent_color": "#A40100", # Red 400
     }
+    
+    # Cache for 1 hour (3600 seconds)
+    cache_manager.set_json(cache_key, response_data, 3600)
+    
+    return response_data
 
 @router.get("/global/stats")
 async def get_public_global_stats(session: AsyncSession = Depends(get_session)):
@@ -73,17 +85,28 @@ async def get_public_global_stats(session: AsyncSession = Depends(get_session)):
     Public endpoint to get global platform statistics for the homepage.
     No authentication required.
     """
+    # Check cache first (cache for 5 minutes)
+    cache_key = "global_stats"
+    cached = cache_manager.get_json(cache_key)
+    if cached:
+        return cached
+    
     total_sites = (await session.exec(select(func.count(Site.id)).where(Site.is_active == True))).one()
     total_students = (await session.exec(select(func.count(User.id)).where(User.role == "student"))).one()
     total_courses = (await session.exec(select(func.count(Course.id)).where(Course.status == "published"))).one()
     total_enrollments = (await session.exec(select(func.count(Enrollment.id)))).one()
     total_certificates = (await session.exec(select(func.count(Certificate.id)))).one()
 
-    return {
+    response_data = {
         "total_schools": total_sites,
         "total_students": total_students,
         "total_courses": total_courses,
         "total_enrollments": total_enrollments,
         "total_certificates": total_certificates
     }
+    
+    # Cache for 5 minutes (300 seconds)
+    cache_manager.set_json(cache_key, response_data, 300)
+    
+    return response_data
 
