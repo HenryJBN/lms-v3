@@ -1,30 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Award, ExternalLink, Share2, Loader2, ShieldCheck } from "lucide-react"
 import NFTCertificate from "@/components/nft-certificate"
-import { certificatesService, Certificate } from "@/lib/services/certificates"
+import { certificatesService } from "@/lib/services/certificates"
 
 export default function CertificatesPage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetchCertificates() {
-      try {
-        const data = await certificatesService.getMyCertificates()
-        setCertificates(data)
-      } catch (error) {
-        console.error("Failed to fetch certificates:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchCertificates()
-  }, [])
+  const { data: certificates = [], isLoading } = useQuery({
+    queryKey: ["certificates"],
+    queryFn: ({ signal }) => certificatesService.getMyCertificates(signal),
+  })
 
   return (
     <div className="container py-6">

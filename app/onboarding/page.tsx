@@ -21,6 +21,8 @@ import {
   Sparkles
 } from "lucide-react"
 
+import { useQuery, useMutation } from "@tanstack/react-query"
+
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -51,10 +53,6 @@ const formSchema = z.object({
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
-  const [isSubdomainAvailable, setIsSubdomainAvailable] = useState<boolean | null>(null)
-  const [isCheckingSubdomain, setIsCheckingSubdomain] = useState(false)
-  const [subdomainMessage, setSubdomainMessage] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,42 +69,21 @@ export default function OnboardingPage() {
   const subdomainValue = form.watch("subdomain")
   const debouncedSubdomain = useDebounce(subdomainValue, 600)
 
-  useEffect(() => {
-    const checkSubdomain = async () => {
-      if (!debouncedSubdomain || debouncedSubdomain.length < 3) {
-        setIsSubdomainAvailable(null)
-        setSubdomainMessage("")
-        return
-      }
+  const { data: subdomainData, isLoading: isCheckingSubdomain } = useQuery({
+    queryKey: ["subdomain-check", debouncedSubdomain],
+    queryFn: () => onboardingService.checkSubdomain(debouncedSubdomain),
+    enabled: !!debouncedSubdomain && debouncedSubdomain.length >= 3,
+  })
 
-      setIsCheckingSubdomain(true)
-      try {
-        const result = await onboardingService.checkSubdomain(debouncedSubdomain)
-        setIsSubdomainAvailable(result.available)
-        setSubdomainMessage(result.message)
-      } catch (error) {
-        console.error("Subdomain check failed:", error)
-        setIsSubdomainAvailable(null)
-      } finally {
-        setIsCheckingSubdomain(false)
-      }
-    }
+  const isSubdomainAvailable = subdomainData?.available ?? null
+  const subdomainMessage = subdomainData?.message ?? ""
 
-    checkSubdomain()
-  }, [debouncedSubdomain])
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!isSubdomainAvailable) {
-      toast.error("Please choose an available subdomain")
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      await onboardingService.registerTenant(values)
+  // Registration Mutation
+  const registerMutation = useMutation({
+    mutationFn: (values: z.infer<typeof formSchema>) => onboardingService.registerTenant(values),
+    onSuccess: (data, values) => {
       toast.success("School registered successfully! Redirecting to your new dashboard...")
       
-      // Redirect to the new subdomain
       const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.com"
       const protocol = window.location.protocol
       const port = window.location.port ? `:${window.location.port}` : ""
@@ -114,12 +91,21 @@ export default function OnboardingPage() {
       setTimeout(() => {
         window.location.href = `${protocol}//${values.subdomain}.${baseDomain}${port}/admin/login`
       }, 2000)
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error("Registration failed:", error)
       toast.error(error.response?.data?.detail || "Registration failed. Please try again.")
-    } finally {
-      setIsSubmitting(false)
     }
+  })
+
+  const isSubmitting = registerMutation.isPending
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!isSubdomainAvailable) {
+      toast.error("Please choose an available subdomain")
+      return
+    }
+    registerMutation.mutate(values)
   }
 
   const nextStep = async () => {

@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from "react"
+import React, { createContext, useContext, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { applyThemeColorsWithForeground } from "@/lib/utils/theme"
 import { apiClient } from "@/lib/api-client"
 import { API_ENDPOINTS } from "@/lib/api-config"
@@ -36,46 +37,32 @@ interface TenantThemeProviderProps {
 }
 
 export function TenantThemeProvider({ children }: TenantThemeProviderProps) {
-  const [theme, setTheme] = useState<TenantTheme | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: theme, isLoading, error: queryError, refetch: refreshTheme } = useQuery({
+    queryKey: ["siteTheme"],
+    queryFn: () => apiClient.get<TenantTheme>(API_ENDPOINTS.siteTheme),
+    staleTime: Infinity, // Theme rarely changes
+  })
 
-  const fetchTheme = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const error = queryError ? (queryError as Error).message : null
 
-      // Use apiClient which automatically adds X-Tenant-Domain header
-      const data = await apiClient.get<TenantTheme>(API_ENDPOINTS.siteTheme)
-      setTheme(data)
-
-      // Apply theme colors to CSS variables
+  useEffect(() => {
+    if (theme) {
       applyThemeColorsWithForeground({
-        primary_color: data.primary_color,
-        secondary_color: data.secondary_color,
-        accent_color: data.accent_color,
+        primary_color: theme.primary_color,
+        secondary_color: theme.secondary_color,
+        accent_color: theme.accent_color,
       })
-    } catch (err) {
-      console.error("Error fetching tenant theme:", err)
-      setError(err instanceof Error ? err.message : "Failed to load theme")
-
-      // Apply default theme colors on error
+    } else if (error) {
       applyThemeColorsWithForeground({
         primary_color: "#ef4444",
         secondary_color: "#3b82f6",
         accent_color: "#8b5cf6",
       })
-    } finally {
-      setIsLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchTheme()
-  }, [])
+  }, [theme, error])
 
   return (
-    <TenantThemeContext.Provider value={{ theme, isLoading, error, refreshTheme: fetchTheme }}>
+    <TenantThemeContext.Provider value={{ theme: theme ?? null, isLoading, error, refreshTheme: async () => { await refreshTheme() } }}>
       {children}
     </TenantThemeContext.Provider>
   )

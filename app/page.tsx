@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,26 +13,13 @@ import { Toaster } from "@/components/ui/toaster"
 
 export default function HomePage() {
   const { toast } = useToast()
-  const [featuredCourses, setFeaturedCourses] = useState<any[]>([])
-
-  useEffect(() => {
-    loadFeaturedCourses()
-  }, [])
-
-  const loadFeaturedCourses = async () => {
-    try {
-      const loadedFeaturedCourses = await courseService.getFeaturedCourses()
-      setFeaturedCourses(loadedFeaturedCourses.items)
-      console.log("Featured courses", loadedFeaturedCourses.items)
-    } catch (err) {
-      console.error("❌ Failed to load data", err)
-      toast({
-        title: "Course Loading Error",
-        description: "Failed to load featured courses.",
-        variant: "destructive",
-      })
-    }
-  }
+  const { data: featuredCourses = [] } = useQuery({
+    queryKey: ["featuredCourses"],
+    queryFn: async () => {
+      const res = await courseService.getFeaturedCourses()
+      return res.items || []
+    },
+  })
 
   const stats = [
     { label: "Active Students", value: "50,000+", icon: Users },

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { 
   Card, 
   CardContent, 
@@ -66,15 +67,12 @@ export default function SystemAdminAnalytics() {
   const [stats, setStats] = useState<GlobalStats | null>(null)
   const [growthData, setGrowthData] = useState<GrowthData[]>([])
   const [sites, setSites] = useState<SiteResponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rangeMonths, setRangeMonths] = useState("12")
 
   const fetchData = async (isRefresh = false, months = parseInt(rangeMonths)) => {
     if (isRefresh) setRefreshing(true)
-    else setIsLoading(true)
-    
     setError(null)
     try {
       const [statsRes, growthRes, sitesRes] = await Promise.allSettled([
@@ -82,27 +80,23 @@ export default function SystemAdminAnalytics() {
         systemAdminService.getGrowthStats(months),
         systemAdminService.getAllSites({ size: 10, page: 1 })
       ])
-
       if (statsRes.status === 'fulfilled') setStats(statsRes.value)
       if (growthRes.status === 'fulfilled') setGrowthData(growthRes.value)
       if (sitesRes.status === 'fulfilled') setSites(sitesRes.value.items)
-      
+      return { stats: statsRes, growth: growthRes, sites: sitesRes }
     } catch (err: any) {
       console.error("Failed to fetch analytics data:", err)
       setError("Failed to load platform intelligence.")
+      throw err
     } finally {
-      setIsLoading(false)
       setRefreshing(false)
     }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    fetchData(false)
-  }, [rangeMonths])
+  const { isLoading } = useQuery({
+    queryKey: ["sysadmin", "analytics", rangeMonths],
+    queryFn: () => fetchData(false, parseInt(rangeMonths)),
+  })
 
   if (isLoading && !stats) {
     return (

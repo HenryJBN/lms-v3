@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,42 +47,30 @@ interface Course {
 
 export default function DashboardPage() {
   const { user, tokenBalance, isLoading } = useAuth()
-  const [inProgressCourses, setInProgressCourses] = useState<Course[]>([])
-  const [completedCourses, setCompletedCourses] = useState<Course[]>([])
-  const [analytics, setAnalytics] = useState<any>(null)
 
-  useEffect(() => {
-    if (!user) return
-    fetchDashboardData()
-  }, [user])
-
-  const fetchDashboardData = async () => {
-    try {
+  const { data: dashboardData } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
       const results = await Promise.allSettled([
         apiClient.get(API_ENDPOINTS.inProgressCourses),
         apiClient.get(API_ENDPOINTS.completedCourses),
         apiClient.get(API_ENDPOINTS.userOverview),
       ])
+      const inProgress = results[0].status === 'fulfilled' ? (results[0].value as any) : null
+      const completed = results[1].status === 'fulfilled' ? (results[1].value as any) : null
+      const analytics = results[2].status === 'fulfilled' ? (results[2].value as any) : null
+      return {
+        inProgressCourses: inProgress?.items || inProgress || [],
+        completedCourses: completed?.items || completed || [],
+        analytics,
+      }
+    },
+    enabled: !!user,
+  })
 
-      if (results[0].status === 'fulfilled') {
-        const inProgressRes = results[0].value;
-        setInProgressCourses(inProgressRes?.items || inProgressRes || [])
-      }
-      
-      if (results[1].status === 'fulfilled') {
-        const completedRes = results[1].value;
-        setCompletedCourses(completedRes?.items || completedRes || [])
-      }
-
-      if (results[2].status === 'fulfilled') {
-        const analyticsRes = results[2].value;
-        setAnalytics(analyticsRes)
-      }
-      
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error)
-    }
-  }
+  const inProgressCourses = dashboardData?.inProgressCourses ?? []
+  const completedCourses = dashboardData?.completedCourses ?? []
+  const analytics = dashboardData?.analytics ?? null
 
   if (isLoading) {
     return (

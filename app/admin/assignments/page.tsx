@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -52,39 +53,25 @@ interface Assignment {
 }
 
 export default function AdminAssignmentsPage() {
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   // Filters
   const [searchTerm, setSearchTerm] = useState("")
   const [courseFilter, setCourseFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [courses, setCourses] = useState<any[]>([])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
+  const { data, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["admin", "assignments"],
+    queryFn: async () => {
+      const [assignmentsResponse, coursesResponse] = await Promise.all([
+        apiClient.get("/api/assignments?page=1&size=1000") as Promise<{ items: Assignment[] }>,
+        apiClient.get("/api/courses?page=1&size=1000") as Promise<{ items: any[] }>,
+      ])
+      return { assignments: assignmentsResponse.items || [], courses: coursesResponse.items || [] }
+    },
+  })
 
-        // Fetch assignments and courses in parallel
-        const [assignmentsResponse, coursesResponse] = await Promise.all([
-          apiClient.get("/api/assignments?page=1&size=1000") as Promise<{ items: Assignment[] }>,
-          apiClient.get("/api/courses?page=1&size=1000") as Promise<{ items: any[] }>,
-        ])
-
-        setAssignments(assignmentsResponse.items || [])
-        setCourses(coursesResponse.items || [])
-      } catch (err: any) {
-        console.error("Failed to fetch data:", err)
-        setError(err.message || "Failed to load assignments")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
+  const assignments = data?.assignments ?? []
+  const courses = data?.courses ?? []
+  const error = queryError ? (queryError as any).message || "Failed to load assignments" : null
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No due date"

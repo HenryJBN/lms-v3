@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -65,36 +66,25 @@ export default function AssignmentSubmissionsPage() {
   const courseId = params.courseId as string
   const assignmentId = params.assignmentId as string
 
-  const [assignment, setAssignment] = useState<Assignment | null>(null)
-  const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-
-        // Fetch assignment details and submissions in parallel
-        const [assignmentResponse, submissionsResponse] = await Promise.all([
-          apiClient.get(`/api/assignments/${assignmentId}`),
-          apiClient.get(`/api/assignments/${assignmentId}/submissions`),
-        ])
-
-        setAssignment(assignmentResponse as Assignment)
-        setSubmissions(submissionsResponse as Submission[])
-      } catch (err: any) {
-        console.error("Failed to fetch data:", err)
-        setError(err.message || "Failed to load assignment submissions")
-      } finally {
-        setLoading(false)
+  const { data, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["admin", "assignmentSubmissions", assignmentId],
+    queryFn: async () => {
+      // Fetch assignment details and submissions in parallel
+      const [assignmentResponse, submissionsResponse] = await Promise.all([
+        apiClient.get(`/api/assignments/${assignmentId}`),
+        apiClient.get(`/api/assignments/${assignmentId}/submissions`),
+      ])
+      return {
+        assignment: assignmentResponse as Assignment,
+        submissions: submissionsResponse as Submission[]
       }
-    }
+    },
+    enabled: !!assignmentId,
+  })
 
-    if (assignmentId) {
-      fetchData()
-    }
-  }, [assignmentId])
+  const assignment = data?.assignment ?? null
+  const submissions = data?.submissions ?? []
+  const error = queryError ? (queryError as Error).message : null
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A"

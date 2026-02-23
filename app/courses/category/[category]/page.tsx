@@ -1,6 +1,6 @@
 import { CardFooter } from "@/components/ui/card"
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -17,48 +17,26 @@ interface CategoryPageProps {
 }
 
 export default function CategoryCoursesPage({ params }: CategoryPageProps) {
-  const [category, setCategory] = useState<Category | null>(null)
-  const [categoryCourses, setCategoryCourses] = useState<CourseReponse[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-
-  useEffect(() => {
-    loadCategoryData()
-  }, [params.category])
-
-  const loadCategoryData = async () => {
-    try {
-      setLoading(true)
-      setError("")
-
-      // Try to get category by slug first, then by id
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["category", params.category],
+    queryFn: async () => {
       let categoryData = await categoryService.getCategoryBySlug(params.category)
       if (!categoryData) {
         categoryData = await categoryService.getCategoryById(params.category)
       }
+      if (!categoryData) throw new Error("Category not found")
 
-      if (!categoryData) {
-        setError("Category not found")
-        return
-      }
-
-      setCategory(categoryData)
-
-      // Load courses for this category
-      // Note: This assumes the backend has an endpoint to get courses by category
-      // For now, we'll filter courses by category_id
       const allCourses = await courseService.getCourses()
       const filteredCourses = allCourses.items.filter(
         (course: CourseReponse) => course.category_id === categoryData.id
       )
-      setCategoryCourses(filteredCourses)
-    } catch (err: any) {
-      console.error("Error loading category:", err)
-      setError(err.message || "Failed to load category")
-    } finally {
-      setLoading(false)
-    }
-  }
+      return { category: categoryData, courses: filteredCourses }
+    },
+  })
+
+  const category = data?.category ?? null
+  const categoryCourses = data?.courses ?? []
+  const error = !loading && !category
 
   if (loading) {
     return (
@@ -80,7 +58,7 @@ export default function CategoryCoursesPage({ params }: CategoryPageProps) {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Category Not Found</h1>
             <p className="text-muted-foreground mb-4">
-              {error || "The category you're looking for doesn't exist."}
+            {error ? "The category you're looking for doesn't exist." : "Category not found."}
             </p>
             <Link href="/courses">
               <Button>Browse All Courses</Button>

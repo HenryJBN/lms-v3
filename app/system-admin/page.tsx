@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { 
   Building2, 
@@ -39,14 +40,11 @@ export default function SystemAdminDashboard() {
   const [stats, setStats] = useState<GlobalStats | null>(null)
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [growthData, setGrowthData] = useState<GrowthData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
-    else setIsLoading(true)
-    
     setError(null)
     try {
       const [statsRes, activityRes, growthRes] = await Promise.allSettled([
@@ -54,23 +52,23 @@ export default function SystemAdminDashboard() {
         systemAdminService.getGlobalActivity(5),
         systemAdminService.getGrowthStats(6)
       ])
-
       if (statsRes.status === 'fulfilled') setStats(statsRes.value)
-      if (activityRes.status === 'fulfilled') setActivity(activityRes.value)
+      if (activityRes.status === 'fulfilled') setActivity(activityRes.value?.items || activityRes.value || [])
       if (growthRes.status === 'fulfilled') setGrowthData(growthRes.value)
-      
+      return { stats: statsRes, activity: activityRes, growth: growthRes }
     } catch (err: any) {
       console.error("Failed to fetch dashboard data:", err)
       setError("Failed to load platform analytics.")
+      throw err
     } finally {
-      setIsLoading(false)
       setRefreshing(false)
     }
   }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  const { isLoading } = useQuery({
+    queryKey: ["sysadmin", "dashboard"],
+    queryFn: () => fetchData(),
+  })
 
   if (isLoading && !stats) {
     return (

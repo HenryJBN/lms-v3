@@ -1,0 +1,137 @@
+components/course-form.tsx(11,8): error TS2307: Cannot find module '@/lib/schemas/course' or its corresponding type declarations.
+components/course-form.tsx(12,31): error TS2307: Cannot find module '@/lib/services/courses' or its corresponding type declarations.
+components/course-form.tsx(13,48): error TS2307: Cannot find module '@/lib/services/categories' or its corresponding type declarations.
+components/course-form.tsx(14,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+components/course-form.tsx(15,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+components/course-form.tsx(16,26): error TS2307: Cannot find module '@/components/ui/textarea' or its corresponding type declarations.
+components/course-form.tsx(23,8): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+components/course-form.tsx(24,26): error TS2307: Cannot find module '@/components/ui/checkbox' or its corresponding type declarations.
+components/course-form.tsx(25,58): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+components/course-form.tsx(26,26): error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+components/course-form.tsx(27,41): error TS2307: Cannot find module '@/components/ui/alert' or its corresponding type declarations.
+components/course-form.tsx(86,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(87,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(89,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(101,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(110,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(111,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(112,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(113,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(114,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(118,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(119,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(120,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(121,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(130,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(132,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(133,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(138,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(139,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(140,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(145,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(146,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(152,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(153,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(154,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(163,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(167,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(168,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(169,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(348,5): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(349,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(350,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(352,7): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(353,9): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(355,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(356,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(357,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(358,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(359,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(362,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(363,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(364,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(365,31): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(370,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(371,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(372,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(378,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(383,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(384,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(385,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(391,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(396,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(397,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(398,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(404,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(409,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(410,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(411,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(412,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(422,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(423,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(424,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(434,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(435,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(436,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(448,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(449,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(450,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(451,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(455,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(456,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(457,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(459,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(461,25): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(470,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(474,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(475,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(476,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(480,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(481,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(482,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(484,21): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(485,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(486,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(487,23): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(496,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(497,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(498,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(499,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(505,32): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(508,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(509,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(510,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(517,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(521,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(522,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(523,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(530,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(534,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(535,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(539,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(542,15): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(547,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(548,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(552,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(566,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(570,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(586,11): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(587,13): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(589,17): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+components/course-form.tsx(590,19): error TS17004: Cannot use JSX unless the '--jsx' flag is provided.
+node_modules/@tanstack/query-core/build/legacy/focusManager.d.ts(6,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(9,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(115,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(156,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(205,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(266,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(427,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/hydration-BlEVG2Lp.d.ts(444,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/onlineManager.d.ts(6,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/queriesObserver.d.ts(11,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/removable.d.ts(2,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/@tanstack/query-core/build/legacy/timeoutManager.d.ts(41,5): error TS18028: Private identifiers are only available when targeting ECMAScript 2015 and higher.
+node_modules/react-hook-form/dist/form.d.ts(1,8): error TS1259: Module '"/Users/macbook/Documents/jsproject/lms-v3/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/react-hook-form/dist/types/controller.d.ts(1,13): error TS1259: Module '"/Users/macbook/Documents/jsproject/lms-v3/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/react-hook-form/dist/types/form.d.ts(1,13): error TS1259: Module '"/Users/macbook/Documents/jsproject/lms-v3/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag
+node_modules/react-hook-form/dist/useFormContext.d.ts(1,8): error TS1259: Module '"/Users/macbook/Documents/jsproject/lms-v3/node_modules/@types/react/index"' can only be default-imported using the 'esModuleInterop' flag

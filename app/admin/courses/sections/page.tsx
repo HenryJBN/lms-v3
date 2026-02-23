@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
@@ -81,10 +82,7 @@ export default function SectionsManagement() {
   const [selectedSections, setSelectedSections] = useState<number[]>([])
 
   // Data states
-  const [sections, setSections] = useState<any[]>([])
-  const [courses, setCourses] = useState<any[]>([])
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true)
-  const [isLoadingSections, setIsLoadingSections] = useState(true)
+  const queryClient = useQueryClient()
 
   // Add/Edit section dialog state
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false)
@@ -104,55 +102,28 @@ export default function SectionsManagement() {
 
   const isSubmitting = form.formState.isSubmitting
 
-  // Fetch courses function
-  const fetchCourses = async () => {
-    try {
-      setIsLoadingCourses(true)
-      // Fetch all courses (published and drafts for admin)
+  // Fetch courses with useQuery
+  const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["admin", "sectionCourses"],
+    queryFn: async () => {
       const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
-      setCourses(response.items || [])
-    } catch (error) {
-      console.error("Failed to fetch courses:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load courses. Please refresh the page.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingCourses(false)
-    }
-  }
+      return response.items || []
+    },
+  })
+  const courses = coursesData ?? []
 
-  // Fetch sections function
-  const fetchSections = async () => {
-    try {
-      setIsLoadingSections(true)
+  // Fetch sections with useQuery (depends on selectedCourse filter)
+  const { data: sectionsData, isLoading: isLoadingSections } = useQuery({
+    queryKey: ["admin", "sections", selectedCourse],
+    queryFn: async () => {
       const params = new URLSearchParams()
-      if (selectedCourse !== "all") {
-        params.append("course_id", selectedCourse)
-      }
+      if (selectedCourse !== "all") params.append("course_id", selectedCourse)
       const response: { items: any[] } = await apiClient.get(`/api/sections?${params}`)
-      setSections(response.items || [])
-    } catch (error) {
-      console.error("Failed to fetch sections:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load sections. Please refresh the page.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingSections(false)
-    }
-  }
+      return response.items || []
+    },
+  })
+  const sections = sectionsData ?? []
 
-  // Fetch courses and sections on component mount
-  useEffect(() => {
-    fetchCourses()
-  }, [])
-
-  useEffect(() => {
-    fetchSections()
-  }, [selectedCourse])
 
   // Handle opening edit dialog
   const handleEditSection = (section: any) => {
@@ -220,7 +191,7 @@ export default function SectionsManagement() {
       setIsAddSectionOpen(false)
 
       // Refresh sections list
-      fetchSections()
+      queryClient.invalidateQueries({ queryKey: ["admin", "sections"] })
     } catch (error: any) {
       console.error("Failed to save section:", error)
 

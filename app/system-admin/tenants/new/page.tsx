@@ -30,6 +30,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { onboardingService } from "@/lib/services/system-admin"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { useDebounce } from "@/hooks/use-debounce"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -37,9 +39,6 @@ import { tenantRegistrationSchema as registerSchema, TenantRegistrationValues as
 
 export default function RegisterSitePage() {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'checking' | 'available' | 'unavailable'>('idle')
-  const [subdomainMessage, setSubdomainMessage] = useState("")
   const [step, setStep] = useState(1)
   const [successData, setSuccessData] = useState<any | null>(null)
 
@@ -58,52 +57,46 @@ export default function RegisterSitePage() {
   const { watch, trigger } = form
   const watchedSubdomain = watch("subdomain")
 
-  // Subdomain availability check
-  useEffect(() => {
-    if (!watchedSubdomain || watchedSubdomain.length < 2) {
-      setSubdomainStatus('idle')
-      setSubdomainMessage("")
-      return
-    }
+  const debouncedSubdomain = useDebounce(watchedSubdomain, 500)
 
-    const checkAvailability = async () => {
-      setSubdomainStatus('checking')
-      try {
-        const res = await onboardingService.checkSubdomain(watchedSubdomain)
-        if (res.available) {
-          setSubdomainStatus('available')
-          setSubdomainMessage("Great! This subdomain is available.")
-        } else {
-          setSubdomainStatus('unavailable')
-          setSubdomainMessage(res.message || "This subdomain is already taken.")
-        }
-      } catch (error) {
-        setSubdomainStatus('idle')
-      }
-    }
+  const { data: subdomainData, isLoading: isCheckingSubdomain } = useQuery({
+    queryKey: ["subdomain-check", debouncedSubdomain],
+    queryFn: () => onboardingService.checkSubdomain(debouncedSubdomain),
+    enabled: !!debouncedSubdomain && debouncedSubdomain.length >= 2,
+  })
 
-    const timer = setTimeout(checkAvailability, 500)
-    return () => clearTimeout(timer)
-  }, [watchedSubdomain])
+  const subdomainStatus = !debouncedSubdomain || debouncedSubdomain.length < 2 
+    ? 'idle' 
+    : isCheckingSubdomain 
+      ? 'checking' 
+      : subdomainData?.available 
+        ? 'available' 
+        : 'unavailable'
+
+  const subdomainMessage = subdomainData?.message ?? ""
+
+  // Registration Mutation
+  const registerMutation = useMutation({
+    mutationFn: (values: RegisterFormValues) => onboardingService.registerTenant(values),
+    onSuccess: (res) => {
+      setSuccessData(res)
+      toast.success("Academy registered successfully!")
+      setStep(3)
+    },
+    onError: (error: any) => {
+      console.error("Registration failed:", error)
+      toast.error(error.response?.data?.detail || "Registration failed. Please try again.")
+    }
+  })
+
+  const isSubmitting = registerMutation.isPending
 
   async function onSubmit(values: RegisterFormValues) {
     if (subdomainStatus !== 'available') {
       toast.error("Please choose an available subdomain")
       return
     }
-
-    setIsSubmitting(true)
-    try {
-      const res = await onboardingService.registerTenant(values)
-      setSuccessData(res)
-      toast.success("Academy registered successfully!")
-      setStep(3)
-    } catch (error: any) {
-      console.error("Registration failed:", error)
-      toast.error(error.response?.data?.detail || "Registration failed. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
+    registerMutation.mutate(values)
   }
 
   const nextStep = async () => {

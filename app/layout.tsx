@@ -7,6 +7,7 @@ import { TenantThemeProvider } from "@/components/tenant-theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { AuthProvider } from "@/lib/contexts/auth-context"
 import { LayoutWrapper } from "@/components/layout-wrapper"
+import { QueryProvider } from "@/components/providers/query-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,19 +24,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <TenantThemeProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              <LayoutWrapper>{children}</LayoutWrapper>
-              <Toaster />
-            </AuthProvider>
-          </ThemeProvider>
-        </TenantThemeProvider>
+        <QueryProvider>
+          <TenantThemeProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <AuthProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+                <Toaster />
+              </AuthProvider>
+            </ThemeProvider>
+          </TenantThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )

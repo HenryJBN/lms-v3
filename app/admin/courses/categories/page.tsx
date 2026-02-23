@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus, Folder, BookOpen, Users, Tag, Edit, Trash2, Eye, Copy } from "lucide-react"
 
 import { AdminLayout } from "@/components/admin/admin-layout"
@@ -37,8 +38,6 @@ import { categoryService, type Category } from "@/lib/services/categories"
 import { type CategoryCreateForm, type CategoryUpdateForm } from "@/lib/schemas/category"
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -47,28 +46,16 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  // Load categories on mount
-  useEffect(() => {
-    loadCategories()
-  }, [])
-
-  const loadCategories = async () => {
-    try {
-      setLoading(true)
+  // Load categories with useQuery
+  const { data: categories = [], isLoading: loading } = useQuery({
+    queryKey: ["admin", "categories"],
+    queryFn: async () => {
       const data = await categoryService.getAllCategories()
-      setCategories(data || [])
-    } catch (error) {
-      console.error("Failed to load categories:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load categories",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data || []
+    },
+  })
 
   // Calculate statistics
   const stats = [
@@ -159,30 +146,16 @@ export default function CategoriesPage() {
     setIsSubmitting(true)
     try {
       await categoryService.createCategory({
-        name: data.name,
-        slug: data.slug,
-        description: data.description || undefined,
-        icon: data.icon || undefined,
-        color: data.color || undefined,
+        name: data.name, slug: data.slug, description: data.description || undefined,
+        icon: data.icon || undefined, color: data.color || undefined,
         parent_id: data.parent_id === "none" ? undefined : data.parent_id,
-        sort_order: data.sort_order,
-        is_active: data.is_active,
+        sort_order: data.sort_order, is_active: data.is_active,
       })
-
-      toast({
-        title: "Success",
-        description: `Category "${data.name}" created successfully`,
-      })
-
-      loadCategories()
+      toast({ title: "Success", description: `Category "${data.name}" created successfully` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] })
       setIsCreateDialogOpen(false)
     } catch (error: any) {
-      console.error("Failed to create category:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create category",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: error.message || "Failed to create category", variant: "destructive" })
       throw error
     } finally {
       setIsSubmitting(false)
@@ -192,35 +165,20 @@ export default function CategoriesPage() {
   // Handle update category
   const handleUpdateCategory = async (data: CategoryUpdateForm) => {
     if (!editingCategory) return
-
     setIsSubmitting(true)
     try {
       await categoryService.updateCategory(editingCategory.id, {
-        name: data.name,
-        slug: data.slug,
-        description: data.description || undefined,
-        icon: data.icon || undefined,
-        color: data.color || undefined,
+        name: data.name, slug: data.slug, description: data.description || undefined,
+        icon: data.icon || undefined, color: data.color || undefined,
         parent_id: data.parent_id === "none" ? null : data.parent_id,
-        sort_order: data.sort_order,
-        is_active: data.is_active,
+        sort_order: data.sort_order, is_active: data.is_active,
       })
-
-      toast({
-        title: "Success",
-        description: `Category "${data.name}" updated successfully`,
-      })
-
-      loadCategories()
+      toast({ title: "Success", description: `Category "${data.name}" updated successfully` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] })
       setIsEditDialogOpen(false)
       setEditingCategory(null)
     } catch (error: any) {
-      console.error("Failed to update category:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update category",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: error.message || "Failed to update category", variant: "destructive" })
       throw error
     } finally {
       setIsSubmitting(false)
@@ -231,18 +189,10 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (category: Category) => {
     try {
       await categoryService.deleteCategory(category.id)
-      toast({
-        title: "Success",
-        description: `Category "${category.name}" deleted successfully`,
-      })
-      loadCategories()
+      toast({ title: "Success", description: `Category "${category.name}" deleted successfully` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "categories"] })
     } catch (error: any) {
-      console.error("Failed to delete category:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete category",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: error.message || "Failed to delete category", variant: "destructive" })
     }
   }
 
@@ -311,11 +261,8 @@ export default function CategoriesPage() {
           for (const categoryId of selectedCategories) {
             await categoryService.deleteCategory(categoryId)
           }
-          toast({
-            title: "Success",
-            description: `${selectedCategories.length} categories deleted successfully`,
-          })
-          loadCategories()
+          toast({ title: "Success", description: `${selectedCategories.length} categories deleted successfully` })
+          queryClient.invalidateQueries({ queryKey: ["admin", "categories"] })
           setSelectedCategories([])
         } catch (error: any) {
           console.error("Failed to delete categories:", error)

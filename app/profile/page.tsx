@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -20,9 +21,7 @@ import { format, isValid } from "date-fns"
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser, tokenBalance } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [message, setMessage] = useState<{
     type: "success" | "error"
     text: string
@@ -37,6 +36,7 @@ export default function ProfilePage() {
   const [location, setLocation] = useState("")
   const [occupation, setOccupation] = useState("")
 
+  // Populate form when user loads
   useEffect(() => {
     if (user) {
       setFirstName(user.first_name || "")
@@ -46,54 +46,37 @@ export default function ProfilePage() {
       setPhone(user.phone || "")
       setLocation(user.location || "")
       setOccupation(user.occupation || "")
-      loadEnrollments()
     }
   }, [user])
 
-  const loadEnrollments = async () => {
-    try {
-      setIsLoading(true)
-      const enrollments = await enrollmentsService.getUserEnrollments()
-      setEnrollments(enrollments)
-    } catch (error) {
-      console.error("Failed to load enrollments:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Fetch enrollments with useQuery
+  const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery({
+    queryKey: ["myEnrollments"],
+    queryFn: () => enrollmentsService.getUserEnrollments(),
+    enabled: !!user,
+  })
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSaving(true)
-    setMessage(null)
-
-    try {
-      const response = await usersService.updateProfile({
-        first_name: firstName,
-        last_name: lastName,
-        bio,
-        phone,
-        location,
-        occupation,
-      })
-
+  // Profile update mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: { first_name: string; last_name: string; bio: string; phone: string; location: string; occupation: string }) =>
+      usersService.updateProfile(data),
+    onSuccess: async (response) => {
       if (response.success) {
         await refreshUser()
         setMessage({ type: "success", text: "Profile updated successfully!" })
       } else {
-        setMessage({
-          type: "error",
-          text: response.error || "Failed to update profile",
-        })
+        setMessage({ type: "error", text: response.error || "Failed to update profile" })
       }
-    } catch (error: any) {
-      setMessage({
-        type: "error",
-        text: error.message || "Failed to update profile",
-      })
-    } finally {
-      setIsSaving(false)
-    }
+    },
+    onError: (error: any) => {
+      setMessage({ type: "error", text: error.message || "Failed to update profile" })
+    },
+  })
+
+  const handleUpdateProfile = (e: React.FormEvent) => {
+    e.preventDefault()
+    setMessage(null)
+    updateProfileMutation.mutate({ first_name: firstName, last_name: lastName, bio, phone, location, occupation })
   }
 
   const getUserInitials = () => {
@@ -124,7 +107,7 @@ export default function ProfilePage() {
     return isValid(date) ? format(date, formatStr) : fallback
   }
 
-  if (authLoading || isLoading) {
+  if (authLoading || enrollmentsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -334,8 +317,8 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  <Button type="submit" disabled={isSaving}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button type="submit" disabled={updateProfileMutation.isPending}>
+                    {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                   </Button>
                 </form>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -55,55 +56,116 @@ export default function AssignmentDetailPage() {
   const courseId = params.courseId as string
   const assignmentId = params.assignmentId as string
   const { user } = useAuth()
+  const queryClient = useQueryClient()
 
-  const [assignment, setAssignment] = useState<Assignment | null>(null)
-  const [submission, setSubmission] = useState<Submission | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { data, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["assignment", assignmentId],
+    queryFn: async () => {
+      const assignment = (await apiClient.get(`/api/assignments/${assignmentId}`)) as Assignment
+      let submission = null
+      
+      if (assignment.submission_status !== "not_submitted") {
+        try {
+          submission = (await apiClient.get(`/api/assignments/${assignmentId}/my-submission`)) as Submission
+        } catch (e) {
+          console.log("No existing submission found")
+        }
+      }
+      return { assignment, submission }
+    },
+    enabled: !!assignmentId && !!user,
+  })
+
+  const assignment = data?.assignment
+  const submission = data?.submission
+  const error = queryError ? (queryError as any).message || "Failed to load assignment" : null
 
   // Form state
   const [content, setContent] = useState("")
   const [attachments, setAttachments] = useState<File[]>([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
 
+  // Sync content when submission is loaded
   useEffect(() => {
-    const fetchAssignment = async () => {
-      try {
-        setLoading(true)
-        const response = (await apiClient.get(`/api/assignments/${assignmentId}`)) as Assignment
-        setAssignment(response)
+    if (submission?.content) {
+      setContent(submission.content)
+    }
+  }, [submission])
 
-        // If already submitted, fetch submission details
-        if (response.submission_status !== "not_submitted") {
-          await fetchSubmission()
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch assignment:", err)
-        setError(err.message || "Failed to load assignment")
-      } finally {
-        setLoading(false)
+  // Mutation for submission
+  const submitMutation = useMutation({
+    mutationFn: async ({ content, uploadedFiles }: { content: string, uploadedFiles: any[] }) => {
+      const submissionData = {
+        content: content.trim(),
+        attachments: uploadedFiles,
       }
+      return apiClient.post(`/api/assignments/${assignmentId}/submissions`, submissionData)
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Assignment submitted successfully!",
+      })
+      queryClient.invalidateQueries({ queryKey: ["assignment", assignmentId] })
+      setContent("")
+      setAttachments([])
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Submission Error",
+        description: err.message || "Failed to submit assignment. Please try again.",
+        variant: "destructive",
+      })
     }
+  })
 
-    const fetchSubmission = async () => {
-      try {
-        // Note: This endpoint doesn't exist yet - we'll need to add it to the assignments router
-        const response = (await apiClient.get(
-          `/api/assignments/${assignmentId}/my-submission`
-        )) as Submission
-        setSubmission(response)
-        setContent(response.content || "")
-      } catch (err: any) {
-        // Submission might not exist yet
-        console.log("No existing submission found")
+  const submitting = submitMutation.isPending
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setAttachments((prev) => [...prev, ...files])
+  }
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadAttachments = async () => {
+    if (attachments.length === 0) return []
+
+    setUploadingFiles(true)
+    try {
+      const uploadedFiles = []
+
+      for (const file of attachments) {
+        const formData = new FormData()
+        formData.append("file", file)
+
+        const response = await apiClient.postFormData(
+          "/api/assignments/upload-attachment",
+          formData
+        )
+
+        uploadedFiles.push({
+          filename: response.filename,
+          url: response.url,
+          size: file.size,
+        })
       }
-    }
 
-    if (assignmentId && user) {
-      fetchAssignment()
+      return uploadedFiles
+    } catch (err: any) {
+      console.error("Failed to upload files:", err)
+      toast({
+        title: "Upload Error",
+        description: "Failed to upload some files. Please try again.",
+        variant: "destructive",
+      })
+      return []
+    } finally {
+      setUploadingFiles(false)
     }
-  }, [assignmentId, user])
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -161,44 +223,9 @@ export default function AssignmentDetailPage() {
       return
     }
 
-    try {
-      setSubmitting(true)
-
-      // Upload attachments first
-      const uploadedFiles = await uploadAttachments()
-
-      // Submit assignment
-      const submissionData = {
-        content: content.trim(),
-        attachments: uploadedFiles,
-      }
-
-      await apiClient.post(`/api/assignments/${assignmentId}/submissions`, submissionData)
-
-      toast({
-        title: "Success",
-        description: "Assignment submitted successfully!",
-      })
-
-      // Refresh assignment data
-      const updatedAssignment = (await apiClient.get(
-        `/api/assignments/${assignmentId}`
-      )) as Assignment
-      setAssignment(updatedAssignment)
-
-      // Clear form
-      setContent("")
-      setAttachments([])
-    } catch (err: any) {
-      console.error("Failed to submit assignment:", err)
-      toast({
-        title: "Submission Error",
-        description: err.message || "Failed to submit assignment. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setSubmitting(false)
-    }
+    // Upload attachments first (keep as separate function for now)
+    const uploadedFiles = await uploadAttachments()
+    submitMutation.mutate({ content, uploadedFiles })
   }
 
   const getStatusIcon = (status: string) => {

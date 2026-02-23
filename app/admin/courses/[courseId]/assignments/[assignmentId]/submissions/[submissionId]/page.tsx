@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -58,53 +59,41 @@ interface Assignment {
 export default function GradeSubmissionPage() {
   const params = useParams()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const courseId = params.courseId as string
   const assignmentId = params.assignmentId as string
   const submissionId = params.submissionId as string
 
-  const [assignment, setAssignment] = useState<Assignment | null>(null)
-  const [submission, setSubmission] = useState<Submission | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Grading form state
   const [grade, setGrade] = useState("")
   const [feedback, setFeedback] = useState("")
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-
-        // Fetch assignment and submission data
-        const [assignmentResponse, submissionResponse] = await Promise.all([
-          apiClient.get(`/api/assignments/${assignmentId}`),
-          // Note: We'll need to add an endpoint to get individual submission details
-          apiClient.get(`/api/assignments/submissions/${submissionId}`),
-        ])
-
-        setAssignment(assignmentResponse as Assignment)
-        const submissionData = submissionResponse as Submission
-        setSubmission(submissionData)
-
-        // Pre-fill form if already graded
-        if (submissionData.grade !== null) {
-          setGrade(submissionData.grade.toString())
-          setFeedback(submissionData.feedback || "")
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch data:", err)
-        setError(err.message || "Failed to load submission")
-      } finally {
-        setLoading(false)
+  const { data, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["admin", "gradingSubmission", submissionId],
+    queryFn: async () => {
+      const [assignmentResponse, submissionResponse] = await Promise.all([
+        apiClient.get(`/api/assignments/${assignmentId}`),
+        apiClient.get(`/api/assignments/submissions/${submissionId}`),
+      ])
+      return {
+        assignment: assignmentResponse as Assignment,
+        submission: submissionResponse as Submission
       }
-    }
+    },
+    enabled: !!assignmentId && !!submissionId,
+  })
 
-    if (assignmentId && submissionId) {
-      fetchData()
+  const assignment = data?.assignment ?? null
+  const submission = data?.submission ?? null
+  const error = queryError ? (queryError as Error).message : null
+
+  // Pre-fill form if already graded
+  useEffect(() => {
+    if (submission && submission.grade !== null) {
+      setGrade(submission.grade.toString())
+      setFeedback(submission.feedback || "")
     }
-  }, [assignmentId, submissionId])
+  }, [submission])
 
   const handleSaveGrade = async () => {
     if (!assignment || !submission) return
@@ -132,9 +121,9 @@ export default function GradeSubmissionPage() {
         description: "Grade saved successfully!",
       })
 
-      // Refresh submission data
-      const updatedSubmission = await apiClient.get(`/api/assignments/submissions/${submissionId}`)
-      setSubmission(updatedSubmission as Submission)
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["admin", "gradingSubmission", submissionId] })
+      queryClient.invalidateQueries({ queryKey: ["admin", "assignmentSubmissions", assignmentId] })
 
       // Navigate back to submissions list
       router.push(`/admin/courses/${courseId}/assignments/${assignmentId}/submissions`)

@@ -1,28 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { CoinsIcon as Coin, Loader2 } from "lucide-react"
 import { usersService } from "@/lib/services/users"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function TokenBalance() {
-  const [balance, setBalance] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { data: balanceData, isLoading } = useQuery({
+    queryKey: ["userTokenBalance"],
+    queryFn: () => usersService.getTokenBalance(),
+  })
 
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        const data = await usersService.getTokenBalance()
-        setBalance(data.balance)
-      } catch (error) {
-        console.error("Failed to fetch token balance:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchBalance()
-  }, [])
+  const balance = balanceData?.balance ?? null
 
   return (
     <TooltipProvider>

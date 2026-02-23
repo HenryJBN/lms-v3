@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,39 +29,31 @@ import {
 export default function GlobalCohortsPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   
-  const [cohorts, setCohorts] = useState<Cohort[]>([])
-  const [courses, setCourses] = useState<{ id: string; title: string }[] | null>(null)
-  const [loading, setLoading] = useState(true)
   const [isAddCohortOpen, setIsAddCohortOpen] = useState(false)
   const [isEditCohortOpen, setIsEditCohortOpen] = useState(false)
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    loadCohorts()
-  }, [])
-
-  const loadCohorts = async () => {
-    try {
-      setLoading(true)
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["admin", "globalCohorts"],
+    queryFn: async () => {
       const [cohortData, coursesData] = await Promise.all([
         courseService.getAllCohorts(),
         courseService.getCourses()
       ])
-      setCohorts(cohortData)
-      setCourses(coursesData.items.map((c: any) => ({ id: c.id, title: c.title })))
-    } catch (error) {
-      console.error("Failed to load cohorts:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load cohorts",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+      return {
+        cohorts: cohortData,
+        courses: coursesData.items.map((c: any) => ({ id: c.id, title: c.title }))
+      }
+    },
+  })
+
+  const cohorts = data?.cohorts ?? []
+  const courses = data?.courses ?? []
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "globalCohorts"] })
 
   const handleCreateCohort = async (values: CohortFormValues) => {
     if (!values.course_id) {
@@ -84,7 +77,7 @@ export default function GlobalCohortsPage() {
         description: "Cohort created successfully",
       })
       setIsAddCohortOpen(false)
-      loadCohorts()
+      invalidate()
     } catch (error) {
       toast({
         title: "Error",
@@ -111,7 +104,7 @@ export default function GlobalCohortsPage() {
       })
       setIsEditCohortOpen(false)
       setEditingCohort(null)
-      loadCohorts()
+      invalidate()
     } catch (error) {
       toast({
         title: "Error",
@@ -130,7 +123,7 @@ export default function GlobalCohortsPage() {
         title: "Success",
         description: "Cohort deleted successfully",
       })
-      loadCohorts()
+      invalidate()
     } catch (error: any) {
       toast({
         title: "Error",

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
 import AdaptiveLearningEngine from "@/components/adaptive-learning-engine"
 import { Button } from "@/components/ui/button"
@@ -14,40 +14,13 @@ export default function LessonPage() {
   const params = useParams()
   const lessonId = params.lessonId as string
 
-  const [lesson, setLesson] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: lesson, isLoading: loading, error: queryError } = useQuery<any>({
+    queryKey: ["lesson", lessonId],
+    queryFn: () => apiClient.get(`/api/lessons/${lessonId}`),
+    enabled: !!lessonId,
+  })
 
-  useEffect(() => {
-    console.log("LessonPage mounted with params:", params)
-    console.log("lessonId from useParams:", lessonId)
-
-    const fetchLesson = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        console.log("About to fetch lesson data for:", lessonId)
-
-        // Fetch lesson data using the lessonId from URL params
-        const lessonData = await apiClient.get(`/api/lessons/${lessonId}`)
-        console.log("Lesson Data received:", lessonData)
-        setLesson(lessonData)
-      } catch (err: any) {
-        console.error("Failed to fetch lesson:", err)
-        setError(err.message || "Failed to load lesson")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (lessonId) {
-      console.log("Calling fetchLesson")
-      fetchLesson()
-    } else {
-      console.log("No lessonId provided")
-      setLoading(false)
-    }
-  }, [lessonId])
+  const error = queryError ? (queryError as any).message || "Failed to load lesson" : null
 
   if (loading) {
     return (

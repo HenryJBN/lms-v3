@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
@@ -93,71 +94,41 @@ export default function UsersManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
-  const [users, setUsers] = useState<User[]>([])
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(20)
-  const [initialized, setInitialized] = useState(false)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
-  const [analytics, setAnalytics] = useState<UserAnalyticsSummary | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [targetUser, setTargetUser] = useState<User | null>(null)
-  const [actionType, setActionType] = useState<"deactivate" | "reactivate" | "soft-delete">(
-    "deactivate"
-  )
+  const [actionType, setActionType] = useState<"deactivate" | "reactivate" | "soft-delete">("deactivate")
   const [actionReason, setActionReason] = useState("")
 
   const searchParams = useSearchParams()
-
-  // Sync page/size from URL on mount and when URL changes
-  useEffect(() => {
-    const p = parseInt(searchParams.get("page") || "1", 10)
-    const s = parseInt(searchParams.get("size") || "20", 10)
-    if (!Number.isNaN(p)) setPage(p)
-    if (!Number.isNaN(s)) setSize(s)
-    setInitialized(true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
-
-  // Fetch user analytics once (admin-only)
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const res = await analyticsService.getUserAnalytics()
-        setAnalytics(res)
-      } catch (err) {
-        console.error("Failed to load user analytics:", err)
-      }
-    }
-    run()
-  }, [])
-
+  const queryClient = useQueryClient()
   const debouncedSearch = useDebounce(searchTerm, 400)
 
-  // Fetch after URL params are applied
-  useEffect(() => {
-    if (!initialized) return
-    const fetchUsers = async () => {
-      try {
-        const roleParam = selectedRole !== "all" ? selectedRole : undefined
-        const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
-        const searchParam = debouncedSearch || undefined
-        const response = await usersService.getUsers({
-          page,
-          size,
-          role: roleParam,
-          status: statusParam,
-          search: searchParam,
-        })
-        setUsers(response.items as any)
-        setTotalPages(response.pages)
-        setTotalItems(response.total)
-      } catch (error) {
-        console.error("Error fetching users:", error)
-      }
-    }
-    fetchUsers()
-  }, [initialized, page, size, selectedRole, selectedStatus, debouncedSearch])
+  // Sync page/size from URL on mount
+  const urlPage = parseInt(searchParams.get("page") || "1", 10)
+  const urlSize = parseInt(searchParams.get("size") || "20", 10)
+
+  // Fetch user analytics (admin-only)
+  const { data: analytics } = useQuery({
+    queryKey: ["admin", "userAnalytics"],
+    queryFn: () => analyticsService.getUserAnalytics(),
+  })
+
+  // Fetch users with filters
+  const { data: usersResponse } = useQuery({
+    queryKey: ["admin", "users", page, size, selectedRole, selectedStatus, debouncedSearch],
+    queryFn: () => {
+      const roleParam = selectedRole !== "all" ? selectedRole : undefined
+      const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
+      const searchParam = debouncedSearch || undefined
+      return usersService.getUsers({ page, size, role: roleParam, status: statusParam, search: searchParam })
+    },
+  })
+
+  const users = (usersResponse?.items as any) ?? []
+  const totalPages = usersResponse?.pages ?? 1
+  const totalItems = usersResponse?.total ?? 0
 
   // Mock user data
   // const users = [
@@ -232,10 +203,10 @@ export default function UsersManagement() {
 
   const stats = {
     totalUsers: analytics?.total_users ?? totalItems,
-    activeUsers: analytics?.active_users ?? users.filter((u) => u.status === "active").length,
-    students: analytics?.students ?? users.filter((u) => u.role === "student").length,
-    instructors: analytics?.instructors ?? users.filter((u) => u.role === "instructor").length,
-    admins: analytics?.admins ?? users.filter((u) => u.role === "admin").length,
+    activeUsers: analytics?.active_users ?? users.filter((u: any) => u.status === "active").length,
+    students: analytics?.students ?? users.filter((u: any) => u.role === "student").length,
+    instructors: analytics?.instructors ?? users.filter((u: any) => u.role === "instructor").length,
+    admins: analytics?.admins ?? users.filter((u: any) => u.role === "admin").length,
   }
 
   const roles = [
@@ -255,12 +226,7 @@ export default function UsersManagement() {
 
   const onSubmit = async (data: UserFormData) => {
     const [first_name, last_name = ""] = data.name.split(" ")
-    const payload = {
-      first_name,
-      last_name,
-      email: data.email,
-      role: data.role,
-    }
+    const payload = { first_name, last_name, email: data.email, role: data.role }
     setIsLoading(true)
     try {
       if (isEditMode && editingUserId) {
@@ -274,35 +240,18 @@ export default function UsersManagement() {
       setIsCreateDialogOpen(false)
       setIsEditMode(false)
       setEditingUserId(null)
-      // refresh list
-      const response = await usersService.getUsers({ page, size })
-      setUsers(response.items as any)
-      setTotalPages(response.pages)
-      setTotalItems(response.total)
+      reload()
     } catch (error: any) {
       handleApiError(error, form.setError, {
-        defaultMessage:
-          error.message || (isEditMode ? "Failed to update user" : "Failed to create user"),
+        defaultMessage: error.message || (isEditMode ? "Failed to update user" : "Failed to create user"),
       })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const reload = async () => {
-    const roleParam = selectedRole !== "all" ? selectedRole : undefined
-    const statusParam = selectedStatus !== "all" ? selectedStatus : undefined
-    const searchParam = debouncedSearch || undefined
-    const response = await usersService.getUsers({
-      page,
-      size,
-      role: roleParam,
-      status: statusParam,
-      search: searchParam,
-    })
-    setUsers(response.items as any)
-    setTotalPages(response.pages)
-    setTotalItems(response.total)
+  const reload = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin", "users"] })
   }
 
   const handleConfirm = async () => {
@@ -321,7 +270,7 @@ export default function UsersManagement() {
       }
       setConfirmOpen(false)
       setActionReason("")
-      await reload()
+      reload()
     } catch (err: any) {
       toast.error(err?.message || `Failed to ${actionType} user`)
     } finally {
@@ -350,11 +299,7 @@ export default function UsersManagement() {
                   try {
                     const result = await usersService.importUsers(file)
                     toast.success(result.message)
-                    // Refresh the users list
-                    const response = await usersService.getUsers({ page, size })
-                    setUsers(response.items as any)
-                    setTotalPages(response.pages)
-                    setTotalItems(response.total)
+                    reload()
                     // Reset file input
                     e.target.value = ""
                   } catch (error: any) {

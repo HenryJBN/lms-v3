@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
+import { useState, Suspense } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useSearchParams, useRouter } from "next/navigation"
 import { 
   Table, 
@@ -45,9 +46,7 @@ import { format } from "date-fns"
 function TenantsContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [sites, setSites] = useState<SiteResponse[]>([])
-  const [total, setTotal] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   
@@ -55,36 +54,27 @@ function TenantsContent() {
   const size = 10
   const debouncedSearch = useDebounce(searchTerm, 500)
 
-  const fetchSites = async () => {
-    setIsLoading(true)
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["sysadmin", "tenants", page, debouncedSearch, statusFilter],
+    queryFn: async () => {
       const params: any = {
-        page,
-        size,
+        page, size,
         name: debouncedSearch || undefined,
         is_active: statusFilter === "all" ? undefined : statusFilter === "active"
       }
-      const data = await systemAdminService.getAllSites(params)
-      setSites(data.items)
-      setTotal(data.total)
-    } catch (err: any) {
-      console.error("Failed to fetch sites:", err)
-      toast.error("Error loading tenants. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      return systemAdminService.getAllSites(params)
+    },
+  })
 
-  useEffect(() => {
-    fetchSites()
-  }, [page, debouncedSearch, statusFilter])
+  const sites = data?.items ?? []
+  const total = data?.total ?? 0
 
   const toggleSiteStatus = async (site: SiteResponse) => {
     try {
       const newStatus = !site.is_active
       await systemAdminService.updateSiteStatus(site.id, { is_active: newStatus })
       toast.success(`Site ${site.name} ${newStatus ? 'activated' : 'suspended'} successfully.`)
-      fetchSites()
+      queryClient.invalidateQueries({ queryKey: ["sysadmin", "tenants"] })
     } catch (err: any) {
       toast.error("Failed to update site status.")
     }
@@ -98,7 +88,7 @@ function TenantsContent() {
           <p className="text-muted-foreground italic text-sm">Monitor and manage all schools on the platform.</p>
         </div>
         <div className="flex items-center gap-2">
-           <Button variant="outline" size="sm" onClick={() => fetchSites()} disabled={isLoading}>
+           <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["sysadmin", "tenants"] })} disabled={isLoading}>
               <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
            </Button>

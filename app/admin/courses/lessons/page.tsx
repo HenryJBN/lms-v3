@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
@@ -87,13 +88,52 @@ export default function LessonsManagement() {
   const [sortDirection, setSortDirection] = useState("asc")
   const [selectedLessons, setSelectedLessons] = useState<string[]>([])
 
-  // Data states
-  const [lessons, setLessons] = useState<any[]>([])
-  const [courses, setCourses] = useState<any[]>([])
+  // Data states (sections kept as local since fetched on-demand per course)
   const [sections, setSections] = useState<any[]>([])
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true)
-  const [isLoadingLessons, setIsLoadingLessons] = useState(true)
   const [isLoadingSections, setIsLoadingSections] = useState(false)
+  const queryClient = useQueryClient()
+
+  // Fetch courses with useQuery
+  const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["admin", "lessonCourses"],
+    queryFn: async () => {
+      const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
+      return response.items || []
+    },
+  })
+  const courses = coursesData ?? []
+
+  // Fetch lessons with useQuery (re-fetches when filters change via queryKey)
+  const { data: lessonsData, isLoading: isLoadingLessons } = useQuery({
+    queryKey: ["admin", "lessons", selectedCourse, selectedType, selectedStatus, searchTerm],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: "1", size: "100" })
+      if (selectedCourse && selectedCourse !== "all") params.append("course_id", selectedCourse)
+      if (selectedType && selectedType !== "all") params.append("type", selectedType)
+      if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus === "published" ? "published" : "draft")
+      if (searchTerm.trim()) params.append("search", searchTerm.trim())
+      const response: { items: any[] } = await apiClient.get(`/api/lessons?${params.toString()}`)
+      return response.items || []
+    },
+  })
+  const lessons = lessonsData ?? []
+
+  // Fetch sections for a specific course (on-demand, not useQuery)
+  const fetchSectionsForCourse = async (courseId: string) => {
+    if (!courseId) { setSections([]); return }
+    try {
+      setIsLoadingSections(true)
+      const response: any[] = await apiClient.get(`/api/sections/course/${courseId}`)
+      setSections(response || [])
+    } catch (error) {
+      console.error("Failed to fetch sections:", error)
+      setSections([])
+    } finally {
+      setIsLoadingSections(false)
+    }
+  }
+
+  const invalidateLessons = () => queryClient.invalidateQueries({ queryKey: ["admin", "lessons"] })
 
   // Add lesson dialog state
   const [isAddLessonOpen, setIsAddLessonOpen] = useState(false)
@@ -173,94 +213,6 @@ export default function LessonsManagement() {
 
   const isEditSubmitting = editForm.formState.isSubmitting
 
-  // Fetch courses function
-  const fetchCourses = async () => {
-    try {
-      setIsLoadingCourses(true)
-      // Fetch all courses (published and drafts for admin)
-      const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
-      setCourses(response.items || [])
-    } catch (error) {
-      console.error("Failed to fetch courses:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load courses. Please refresh the page.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingCourses(false)
-    }
-  }
-
-  // Fetch sections for a specific course
-  const fetchSectionsForCourse = async (courseId: string) => {
-    if (!courseId) {
-      setSections([])
-      return
-    }
-
-    try {
-      setIsLoadingSections(true)
-      const response: any[] = await apiClient.get(`/api/sections/course/${courseId}`)
-      setSections(response || [])
-    } catch (error) {
-      console.error("Failed to fetch sections:", error)
-      setSections([])
-    } finally {
-      setIsLoadingSections(false)
-    }
-  }
-
-  // Fetch lessons function
-  const fetchLessons = async () => {
-    try {
-      setIsLoadingLessons(true)
-
-      // Build query parameters for server-side filtering
-      const params = new URLSearchParams({
-        page: "1",
-        size: "100",
-      })
-
-      // Add filters if they have values
-      if (selectedCourse && selectedCourse !== "all") {
-        params.append("course_id", selectedCourse)
-      }
-      if (selectedType && selectedType !== "all") {
-        params.append("type", selectedType)
-      }
-      if (selectedStatus && selectedStatus !== "all") {
-        params.append("status", selectedStatus === "published" ? "published" : "draft")
-      }
-      if (searchTerm.trim()) {
-        params.append("search", searchTerm.trim())
-      }
-
-      const response: { items: any[] } = await apiClient.get(`/api/lessons?${params.toString()}`)
-      console.log("Fetched lessons:", response.items?.length || 0, "items")
-      setLessons(response.items || [])
-    } catch (error) {
-      console.error("Failed to fetch lessons:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load lessons. Please refresh the page.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingLessons(false)
-    }
-  }
-
-  // Fetch courses and lessons on component mount
-  useEffect(() => {
-    fetchCourses()
-    fetchLessons()
-  }, [])
-
-  // Fetch lessons when filters change
-  useEffect(() => {
-    fetchLessons()
-  }, [selectedCourse, selectedType, selectedStatus, searchTerm])
 
   // Handle form submission
   const onSubmit = async (values: LessonCreateForm) => {
@@ -342,7 +294,7 @@ export default function LessonsManagement() {
       await apiClient.post("/api/lessons", lessonData)
 
       // Refresh lessons list first
-      await fetchLessons()
+      await invalidateLessons()
 
       toast({
         title: "Success",
@@ -560,7 +512,7 @@ export default function LessonsManagement() {
         title: "Success",
         description: `Lesson "${lessonToPublish.title}" published successfully!`,
       })
-      fetchLessons()
+      invalidateLessons()
     } catch (error: any) {
       console.error("Failed to publish lesson:", error)
       toast({
@@ -582,7 +534,7 @@ export default function LessonsManagement() {
         title: "Success",
         description: `Lesson "${lessonToUnpublish.title}" moved back to draft!`,
       })
-      fetchLessons()
+      invalidateLessons()
     } catch (error: any) {
       console.error("Failed to unpublish lesson:", error)
       toast({
@@ -613,7 +565,7 @@ export default function LessonsManagement() {
       })
 
       // Refresh lessons list
-      await fetchLessons()
+      await invalidateLessons()
 
       // Close dialog and reset state
       setIsDeleteLessonOpen(false)
@@ -722,7 +674,7 @@ export default function LessonsManagement() {
       await apiClient.put(`/api/lessons/${editingLesson.id}`, lessonData)
 
       // Refresh lessons list first
-      await fetchLessons()
+      await invalidateLessons()
 
       toast({
         title: "Success",
@@ -985,7 +937,7 @@ export default function LessonsManagement() {
                                           type="button"
                                           variant="outline"
                                           size="sm"
-                                          onClick={fetchCourses}
+                                          onClick={() => queryClient.invalidateQueries({ queryKey: ["admin", "lessonCourses"] })}
                                           disabled={isLoadingCourses}
                                           title="Refresh courses"
                                         >
@@ -1641,7 +1593,7 @@ export default function LessonsManagement() {
                                           type="button"
                                           variant="outline"
                                           size="sm"
-                                          onClick={fetchCourses}
+                                          onClick={() => queryClient.invalidateQueries({ queryKey: ["admin", "lessonCourses"] })}
                                           disabled={isLoadingCourses}
                                           title="Refresh courses"
                                         >

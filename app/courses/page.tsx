@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { Search, Star, Clock, Users, BookOpen } from "lucide-react"
 
@@ -33,116 +34,64 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { categoryService, type Category } from "@/lib/services/categories"
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<CourseReponse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories")
   const [selectedLevel, setSelectedLevel] = useState<string>("all-levels")
-  const [enrollingCourses, setEnrollingCourses] = useState<Set<number>>(new Set())
-  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set())
 
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
   const debouncedSearch = useDebounce(searchQuery, 400)
-  const [categories, setCategories] = useState<Category[]>([])
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    loadCategories()
-    loadCourses()
-  }, [debouncedSearch, selectedCategory, selectedLevel])
+  // Fetch categories
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getAllCategories(),
+  })
 
-  // Fetch enrollments when user is authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadUserEnrollments()
-    } else {
-      setEnrolledCourseIds(new Set())
-    }
-  }, [isAuthenticated])
-
-  const loadUserEnrollments = async () => {
-    try {
-      const enrollments = await enrollmentsService.getUserEnrollments()
-      const enrolledIds = new Set(enrollments.map((e) => String(e.course_id)))
-      setEnrolledCourseIds(enrolledIds)
-    } catch (error) {
-      console.error("Failed to load user enrollments:", error)
-    }
-  }
-
-  const loadCategories = async () => {
-    try {
-      const response = await categoryService.getAllCategories()
-      setCategories(response || [])
-    } catch (err) {
-      console.error("Error loading categories:", err)
-    }
-  }
-
-  const loadCourses = async () => {
-    try {
-      setIsLoading(true)
-      setError("")
-
+  // Fetch courses with filters
+  const { data: courses = [], isLoading } = useQuery({
+    queryKey: ["courses", debouncedSearch, selectedCategory, selectedLevel],
+    queryFn: async () => {
       const filters: CourseFilters = {}
-      if (searchQuery) filters.search = debouncedSearch
+      if (debouncedSearch) filters.search = debouncedSearch
       if (selectedCategory !== "all-categories") filters.category_id = selectedCategory
       if (selectedLevel !== "all-levels")
         filters.level = selectedLevel as "beginner" | "intermediate" | "advanced"
-
       const response = await courseService.getCourses(filters)
-      
-      const validCourses = (response.items || []).filter((c): c is CourseReponse => c !== null)
+      return (response.items || []).filter((c): c is CourseReponse => c !== null)
+    },
+  })
 
-      setCourses(validCourses)
-    } catch (err: any) {
-      console.error("Error loading courses:", err)
-      setError(err.message || "Failed to load courses")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Fetch user enrollments
+  const { data: enrolledCourseIds = new Set<string>() } = useQuery({
+    queryKey: ["enrollments"],
+    queryFn: async () => {
+      const enrollments = await enrollmentsService.getUserEnrollments()
+      return new Set(enrollments.map((e) => String(e.course_id)))
+    },
+    enabled: isAuthenticated,
+  })
 
-  const handleEnroll = async (courseId: number) => {
+  // Enroll mutation
+  const enrollMutation = useMutation({
+    mutationFn: (courseId: string) => enrollmentsService.enrollInCourse(courseId),
+    onSuccess: () => {
+      toast({ title: "Enrollment Successful", description: "You have been enrolled in the course!" })
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] })
+      queryClient.invalidateQueries({ queryKey: ["courses"] })
+    },
+    onError: (err: any) => {
+      toast({ title: "Enrollment Failed", description: err.message || "Failed to enroll.", variant: "destructive" })
+    },
+  })
+
+  const handleEnroll = (courseId: number) => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to enroll in courses.",
-        variant: "destructive",
-      })
+      toast({ title: "Authentication Required", description: "Please sign in to enroll.", variant: "destructive" })
       return
     }
-
-    try {
-      setEnrollingCourses((prev) => new Set(prev).add(courseId))
-
-      await enrollmentsService.enrollInCourse(String(courseId))
-
-      toast({
-        title: "Enrollment Successful",
-        description: "You have been enrolled in the course!",
-      })
-
-      // Update both local course state and enrolled IDs set
-      setCourses((prev) =>
-        prev.map((course) => (course.id === courseId ? { ...course, is_enrolled: true } : course))
-      )
-      setEnrolledCourseIds((prev) => new Set(prev).add(String(courseId)))
-      
-    } catch (err: any) {
-      toast({
-        title: "Enrollment Failed",
-        description: err.message || "Failed to enroll in course.",
-        variant: "destructive",
-      })
-    } finally {
-      setEnrollingCourses((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(courseId)
-        return newSet
-      })
-    }
+    enrollMutation.mutate(String(courseId))
   }
 
   const formatDuration = (hours: number) => {
@@ -153,19 +102,7 @@ export default function CoursesPage() {
   }
 
   const isCourseEnrolled = (course: CourseReponse) => {
-    // Check both API flag and local enrollment check
-    // Ensure we handle string/number comparison correctly
     return course.is_enrolled || enrolledCourseIds.has(String(course.id))
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto py-8">
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    )
   }
 
   return (
@@ -315,10 +252,10 @@ export default function CoursesPage() {
                 ) : (
                   <Button
                     onClick={() => handleEnroll(course.id as unknown as number)}
-                    disabled={enrollingCourses.has(course.id as unknown as number)}
+                    disabled={enrollMutation.isPending}
                     className="flex-1"
                   >
-                    {enrollingCourses.has(course.id as unknown as number) ? "Enrolling..." : "Enroll Now"}
+                    {enrollMutation.isPending ? "Enrolling..." : "Enroll Now"}
                   </Button>
                 )}
               </CardFooter>

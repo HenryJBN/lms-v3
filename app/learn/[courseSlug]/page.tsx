@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,15 +32,56 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const lessonParam = searchParams.get("lesson")
   const cohortId = searchParams.get("cohort")
 
-  const [course, setCourse] = useState<any>(null)
+  const queryClient = useQueryClient()
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
-  const [userProgress, setUserProgress] = useState<any>(null)
   const [showQuiz, setShowQuiz] = useState(false)
   const [videoCompleted, setVideoCompleted] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [autoPlayNext, setAutoPlayNext] = useState(false)
   const [savedPlaybackRate, setSavedPlaybackRate] = useState(1)
   const prevLessonCompletedRef = useRef(false)
+
+  // 1. Fetch Course Lessons
+  const { data: rawLessons = [], isLoading: lessonsLoading } = useQuery({
+    queryKey: ["course", courseSlug, "lessons"],
+    queryFn: ({ signal }) => courseService.getCourseLessons(courseSlug, signal),
+  })
+
+  // 2. Fetch User Progress (completed lessons/quizzes)
+  const { data: userProgress, isLoading: progressLoading } = useQuery({
+    queryKey: ["course", courseSlug, "progress", cohortId],
+    queryFn: ({ signal }) => progressService.getCourseProgress(courseSlug, cohortId || undefined, signal),
+  })
+
+  // 3. Fetch Enrollment Progress (percentage)
+  const { data: enrollmentProgress, isLoading: enrollmentLoading } = useQuery({
+    queryKey: ["course", courseSlug, "enrollment", cohortId],
+    queryFn: ({ signal }) => progressService.getEnrollmentProgress(courseSlug, cohortId || undefined, signal),
+  })
+
+  // 4. Combined Course Data
+  const course = useMemo(() => {
+    if (!rawLessons.length) return null
+
+    const transformedLessons = rawLessons.map((lesson: any) => ({
+      id: lesson.id,
+      title: lesson.title,
+      description: lesson.description || lesson.content || "",
+      videoUrl: lesson.video_url || "",
+      duration: formatDuration(lesson.video_duration || 0),
+      hasQuiz: lesson.has_quiz || false,
+      prerequisites: lesson.prerequisites || [],
+      quiz: lesson.quiz || null,
+    }))
+
+    return {
+      id: courseSlug,
+      title: rawLessons[0]?.course_title || "Course",
+      lessons: transformedLessons,
+      progressPercentage: enrollmentProgress?.progress_percentage || 0,
+    }
+  }, [rawLessons, enrollmentProgress, courseSlug])
+
+  const loading = lessonsLoading || progressLoading || enrollmentLoading
 
   // Load saved playback rate from localStorage
   useEffect(() => {
@@ -100,136 +142,25 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     }
   }
 
-  useEffect(() => {
-    const abortController = new AbortController()
-    let navTimer: NodeJS.Timeout | null = null
-
-    const fetchCourseData = async () => {
-      // Avoid redundant fetches if we already have the course for this slug/cohort
-      if (course && course.id === courseSlug && currentLessonIndex !== -1) {
-          // If we just need to update the lesson index because lessonParam changed, 
-          // we handle that in the other useEffect or here if it's the first load
-          return
-      }
-
-      try {
-        setLoading(true)
-
-        // Fetch course lessons, lesson progress, and enrollment progress
-        const [lessons, lessonProgress, enrollmentProgress] = await Promise.all([
-          courseService.getCourseLessons(courseSlug, { signal: abortController.signal }),
-          progressService.getCourseProgress(courseSlug, cohortId || undefined, { signal: abortController.signal }).catch(() => ({
-            courseId: courseSlug,
-            completedLessons: [],
-            completedQuizzes: [],
-          })),
-          progressService.getEnrollmentProgress(courseSlug, cohortId || undefined, { signal: abortController.signal }).catch(() => ({
-            progress_percentage: 0,
-          })),
-        ])
-
-
-        if (!lessons || lessons.length === 0) {
-          router.push("/learn")
-          return
-        }
-
-        // Transform lessons to match expected format
-        const transformedLessons = lessons.map((lesson: any) => ({
-          id: lesson.id,
-          title: lesson.title,
-          description: lesson.description || lesson.content || "",
-          videoUrl: lesson.video_url || "",
-          duration: formatDuration(lesson.video_duration || 0),
-          hasQuiz: lesson.has_quiz || false,
-          prerequisites: lesson.prerequisites || [],
-          quiz: lesson.quiz || null,
-        }))
-
-        // Create course object with enrollment progress
-        const courseData = {
-          id: courseSlug,
-          title: lessons[0]?.course_title || "Course",
-          lessons: transformedLessons,
-          progressPercentage: enrollmentProgress.progress_percentage || 0,
-        }
-
-        // If there's a lesson ID in the URL, set the current lesson
-        let targetLessonIndex = 0
-        if (lessonParam) {
-          const lessonIndex = transformedLessons.findIndex(
-            (lesson: any) => lesson.id === lessonParam
-          )
-          if (lessonIndex !== -1) {
-            targetLessonIndex = lessonIndex
-          }
-        }
-        
-        const initialLesson = transformedLessons[targetLessonIndex]
-        const isCurrentVideoCompleted = (lessonProgress.completedLessons as string[])?.includes(initialLesson.id) || false
-
-        // Batch initial state updates
-        setCourse(courseData)
-        setUserProgress(lessonProgress)
-        setCurrentLessonIndex(targetLessonIndex)
-        setVideoCompleted(isCurrentVideoCompleted)
-
-        // Check if we should auto-play the next lesson for already-completed current lesson
-        const currentLesson = transformedLessons[targetLessonIndex]
-        const nextLesson = targetLessonIndex < transformedLessons.length - 1 ? transformedLessons[targetLessonIndex + 1] : null
-        
-        if (currentLesson && nextLesson) {
-          const isCurrentLessonCompleted = (lessonProgress.completedLessons as string[])?.includes(currentLesson.id) || false
-          const isCurrentQuizCompleted = currentLesson.hasQuiz
-            ? (lessonProgress.completedQuizzes as string[])?.includes(currentLesson.id) || false
-            : true
-          const canGoNext = !nextLesson.prerequisites ||
-            nextLesson.prerequisites.every(
-              (prereqId: string) => (lessonProgress.completedLessons as string[])?.includes(prereqId) || false
-            )
-
-          // If current lesson is completed and we can go to next, auto-play after a short delay
-          if (isCurrentLessonCompleted && isCurrentQuizCompleted && canGoNext) {
-            navTimer = setTimeout(() => {
-              const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
-              router.push(url)
-            }, 2000)
-          }
-        }
-
-        setLoading(false)
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-           return
-        }
-        console.error("Failed to load course data:", error)
-        router.push("/learn")
-      }
-    }
-
-    fetchCourseData()
-
-    return () => {
-      abortController.abort()
-      if (navTimer) clearTimeout(navTimer)
-    }
-  }, [courseSlug, cohortId, router]) // Removed lessonParam
-
+  // Handle target lesson index when lessonParam changes or rawLessons load
   useEffect(() => {
     if (!course || !lessonParam) return
 
-    const lessonIndex = course.lessons.findIndex(
-      (lesson: any) => lesson.id === lessonParam
-    )
-
-    if (lessonIndex !== -1 && lessonIndex !== currentLessonIndex) {
-      setCurrentLessonIndex(lessonIndex)
+    const targetIndex = course.lessons.findIndex((l: any) => l.id === lessonParam)
+    if (targetIndex !== -1 && targetIndex !== currentLessonIndex) {
+      setCurrentLessonIndex(targetIndex)
       setShowQuiz(false)
-      if (userProgress) {
-        setVideoCompleted(userProgress.completedLessons?.includes(course.lessons[lessonIndex].id) || false)
-      }
+      setVideoCompleted(userProgress?.completedLessons?.includes(course.lessons[targetIndex].id) || false)
     }
-  }, [lessonParam, course, userProgress])
+  }, [lessonParam, course, userProgress, currentLessonIndex])
+
+  // Initial redirect if no lessons or invalid slug (handled by query success/error later if needed)
+  useEffect(() => {
+    if (!lessonsLoading && rawLessons.length === 0) {
+      router.push("/learn")
+    }
+  }, [lessonsLoading, rawLessons, router])
+
 
   // Early return for loading state
   if (loading || !course || !userProgress) {
@@ -263,27 +194,11 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     // Always check if we need to mark the lesson as completed
     if (!isLessonCompleted) {
       try {
-        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
-        // Update local lesson progress state
-        updatedCompletedLessons = [...updatedCompletedLessons, currentLesson.id]
-        setUserProgress((prev: any) => ({
-          ...prev,
-          completedLessons: updatedCompletedLessons,
-        }))
-
-        // Use course progress from response if available, otherwise fallback to fetch
-        if (response && response.course_progress_percentage !== undefined) {
-          setCourse((prevCourse: any) => ({
-            ...prevCourse,
-            progressPercentage: response.course_progress_percentage,
-          }))
-        } else {
-          const updatedEnrollmentProgress = await progressService.getEnrollmentProgress(courseSlug, cohortId || undefined)
-          setCourse((prevCourse: any) => ({
-            ...prevCourse,
-            progressPercentage: updatedEnrollmentProgress.progress_percentage || 0,
-          }))
-        }
+        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        
+        // Sync progress and enrollment data
+        queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "progress"] })
+        queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "enrollment"] })
       } catch (error) {
         console.error("Failed to mark lesson as completed:", error)
       }
@@ -294,9 +209,10 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       setShowQuiz(true)
     } else if (nextLesson) {
       // Check if next lesson is accessible with current progress
+      const currentCompleted = userProgress.completedLessons || []
       const canGoNext = !nextLesson.prerequisites ||
         nextLesson.prerequisites.every(
-          (prereqId: string) => updatedCompletedLessons.includes(prereqId)
+          (prereqId: string) => currentCompleted.includes(prereqId) || prereqId === currentLesson.id
         )
       
       if (canGoNext) {
@@ -317,36 +233,20 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         }
 
         // Re-call progress update to sync completion status now that quiz is passed
-        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
 
-        // Update local progress state
-        const updatedCompletedQuizzes: string[] = [...(userProgress.completedQuizzes || []), currentLesson.id]
-        const updatedCompletedLessons: string[] = [...(userProgress.completedLessons || [])]
-        if (!updatedCompletedLessons.includes(currentLesson.id)) {
-          updatedCompletedLessons.push(currentLesson.id)
-        }
-
-        setUserProgress((prev: any) => ({
-          ...prev,
-          completedQuizzes: updatedCompletedQuizzes,
-          completedLessons: updatedCompletedLessons,
-        }))
-
-        // Update course progress real-time from response
-        if (response && response.course_progress_percentage !== undefined) {
-          setCourse((prevCourse: any) => ({
-            ...prevCourse,
-            progressPercentage: response.course_progress_percentage,
-          }))
-        }
+        // Sync progress and enrollment data
+        queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "progress"] })
+        queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "enrollment"] })
 
         setShowQuiz(false)
 
         // Auto-play next lesson after passing quiz
         if (nextLesson) {
+          const currentCompleted = userProgress.completedLessons || []
           const canGoNext = !nextLesson.prerequisites ||
             nextLesson.prerequisites.every(
-              (prereqId: string) => updatedCompletedLessons.includes(prereqId)
+              (prereqId: string) => currentCompleted.includes(prereqId) || prereqId === currentLesson.id
             )
 
           if (canGoNext) {

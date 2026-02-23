@@ -356,8 +356,9 @@ class CourseService {
   /**
    * ✅ Fetch course lessons for learning
    */
-  async getCourseLessons(courseIdOrSlug: string, options?: RequestInit): Promise<any[]> {
+  async getCourseLessons(courseIdOrSlug: string, signal?: AbortSignal): Promise<any[]> {
     try {
+      const options = { signal }
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
       const endpoint = isUUID
@@ -494,8 +495,9 @@ class ProgressService {
   /**
    * Get user progress for a course
    */
-  async getCourseProgress(courseIdOrSlug: string, cohortId?: string, options?: RequestInit): Promise<UserProgress> {
+  async getCourseProgress(courseIdOrSlug: string, cohortId?: string, signal?: AbortSignal): Promise<UserProgress> {
     try {
+      const options = { signal }
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
       
@@ -585,8 +587,9 @@ class ProgressService {
   /**
    * Get enrollment progress for a course
    */
-  async getEnrollmentProgress(courseIdOrSlug: string, cohortId?: string, options?: RequestInit): Promise<{ progress_percentage: number }> {
+  async getEnrollmentProgress(courseIdOrSlug: string, cohortId?: string, signal?: AbortSignal): Promise<{ progress_percentage: number }> {
     try {
+      const options = { signal }
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
       

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -42,8 +43,8 @@ const FileUploadField = ({
   label: string
   accept: string
   maxSize: number
-  value?: File | null
-  onChange: (file: File | null) => void
+  value?: File | string | null
+  onChange: (file: File | string | null) => void
   error?: string
   uploadProgress?: number
   previewUrl?: string
@@ -108,7 +109,7 @@ const FileUploadField = ({
         {value ? (
           <div className="flex items-center justify-center space-x-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <span className="text-sm">{value.name}</span>
+            <span className="text-sm">{typeof value === 'string' ? 'Existing File' : value.name}</span>
             <Button type="button" variant="ghost" size="sm" onClick={clearFile}>
               <X className="h-4 w-4" />
             </Button>
@@ -194,37 +195,26 @@ export const CourseCreateForm = ({
 }: CourseFormProps) => {
   const [internalIsSubmitting, setInternalIsSubmitting] = useState(false)
   const [internalUploadProgress, setInternalUploadProgress] = useState<Record<string, number>>({})
-  const [categories, setCategories] = useState<Category[]>([])
-  const [thumbnailPreview, setThumbnailPreview] = useState<string>("")
-  const [videoPreview, setVideoPreview] = useState<string>("")
-
-  const isSubmitting = externalIsSubmitting ?? internalIsSubmitting
-  const uploadProgress = externalUploadProgress ?? internalUploadProgress
-
-  const schema = mode === "create" ? CourseCreateSchema : CourseUpdateSchema
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoryService.getCategories(),
+  })
 
   const {
     register,
-    control,
     handleSubmit,
-    watch,
-    reset,
     setValue,
-    formState: { errors, isValid },
+    reset,
+    control,
+    watch,
+    formState: { errors },
   } = useForm<CourseCreateFormData>({
-    resolver: zodResolver(schema),
-    mode: "onChange",
+    resolver: zodResolver(mode === "create" ? CourseCreateSchema : CourseUpdateSchema),
     defaultValues: initialData
       ? {
           ...initialData,
-          // Ensure nulls are converted to undefined for optional fields
-          category_id: initialData.category_id || "",
-          thumbnail: initialData.thumbnail_url,
-          trailer_video: initialData.trailer_video_url,
-          requirements: initialData.requirements || [],
-          learning_outcomes: initialData.learning_outcomes || [],
-          tags: initialData.tags || [],
-          token_reward: initialData.token_reward || 0,
+          thumbnail: initialData.thumbnail || initialData.thumbnail_url,
+          trailer_video: initialData.trailer_video || initialData.trailer_video_url,
         }
       : {
           title: "",
@@ -232,57 +222,49 @@ export const CourseCreateForm = ({
           description: "",
           short_description: "",
           category_id: "",
-          level: "beginner",
+          duration_hours: 0,
           price: 0,
-          duration_hours: 1,
-          language: "en",
+          level: "beginner",
           is_free: false,
-          is_featured: false,
           token_reward: 0,
-          requirements: [],
-          learning_outcomes: [],
-          tags: [],
         },
   })
 
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>(initialData?.thumbnail_url || "")
+  const [videoPreview, setVideoPreview] = useState<string>(initialData?.trailer_video_url || "")
+
+  const title = watch("title")
   const thumbnailFile = watch("thumbnail")
   const trailerFile = watch("trailer_video")
   const isFree = watch("is_free")
-  const title = watch("title")
 
-  // Fetch categories on mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const categoryData = await categoryService.getCategories()
-        setCategories(categoryData)
-      } catch (error) {
-        console.error("Failed to fetch categories:", error)
-      }
-    }
-    fetchCategories()
-  }, [])
+  const isSubmitting = externalIsSubmitting || internalIsSubmitting
+  const uploadProgress = externalUploadProgress || internalUploadProgress
 
   // Create object URLs for file previews
   useEffect(() => {
-    if (thumbnailFile && thumbnailFile instanceof File) {
+    if (thumbnailFile instanceof File) {
       const url = URL.createObjectURL(thumbnailFile)
       setThumbnailPreview(url)
       return () => URL.revokeObjectURL(url)
+    } else if (typeof thumbnailFile === "string") {
+      setThumbnailPreview(thumbnailFile)
     } else {
-      setThumbnailPreview("")
+      setThumbnailPreview(initialData?.thumbnail_url || "")
     }
-  }, [thumbnailFile])
+  }, [thumbnailFile, initialData])
 
   useEffect(() => {
-    if (trailerFile && trailerFile instanceof File) {
+    if (trailerFile instanceof File) {
       const url = URL.createObjectURL(trailerFile)
       setVideoPreview(url)
       return () => URL.revokeObjectURL(url)
+    } else if (typeof trailerFile === "string") {
+      setVideoPreview(trailerFile)
     } else {
-      setVideoPreview("")
+      setVideoPreview(initialData?.trailer_video_url || "")
     }
-  }, [trailerFile])
+  }, [trailerFile, initialData])
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -332,14 +314,22 @@ export const CourseCreateForm = ({
       // Upload files first if they exist
       const courseData: any = { ...data }
 
-      if (data.thumbnail && typeof data.thumbnail !== "string") {
-        const thumbnailUrl = await uploadFile(data.thumbnail, "thumbnail")
-        courseData.thumbnail_url = thumbnailUrl
+      if (data.thumbnail) {
+        if (typeof data.thumbnail !== "string") {
+          const thumbnailUrl = await uploadFile(data.thumbnail, "thumbnail")
+          courseData.thumbnail_url = thumbnailUrl
+        } else {
+          courseData.thumbnail_url = data.thumbnail
+        }
       }
 
-      if (data.trailer_video && typeof data.trailer_video !== "string") {
-        const trailerUrl = await uploadFile(data.trailer_video, "trailer")
-        courseData.trailer_video_url = trailerUrl
+      if (data.trailer_video) {
+        if (typeof data.trailer_video !== "string") {
+          const trailerUrl = await uploadFile(data.trailer_video, "trailer")
+          courseData.trailer_video_url = trailerUrl
+        } else {
+          courseData.trailer_video_url = data.trailer_video
+        }
       }
 
       // Remove file objects from data (backend expects URLs)

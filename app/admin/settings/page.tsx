@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -53,8 +54,6 @@ interface SiteSettings {
 export default function AdminSettings() {
   const { toast } = useToast()
   const { refreshTheme } = useTenantTheme()
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
   const [isTestingEmail, setIsTestingEmail] = useState(false)
   const [settings, setSettings] = useState<SiteSettings>({
     name: "",
@@ -75,114 +74,98 @@ export default function AdminSettings() {
     smtp_from_name: "",
   })
 
-  useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  const fetchSettings = async () => {
-    try {
+  const { data: initialSettings, isLoading } = useQuery({
+    queryKey: ["admin", "settings"],
+    queryFn: async () => {
       const data = await apiClient.get<SiteSettings>("/api/admin/settings/site")
+      // Update local state when data is first loaded
       setSettings(data)
-
-      // Populate email config
-      // Note: Masked values (like "itq***") are shown as placeholders
-      // We'll only send values that the user actually changes
       setEmailConfig({
         smtp_host: data.smtp_host || "",
         smtp_port: data.smtp_port || 587,
-        smtp_username: data.smtp_username || "", // Will be masked like "itq***"
-        smtp_password: "", // Never populated (write-only)
-        smtp_from_email: data.smtp_from_email || "", // Will be masked like "con***@***.com"
+        smtp_username: data.smtp_username || "",
+        smtp_password: "",
+        smtp_from_email: data.smtp_from_email || "",
         smtp_from_name: data.smtp_from_name || "",
       })
-    } catch (error) {
-      console.error("Failed to fetch settings:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load settings",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+      return data
+    },
+    staleTime: Infinity, // Settings don't change often
+  })
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      const data = await apiClient.patch<SiteSettings>("/api/admin/settings/site", {
-        name: settings.name,
-        description: settings.description,
-        support_email: settings.support_email,
-        theme_config: settings.theme_config,
-      })
-
+  const saveSettingsMutation = useMutation({
+    mutationFn: (data: Partial<SiteSettings>) => 
+      apiClient.patch<SiteSettings>("/api/admin/settings/site", data),
+    onSuccess: async (data) => {
       setSettings(data)
-
-      // Refresh theme to apply new colors immediately
       await refreshTheme()
-
       toast({
         title: "Success",
         description: "Settings saved successfully. Theme colors have been updated.",
       })
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Failed to save settings:", error)
       toast({
         title: "Error",
         description: "Failed to save settings",
         variant: "destructive",
       })
-    } finally {
-      setIsSaving(false)
     }
-  }
+  })
 
-  const handleEmailSave = async () => {
-    setIsSaving(true)
-    try {
-      // Build email data, excluding masked values (containing ***)
-      const emailData: any = {
-        smtp_host: emailConfig.smtp_host || null,
-        smtp_port: emailConfig.smtp_port || null,
-        smtp_from_name: emailConfig.smtp_from_name || null,
-      }
-
-      // Only include username if it's not masked (doesn't contain ***)
-      if (emailConfig.smtp_username && !emailConfig.smtp_username.includes("***")) {
-        emailData.smtp_username = emailConfig.smtp_username
-      }
-
-      // Only include from_email if it's not masked (doesn't contain ***)
-      if (emailConfig.smtp_from_email && !emailConfig.smtp_from_email.includes("***")) {
-        emailData.smtp_from_email = emailConfig.smtp_from_email
-      }
-
-      // Only include password if user entered a new one
-      if (emailConfig.smtp_password) {
-        emailData.smtp_password = emailConfig.smtp_password
-      }
-
-      const data = await apiClient.patch<SiteSettings>("/api/admin/settings/site", emailData)
-
+  const saveEmailMutation = useMutation({
+    mutationFn: (data: any) => 
+      apiClient.patch<SiteSettings>("/api/admin/settings/site", data),
+    onSuccess: (data) => {
       setSettings(data)
-      // Clear password field after save (write-only)
       setEmailConfig(prev => ({ ...prev, smtp_password: "" }))
-
       toast({
         title: "Success",
         description: "Email settings saved successfully",
       })
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Failed to save email settings:", error)
       toast({
         title: "Error",
         description: "Failed to save email settings",
         variant: "destructive",
       })
-    } finally {
-      setIsSaving(false)
     }
+  })
+
+  const isSaving = saveSettingsMutation.isPending || saveEmailMutation.isPending
+
+  const handleSave = async () => {
+    saveSettingsMutation.mutate({
+      name: settings.name,
+      description: settings.description,
+      support_email: settings.support_email,
+      theme_config: settings.theme_config,
+    })
+  }
+
+  const handleEmailSave = async () => {
+    const emailData: any = {
+      smtp_host: emailConfig.smtp_host || null,
+      smtp_port: emailConfig.smtp_port || null,
+      smtp_from_name: emailConfig.smtp_from_name || null,
+    }
+
+    if (emailConfig.smtp_username && !emailConfig.smtp_username.includes("***")) {
+      emailData.smtp_username = emailConfig.smtp_username
+    }
+
+    if (emailConfig.smtp_from_email && !emailConfig.smtp_from_email.includes("***")) {
+      emailData.smtp_from_email = emailConfig.smtp_from_email
+    }
+
+    if (emailConfig.smtp_password) {
+      emailData.smtp_password = emailConfig.smtp_password
+    }
+
+    saveEmailMutation.mutate(emailData)
   }
 
   const handleTestEmail = async () => {

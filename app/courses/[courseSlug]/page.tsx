@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -55,67 +56,52 @@ export default function CoursePage() {
   const router = useRouter()
   const courseSlug = params?.courseSlug as string
 
-  const [course, setCourse] = useState<CourseReponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({})
-  const [isEnrolling, setIsEnrolling] = useState(false)
-  const [isEnrolled, setIsEnrolled] = useState(false)
-  
-  // Cohort state
-  const [cohorts, setCohorts] = useState<any[]>([])
   const [selectedCohort, setSelectedCohort] = useState<string | undefined>(undefined)
 
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        setLoading(true)
-        const response = await courseService.getCourse(courseSlug)
-        console.log(`One course Data ${response}`)
+  // Fetch course data
+  const { data: course, isLoading: loading } = useQuery({
+    queryKey: ["course", courseSlug],
+    queryFn: () => courseService.getCourse(courseSlug),
+    enabled: !!courseSlug,
+  })
 
-        setCourse(response)
-        
-        // Fetch Cohorts for this course
-        if (response?.id) {
-           try {
-             const courseCohorts = await courseService.getCourseCohorts(String(response.id))
-             setCohorts(courseCohorts)
-             // Auto-select first active cohort? Or let user choose.
-             // if (courseCohorts.length > 0) setSelectedCohort(courseCohorts[0].id)
-           } catch (err) {
-             console.error("Failed to fetch cohorts", err)
-           }
-        }
+  // Fetch cohorts for this course
+  const { data: cohorts = [] } = useQuery({
+    queryKey: ["course", courseSlug, "cohorts"],
+    queryFn: () => courseService.getCourseCohorts(String(course!.id)),
+    enabled: !!course?.id,
+  })
 
-        // Check if user is enrolled in this course
-        if (isAuthenticated && response?.id) {
-          try {
-            const enrollments = await enrollmentsService.getUserEnrollments()
-            const isUserEnrolled = enrollments.some(
-              (enrollment: any) =>
-                String(enrollment.course_id) === String(response.id) && enrollment.status === "active"
-            )
-            setIsEnrolled(isUserEnrolled)
-          } catch (error) {
-            console.error("Failed to check enrollment status:", error)
-          }
-        }
+  // Check if user is enrolled
+  const { data: isEnrolled = false } = useQuery({
+    queryKey: ["enrollment", courseSlug],
+    queryFn: async () => {
+      const enrollments = await enrollmentsService.getUserEnrollments()
+      return enrollments.some(
+        (enrollment: any) =>
+          String(enrollment.course_id) === String(course!.id) && enrollment.status === "active"
+      )
+    },
+    enabled: !!course?.id && isAuthenticated,
+  })
 
-        // if (response?.modules?.length > 0) {
-        //   setExpandedModules({ [response.modules[0].id]: true });
-        // }
-      } catch (err: any) {
-        console.error(err)
-        setError("Failed to load course information.")
-      } finally {
-        setLoading(false)
-      }
-    }
-    if (courseSlug) fetchCourse()
-  }, [courseSlug, isAuthenticated])
+  // Enroll mutation
+  const enrollMutation = useMutation({
+    mutationFn: () => enrollmentsService.enrollInCourse(String(course!.id), selectedCohort),
+    onSuccess: () => {
+      toast({ title: "Enrollment Successful", description: "You have been enrolled in the course!" })
+      queryClient.invalidateQueries({ queryKey: ["enrollment", courseSlug] })
+      router.push(`/learn/${course!.slug}`)
+    },
+    onError: (err: any) => {
+      toast({ title: "Enrollment Failed", description: err.message || "Failed to enroll.", variant: "destructive" })
+    },
+  })
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules((prev) => ({
@@ -128,67 +114,33 @@ export default function CoursePage() {
     alert("Redirecting to payment gateway...")
   }
 
-  const handleEnroll = async () => {
+  const handleEnroll = () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to enroll in courses.",
-        variant: "destructive",
-      })
+      toast({ title: "Authentication Required", description: "Please sign in to enroll.", variant: "destructive" })
       return
     }
-
     if (!course) {
-      toast({
-        title: "Error",
-        description: "Course data not available.",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Course data not available.", variant: "destructive" })
       return
     }
-    
-    // Require cohort selection if cohorts exist?
-    // strategy: Optional for now, or mandatory if cohorts exist.
-    // Let's make it mandatory if cohorts exist, otherwise user might miss it.
     if (cohorts.length > 0 && !selectedCohort) {
-        toast({
-            title: "Select a Cohort",
-            description: "Please select a cohort intake to proceed.",
-            variant: "destructive"
-        })
-        return
+      toast({ title: "Select a Cohort", description: "Please select a cohort intake to proceed.", variant: "destructive" })
+      return
     }
-
-    try {
-      setIsEnrolling(true)
-      await enrollmentsService.enrollInCourse(String(course.id), selectedCohort)
-
-      toast({
-        title: "Enrollment Successful",
-        description: "You have been enrolled in the course!",
-      })
-
-      // Redirect to learn page after successful enrollment
-      router.push(`/learn/${course.slug}`)
-    } catch (err: any) {
-      toast({
-        title: "Enrollment Failed",
-        description: err.message || "Failed to enroll in course.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsEnrolling(false)
-    }
+    enrollMutation.mutate()
   }
 
-  if (loading)
+  if (!course && !loading)
+    return (
+      <div className="container py-10 text-center text-muted-foreground">Course not found.</div>
+    )
+
+  if (loading || !course)
     return (
       <div className="container py-10 text-center text-muted-foreground">
         Loading course information...
       </div>
     )
-
-  if (error) return <div className="container py-10 text-center text-red-500">{error}</div>
 
   if (!course)
     return (
@@ -241,9 +193,9 @@ export default function CoursePage() {
                         className="rounded-full"
                         variant="default"
                         onClick={handleEnroll}
-                        disabled={isEnrolling}
+                        disabled={enrollMutation.isPending}
                       >
-                        {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                        {enrollMutation.isPending ? "Enrolling..." : "Enroll Now"}
                       </Button>
                   </div>
                 )

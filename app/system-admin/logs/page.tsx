@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { 
   Card, 
   CardContent, 
@@ -61,40 +62,25 @@ const ACTIVITY_TYPE_LABELS = {
 }
 
 export default function SystemAdminLogsPage() {
-  const [activities, setActivities] = useState<ActivityItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pages, setPages] = useState(1)
   const [activityType, setActivityType] = useState<string>("all")
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const queryClient = useQueryClient()
 
-  const fetchLogs = async (p = page, type = activityType) => {
-    setIsLoading(true)
-    try {
-      const params: any = { page: p, size: 10 }
-      if (type !== "all") {
-        params.activity_type = type
-      }
-      const data = await systemAdminService.getGlobalActivity(params)
-      setActivities(data.items)
-      setTotal(data.total)
-      setPages(data.pages)
-    } catch (error) {
-      console.error("Failed to fetch logs:", error)
-    } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }
+  const { data, isLoading, isFetching: isRefreshing } = useQuery({
+    queryKey: ["sysadmin", "logs", page, activityType],
+    queryFn: async () => {
+      const params: any = { page, size: 10 }
+      if (activityType !== "all") params.activity_type = activityType
+      return systemAdminService.getGlobalActivity(params)
+    },
+  })
 
-  useEffect(() => {
-    fetchLogs()
-  }, [page, activityType])
+  const activities = data?.items ?? []
+  const total = data?.total ?? 0
+  const pages = data?.pages ?? 1
 
   const handleRefresh = () => {
-    setIsRefreshing(true)
-    fetchLogs(page, activityType)
+    queryClient.invalidateQueries({ queryKey: ["sysadmin", "logs"] })
   }
 
   return (

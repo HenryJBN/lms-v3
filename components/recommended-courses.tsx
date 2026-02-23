@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react"
+import React from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent } from "@/components/ui/card"
 import { Gem } from "lucide-react"
 import Link from "next/link"
@@ -16,33 +17,21 @@ interface RecommendedCourse {
 }
 
 export default function RecommendedCourses() {
-  const [recommendations, setRecommendations] = useState<RecommendedCourse[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    fetchRecommendations()
-  }, [])
-
-  const fetchRecommendations = async () => {
-    try {
-      setIsLoading(true)
+  const { data: recommendations = [], isLoading } = useQuery({
+    queryKey: ["recommendedCourses"],
+    queryFn: async () => {
       // Try to get featured courses first
       const featured = await apiClient.get<RecommendedCourse[]>(`${API_ENDPOINTS.courses}/featured/`)
       
       if (featured && featured.length > 0) {
-        setRecommendations(featured.slice(0, 3))
+        return featured.slice(0, 3)
       } else {
         // Fallback to latest courses
         const coursesRes = await apiClient.get<{ items: RecommendedCourse[] }>(API_ENDPOINTS.courses)
-        const items = coursesRes?.items || []
-        setRecommendations(items.slice(0, 3))
+        return (coursesRes?.items || []).slice(0, 3)
       }
-    } catch (error) {
-      console.error("Failed to fetch recommendations:", error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+  })
 
   if (isLoading) {
     return (
@@ -60,7 +49,7 @@ export default function RecommendedCourses() {
 
   return (
     <div className="space-y-3">
-      {recommendations.map((course) => (
+      {recommendations.map((course: RecommendedCourse) => (
         <Link key={course.id} href={`/courses/${course.slug}`}>
           <Card className="overflow-hidden hover:bg-muted/50 transition-colors">
             <CardContent className="p-0">

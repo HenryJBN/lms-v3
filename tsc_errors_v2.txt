@@ -1,0 +1,11 @@
+components/course-form.tsx(11,8): error TS2307: Cannot find module '@/lib/schemas/course' or its corresponding type declarations.
+components/course-form.tsx(12,31): error TS2307: Cannot find module '@/lib/services/courses' or its corresponding type declarations.
+components/course-form.tsx(13,48): error TS2307: Cannot find module '@/lib/services/categories' or its corresponding type declarations.
+components/course-form.tsx(14,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+components/course-form.tsx(15,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+components/course-form.tsx(16,26): error TS2307: Cannot find module '@/components/ui/textarea' or its corresponding type declarations.
+components/course-form.tsx(23,8): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.
+components/course-form.tsx(24,26): error TS2307: Cannot find module '@/components/ui/checkbox' or its corresponding type declarations.
+components/course-form.tsx(25,58): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+components/course-form.tsx(26,26): error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+components/course-form.tsx(27,41): error TS2307: Cannot find module '@/components/ui/alert' or its corresponding type declarations.

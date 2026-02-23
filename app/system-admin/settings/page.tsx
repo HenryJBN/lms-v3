@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,23 +14,16 @@ import { systemAdminService, SystemConfig } from "@/lib/services/system-admin"
 
 export default function SettingsPage() {
   const [configs, setConfigs] = useState<SystemConfig[]>([])
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchConfigs()
-  }, [])
-
-  const fetchConfigs = async () => {
-    try {
+  const { isLoading: loading } = useQuery({
+    queryKey: ["sysadmin", "settings"],
+    queryFn: async () => {
       const data = await systemAdminService.getSystemSettings()
       setConfigs(data)
-    } catch (error) {
-      toast.error("Failed to load settings")
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data
+    },
+  })
 
   const handleUpdate = async (id: string, value: string) => {
     setSaving(id)

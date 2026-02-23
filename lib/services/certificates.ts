@@ -22,17 +22,17 @@ class CertificatesService {
     throw error instanceof Error ? error : new Error(`${context} failed due to an unexpected error`)
   }
 
-  async getMyCertificates(): Promise<Certificate[]> {
+  async getMyCertificates(signal?: AbortSignal): Promise<Certificate[]> {
     try {
-      return await apiClient.get<Certificate[]>(API_ENDPOINTS.myCertificates)
+      return await apiClient.get<Certificate[]>(API_ENDPOINTS.myCertificates, { signal })
     } catch (error) {
       this.handleError("Get certificates", error)
     }
   }
 
-  async getCertificate(id: string): Promise<Certificate> {
+  async getCertificate(id: string, signal?: AbortSignal): Promise<Certificate> {
     try {
-      return await apiClient.get<Certificate>(`${API_ENDPOINTS.certificates}/${id}`)
+      return await apiClient.get<Certificate>(`${API_ENDPOINTS.certificates}/${id}`, { signal })
     } catch (error) {
       this.handleError("Get certificate", error)
     }

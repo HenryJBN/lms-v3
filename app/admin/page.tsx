@@ -52,7 +52,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { adminService, AdminDashboardStats } from "@/lib/services/admin"
 import { format } from "date-fns"
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import {
   LineChart as RechartsLineChart,
@@ -102,27 +103,14 @@ function DashboardSkeleton() {
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<AdminDashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState("30d")
 
-  const fetchStats = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await adminService.getDashboardStats(selectedPeriod)
-      setStats(data)
-    } catch (err) {
-      console.error("Failed to fetch admin stats:", err)
-      setError("Failed to load dashboard data. Please try again.")
-    } finally {
-      setLoading(false)
-    }
-  }, [selectedPeriod])
+  const { data: stats, isLoading: loading, error: queryError, refetch: fetchStats } = useQuery({
+    queryKey: ["admin", "dashboard", selectedPeriod],
+    queryFn: () => adminService.getDashboardStats(selectedPeriod),
+  })
 
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
+  const error = queryError ? "Failed to load dashboard data. Please try again." : null
 
   const handleExport = () => {
     if (!stats) return
@@ -163,7 +151,7 @@ export default function AdminDashboard() {
       <div className="container mx-auto py-24 text-center space-y-4">
         <XCircle className="h-12 w-12 text-destructive mx-auto" />
         <h2 className="text-2xl font-bold">{error || "Something went wrong"}</h2>
-        <Button onClick={fetchStats}>
+        <Button onClick={() => fetchStats()}>
           <RefreshCcw className="mr-2 h-4 w-4" />
           Retry
         </Button>

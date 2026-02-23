@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -44,31 +45,18 @@ export default function CourseAssignmentsAdminPage() {
   const params = useParams()
   const courseId = params.courseId as string
 
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { data: assignments = [], isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["admin", "courseAssignments", courseId],
+    queryFn: async () => {
+      const response = (await apiClient.get(
+        `/api/assignments?course_id=${courseId}&page=1&size=100`
+      )) as { items: Assignment[] }
+      return response.items || []
+    },
+    enabled: !!courseId,
+  })
 
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        setLoading(true)
-        const response = (await apiClient.get(
-          `/api/assignments?course_id=${courseId}&page=1&size=100`
-        )) as { items: Assignment[] }
-
-        setAssignments(response.items || [])
-      } catch (err: any) {
-        console.error("Failed to fetch assignments:", err)
-        setError(err.message || "Failed to load assignments")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (courseId) {
-      fetchAssignments()
-    }
-  }, [courseId])
+  const error = queryError ? (queryError as Error).message : null
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "No due date"

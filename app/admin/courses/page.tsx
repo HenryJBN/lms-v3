@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -57,58 +58,39 @@ export default function CoursesManagement() {
   const [isAddCourseDialogOpen, setIsAddCourseDialogOpen] = useState(false)
   const [isEditCourseDialogOpen, setIsEditCourseDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<any>(null)
-  const [categories, setCategories] = useState<any[]>([])
-  const [courses, setCourses] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // Use the new form hooks
   const createForm = useCourseCreateForm()
   const updateForm = useCourseUpdateForm(editingCourse?.id)
 
-  // ======= LOAD DATA =======
-  useEffect(() => {
-    loadInitialData()
-  }, [])
-
-  const loadInitialData = async () => {
-    try {
-      setLoading(true)
+  // ======= LOAD DATA with useQuery =======
+  const { data: initialData, isLoading: loading } = useQuery({
+    queryKey: ["admin", "courses"],
+    queryFn: async () => {
       const [courseData, categoryData] = await Promise.all([
         courseService.getAdminCourses(),
         courseService.getCategories(),
       ])
-      setCourses(courseData.items)
-      setCategories(categoryData)
-    } catch (err) {
-      console.error("❌ Failed to load data", err)
-      toast({
-        title: "Error",
-        description: "Failed to load data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+      return { courses: courseData.items, categories: categoryData }
+    },
+  })
+
+  const courses = initialData?.courses ?? []
+  const categories = initialData?.categories ?? []
 
   // Handle successful course creation
   const handleCreateSuccess = async (newCourse: any) => {
-    toast({
-      title: "Success",
-      description: `Course "${newCourse.title}" created successfully!`,
-    })
-    loadInitialData() // Refresh the list
+    toast({ title: "Success", description: `Course "${newCourse.title}" created successfully!` })
+    queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
     setIsAddCourseDialogOpen(false)
   }
 
   // Handle successful course update
   const handleUpdateSuccess = async (updatedCourse: any) => {
-    toast({
-      title: "Success",
-      description: `Course "${updatedCourse.title}" updated successfully!`,
-    })
-    loadInitialData() // Refresh the list
+    toast({ title: "Success", description: `Course "${updatedCourse.title}" updated successfully!` })
+    queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
     setIsEditCourseDialogOpen(false)
     setEditingCourse(null)
   }
@@ -123,32 +105,16 @@ export default function CoursesManagement() {
   })
 
   const stats = [
-    {
-      title: "Total Courses",
-      value: courses.length,
-      icon: BookOpen,
-    },
-    {
-      title: "Published",
-      value: courses.filter((c) => c.status === "published").length,
-      icon: Eye,
-    },
-    {
-      title: "Drafts",
-      value: courses.filter((c) => c.status === "draft").length,
-      icon: FileText,
-    },
-    {
-      title: "Total Students",
-      value: courses.reduce((sum, course) => sum + course.total_students, 0).toLocaleString(),
-      icon: Users,
-    },
+    { title: "Total Courses", value: courses.length, icon: BookOpen },
+    { title: "Published", value: courses.filter((c: any) => c.status === "published").length, icon: Eye },
+    { title: "Drafts", value: courses.filter((c: any) => c.status === "draft").length, icon: FileText },
+    { title: "Total Students", value: courses.reduce((sum: number, course: any) => sum + course.total_students, 0).toLocaleString(), icon: Users },
     {
       title: "Avg Rating",
       value: (() => {
-        const ratedCourses = courses.filter((c) => c.rating > 0)
-        if (ratedCourses.length === 0) return 0 // prevent NaN
-        const totalRating = ratedCourses.reduce((sum, course) => sum + course.rating, 0)
+        const ratedCourses = courses.filter((c: any) => c.rating > 0)
+        if (ratedCourses.length === 0) return 0
+        const totalRating = ratedCourses.reduce((sum: number, course: any) => sum + course.rating, 0)
         return totalRating / ratedCourses.length
       })(),
       icon: Star,
@@ -156,59 +122,43 @@ export default function CoursesManagement() {
     },
   ]
 
-  const handlePublishCourse = async (courseToPublish: any) => {
-    try {
-      await courseService.publishCourse(courseToPublish.id)
-      toast({
-        title: "Success",
-        description: `Course "${courseToPublish.title}" published successfully!`,
-      })
-      loadInitialData() // Refresh the list
-    } catch (error: any) {
-      console.error("Failed to publish course:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to publish course",
-        variant: "destructive",
-      })
-    }
-  }
+  // Mutations
+  const publishMutation = useMutation({
+    mutationFn: (courseToPublish: any) => courseService.publishCourse(courseToPublish.id),
+    onSuccess: (_, courseToPublish) => {
+      toast({ title: "Success", description: `Course "${courseToPublish.title}" published!` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to publish course", variant: "destructive" })
+    },
+  })
 
-  const handleUnpublishCourse = async (courseToUnpublish: any) => {
-    try {
-      await courseService.unpublishCourse(courseToUnpublish.id)
-      toast({
-        title: "Success",
-        description: `Course "${courseToUnpublish.title}" moved back to draft!`,
-      })
-      loadInitialData() // Refresh the list
-    } catch (error: any) {
-      console.error("Failed to unpublish course:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to unpublish course",
-        variant: "destructive",
-      })
-    }
-  }
+  const unpublishMutation = useMutation({
+    mutationFn: (courseToUnpublish: any) => courseService.unpublishCourse(courseToUnpublish.id),
+    onSuccess: (_, courseToUnpublish) => {
+      toast({ title: "Success", description: `Course "${courseToUnpublish.title}" moved to draft!` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to unpublish", variant: "destructive" })
+    },
+  })
 
-  const handleDeleteCourse = async (courseToDelete: any) => {
-    try {
-      await courseService.deleteCourse(courseToDelete.id)
-      setCourses((prev) => prev.filter((course) => course.id !== courseToDelete.id))
-      toast({
-        title: "Success",
-        description: `Course "${courseToDelete.title}" deleted successfully!`,
-      })
-    } catch (error: any) {
-      console.error("Failed to delete course:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete course",
-        variant: "destructive",
-      })
-    }
-  }
+  const deleteMutation = useMutation({
+    mutationFn: (courseToDelete: any) => courseService.deleteCourse(courseToDelete.id),
+    onSuccess: (_, courseToDelete) => {
+      toast({ title: "Success", description: `Course "${courseToDelete.title}" deleted!` })
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses"] })
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete", variant: "destructive" })
+    },
+  })
+
+  const handlePublishCourse = (course: any) => publishMutation.mutate(course)
+  const handleUnpublishCourse = (course: any) => unpublishMutation.mutate(course)
+  const handleDeleteCourse = (course: any) => deleteMutation.mutate(course)
 
   const handleViewCourse = (course: any) => {
     router.push(`/courses/${course.id}`)

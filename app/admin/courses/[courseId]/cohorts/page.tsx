@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,41 +30,31 @@ export default function CourseCohortsPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   
   const courseId = params.courseId as string
   
-  const [course, setCourse] = useState<any>(null)
-  const [cohorts, setCohorts] = useState<Cohort[]>([])
-  const [loading, setLoading] = useState(true)
   const [isAddCohortOpen, setIsAddCohortOpen] = useState(false)
   const [isEditCohortOpen, setIsEditCohortOpen] = useState(false)
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [courseId])
-
-  const loadData = async () => {
-    try {
-      setLoading(true)
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["admin", "courseCohorts", courseId],
+    queryFn: async () => {
       const [courseData, cohortData] = await Promise.all([
-        courseService.getCourseById(courseId as any), // courseService might need UUID string or number
+        courseService.getCourseById(courseId as any),
         courseService.getCourseCohorts(courseId)
       ])
-      setCourse(courseData)
-      setCohorts(cohortData)
-    } catch (error) {
-      console.error("Failed to load data:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load course or cohorts",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+      return { course: courseData, cohorts: cohortData }
+    },
+    enabled: !!courseId,
+  })
+
+  const course = data?.course ?? null
+  const cohorts = data?.cohorts ?? []
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "courseCohorts", courseId] })
 
   const handleAddCohort = async (values: CohortFormValues) => {
     try {
@@ -79,7 +70,7 @@ export default function CourseCohortsPage() {
         description: "Cohort created successfully",
       })
       setIsAddCohortOpen(false)
-      loadData()
+      invalidate()
     } catch (error) {
       toast({
         title: "Error",
@@ -106,7 +97,7 @@ export default function CourseCohortsPage() {
       })
       setIsEditCohortOpen(false)
       setEditingCohort(null)
-      loadData()
+      invalidate()
     } catch (error) {
       toast({
         title: "Error",
@@ -125,7 +116,7 @@ export default function CourseCohortsPage() {
         title: "Success",
         description: "Cohort deleted successfully",
       })
-      loadData()
+      invalidate()
     } catch (error: any) {
       toast({
         title: "Error",
