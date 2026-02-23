@@ -1,8 +1,10 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   NavigationMenu,
@@ -21,14 +23,48 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { GraduationCap, BookOpen, User, Settings, LogOut, LayoutDashboard } from "lucide-react"
+import { GraduationCap, BookOpen, User, Settings, LogOut, LayoutDashboard, Sparkles } from "lucide-react"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useTenantTheme } from "@/components/tenant-theme-provider"
+import { courseService, type CourseReponse } from "@/lib/services/courses"
 
 export default function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuth()
   const { theme } = useTenantTheme()
   const router = useRouter()
+  const [isMounted, setIsMounted] = useState(false)
+  
+  // Determine if we are on global domain or tenant subdomain
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.test"
+  
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Fetch featured courses using courseService (matching landing page logic)
+  const { data: featuredCourses = [] } = useQuery({
+    queryKey: ["featuredCourses", isMounted],
+    queryFn: async () => {
+      if (!isMounted) return []
+      try {
+        // Use getGlobalFeaturedCourses for global domain, getFeaturedCourses for tenant
+        const hostname = window.location.hostname
+        const isGlobal = hostname === baseDomain || hostname === "localhost" || hostname === "127.0.0.1" || hostname === `www.${baseDomain}`
+        
+        if (isGlobal) {
+          return await courseService.getGlobalFeaturedCourses()
+        } else {
+          const res = await courseService.getFeaturedCourses()
+          // @ts-ignore
+          return res.items || res || []
+        }
+      } catch (err) {
+        console.error("Failed to fetch featured courses:", err)
+        return []
+      }
+    },
+    enabled: isMounted,
+  })
 
   const handleLogout = () => {
     logout()
@@ -81,52 +117,28 @@ export default function SiteHeader() {
                         </Link>
                       </NavigationMenuLink>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/courses/category/blockchain"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">Blockchain</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Web3 and crypto
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/courses/category/ai"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">AI & ML</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Artificial intelligence
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/courses/category/web-dev"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">Web Dev</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Frontend & backend
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/courses/category/filmmaking"
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">Filmmaking</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            Video production
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </div>
+                    {featuredCourses.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {featuredCourses.slice(0, 4).map((course) => (
+                          <NavigationMenuLink key={course.id} asChild>
+                            <Link
+                              href={`/courses/${course.slug}`}
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <div className="text-sm font-medium leading-none flex items-center gap-1">
+                                <Sparkles className="h-3 w-3 text-primary" />
+                                {course.title.length > 15 ? `${course.title.substring(0, 15)}...` : course.title}
+                              </div>
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                {course.short_description || "Featured course"}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        ))}
+                      </div>
+                    ) : (
+                      <></>
+                    )}
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
