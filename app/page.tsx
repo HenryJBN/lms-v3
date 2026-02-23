@@ -523,7 +523,7 @@ export default function HomePage() {
       </section>
 
       {/* Premium Gradient CTA Section */}
-      <section className="py-24 relative overflow-hidden">
+      <section className="py-40 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-blue-600 to-purple-700 mx-4 md:mx-8 rounded-3xl shadow-2xl flex items-center justify-center text-white">
           <div className="absolute inset-0 opacity-20 bg-[url('/noise.png')] mix-blend-overlay"></div>
           
@@ -550,11 +550,11 @@ export default function HomePage() {
               </Button>
             </div>
             
-            <div className="mt-12 flex flex-col md:flex-row items-center justify-center gap-6 text-sm font-medium opacity-80">
+            {/* <div className="mt-12 flex flex-col md:flex-row items-center justify-center gap-6 text-sm font-medium opacity-80">
               <div className="flex items-center"><CheckCircle2 className="w-5 h-5 mr-2" /> No credit card required</div>
               <div className="flex items-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Cancel anytime</div>
               <div className="flex items-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Earn while you learn</div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
