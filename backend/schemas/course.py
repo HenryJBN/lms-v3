@@ -112,6 +112,8 @@ class CourseResponse(BaseModel): # Use BaseModel if config isn't enough, but Bas
     instructor_first_name: Optional[str] = None
     instructor_last_name: Optional[str] = None
     category_name: Optional[str] = None
+    tenant_name: Optional[str] = None
+    tenant_domain: Optional[str] = None
 
     @computed_field
     def instructor_name(self) -> str:

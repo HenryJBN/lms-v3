@@ -45,6 +45,10 @@ export interface CourseReponse extends Course {
   // createdDate: string;
   // lastUpdated: string;
   thumbnail_url: string
+  tenant_name?: string
+  tenant_domain?: string
+  instructor_first_name?: string
+  instructor_last_name?: string
 }
 
 // CourseUpdate interface is now imported from schemas
@@ -171,6 +175,20 @@ class CourseService {
       return response
     } catch (error) {
       console.error("❌ Failed to get courses:", error)
+      throw error
+    }
+  }
+
+  /**
+   * ✅ Fetch paginated global featured courses
+   */
+  async getGlobalFeaturedCourses(): Promise<CourseReponse[]> {
+    try {
+      const endpoint = `${API_ENDPOINTS.courses}/global/featured/`
+      const response = await apiClient.get<CourseReponse[]>(endpoint)
+      return Array.isArray(response) ? response : []
+    } catch (error) {
+      console.error("❌ Failed to get global featured courses:", error)
       throw error
     }
   }

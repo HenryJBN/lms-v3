@@ -72,6 +72,8 @@ export const API_ENDPOINTS = {
   // Site endpoints
   siteTheme: "/api/site/theme",
   siteInfo: "/api/site/info",
+  siteGlobalTheme: "/api/site/global/theme",
+  siteGlobalStats: "/api/site/global/stats",
 
   // System Admin endpoints
   systemAdmin: "/api/system-admin",

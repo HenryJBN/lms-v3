@@ -37,9 +37,23 @@ interface TenantThemeProviderProps {
 }
 
 export function TenantThemeProvider({ children }: TenantThemeProviderProps) {
+  const [isGlobal, setIsGlobal] = React.useState<boolean | null>(null)
+
+  React.useEffect(() => {
+    const hostname = window.location.hostname
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.test"
+    setIsGlobal(
+      hostname === baseDomain || 
+      hostname === "localhost" || 
+      hostname === "127.0.0.1" || 
+      hostname === `www.${baseDomain}`
+    )
+  }, [])
+
   const { data: theme, isLoading, error: queryError, refetch: refreshTheme } = useQuery({
-    queryKey: ["siteTheme"],
-    queryFn: () => apiClient.get<TenantTheme>(API_ENDPOINTS.siteTheme),
+    queryKey: ["siteTheme", isGlobal],
+    queryFn: () => apiClient.get<TenantTheme>(isGlobal ? API_ENDPOINTS.siteGlobalTheme : API_ENDPOINTS.siteTheme),
+    enabled: isGlobal !== null,
     staleTime: Infinity, // Theme rarely changes
   })
 

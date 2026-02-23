@@ -160,6 +160,30 @@ async def get_courses(
         pages=(total + pagination.size - 1) // pagination.size
     )
 
+@router.get("/global/featured", response_model=List[CourseResponse])
+async def get_global_featured_courses(
+    session: AsyncSession = Depends(get_session)
+):
+    # Fetch 6 random courses across ALL tenants, joining the Site to get the tenant name
+    query = select(Course, User, Site).outerjoin(User, Course.instructor_id == User.id).join(Site, Course.site_id == Site.id).where(
+        Course.status == CourseStatus.published
+    ).order_by(func.random()).limit(6)
+    
+    results = await session.exec(query)
+    rows = results.all()
+    
+    items = []
+    for course, instructor, site in rows:
+        item = CourseResponse(
+            **course.model_dump(),
+            instructor_first_name=instructor.first_name if instructor else None,
+            instructor_last_name=instructor.last_name if instructor else None,
+            tenant_name=site.name,
+            tenant_domain=site.subdomain
+        )
+        items.append(item)
+    return items
+
 @router.get("/featured", response_model=List[CourseResponse])
 async def get_featured_courses(
     session: AsyncSession = Depends(get_session),

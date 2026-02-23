@@ -3,10 +3,30 @@ import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
-  const host = request.headers.get("host")
+  const hostWithPort = request.headers.get("host") || ""
+  const host = hostWithPort.split(":")[0] // Remove port for domain matching
+  const port = hostWithPort.split(":")[1] ? `:${hostWithPort.split(":")[1]}` : ""
   
-  if (host) {
-    requestHeaders.set("x-tenant-domain", host)
+  if (hostWithPort) {
+    requestHeaders.set("x-tenant-domain", host) // Set without port for backend
+  }
+
+  // Prevent tenant domains from accessing the root homepage
+  if (request.nextUrl.pathname === "/") {
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.test"
+    const isLocalhost = host === "localhost" || host === "127.0.0.1"
+    
+    // Determine if the current host is the global domain
+    const isGlobal = 
+      host === baseDomain || 
+      host === `www.${baseDomain}` || 
+      isLocalhost
+      
+    if (!isGlobal) {
+      // It's a tenant trying to access `/`, redirect them to the global `/`
+      const targetHost = `${baseDomain}${port}`
+      return NextResponse.redirect(`${request.nextUrl.protocol}//${isLocalhost ? `localhost${port}` : targetHost}/`)
+    }
   }
 
   // Check if the request is for admin or system-admin routes
