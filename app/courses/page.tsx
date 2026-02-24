@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
-import { Search, Star, Clock, Users, BookOpen } from "lucide-react"
+import { Search, Star, Clock, Users, BookOpen, Globe } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,35 +32,51 @@ import { courseService, type CourseReponse, type CourseFilters } from "@/lib/ser
 import { enrollmentsService } from "@/lib/services/enrollments"
 import { useDebounce } from "@/hooks/use-debounce"
 import { categoryService, type Category } from "@/lib/services/categories"
+import { isGlobalDomain, buildTenantUrl } from "@/lib/utils/domain"
 
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all-categories")
   const [selectedLevel, setSelectedLevel] = useState<string>("all-levels")
+  const [isGlobal, setIsGlobal] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   const { isAuthenticated } = useAuth()
   const { toast } = useToast()
   const debouncedSearch = useDebounce(searchQuery, 400)
   const queryClient = useQueryClient()
 
+  // Detect if we're on global domain (not a subdomain)
+  useEffect(() => {
+    setIsMounted(true)
+    setIsGlobal(isGlobalDomain())
+  }, [])
+
   // Fetch categories
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", isGlobal],
     queryFn: () => categoryService.getAllCategories(),
   })
 
-  // Fetch courses with filters
+  // Fetch courses with filters - uses global endpoint if on global domain
   const { data: courses = [], isLoading } = useQuery({
-    queryKey: ["courses", debouncedSearch, selectedCategory, selectedLevel],
+    queryKey: ["courses", debouncedSearch, selectedCategory, selectedLevel, isGlobal],
     queryFn: async () => {
       const filters: CourseFilters = {}
       if (debouncedSearch) filters.search = debouncedSearch
       if (selectedCategory !== "all-categories") filters.category_id = selectedCategory
       if (selectedLevel !== "all-levels")
         filters.level = selectedLevel as "beginner" | "intermediate" | "advanced"
-      const response = await courseService.getCourses(filters)
+      
+      let response
+      if (isGlobal) {
+        response = await courseService.getGlobalCourses(filters)
+      } else {
+        response = await courseService.getCourses(filters)
+      }
       return (response.items || []).filter((c): c is CourseReponse => c !== null)
     },
+    enabled: isMounted,
   })
 
   // Fetch user enrollments
@@ -70,7 +86,7 @@ export default function CoursesPage() {
       const enrollments = await enrollmentsService.getUserEnrollments()
       return new Set(enrollments.map((e) => String(e.course_id)))
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isGlobal, // Don't fetch enrollments in global view since users can't enroll directly
   })
 
   // Enroll mutation
@@ -86,12 +102,26 @@ export default function CoursesPage() {
     },
   })
 
-  const handleEnroll = (courseId: number) => {
+  // Get tenant signup URL for enrollment redirect in global view
+  const getTenantSignupUrl = (course: CourseReponse) => {
+    if (!course.tenant_domain) return "/signup"
+    return buildTenantUrl(course.tenant_domain, "/signup")
+  }
+
+  const handleEnroll = (course: CourseReponse) => {
+    // In global view, redirect to tenant's signup portal
+    if (isGlobal && course.tenant_domain) {
+      const signupUrl = getTenantSignupUrl(course)
+      window.location.href = signupUrl
+      return
+    }
+    
+    // In tenant view, enroll directly
     if (!isAuthenticated) {
       toast({ title: "Authentication Required", description: "Please sign in to enroll.", variant: "destructive" })
       return
     }
-    enrollMutation.mutate(String(courseId))
+    enrollMutation.mutate(String(course.id))
   }
 
   const formatDuration = (hours: number) => {
@@ -200,7 +230,16 @@ export default function CoursesPage() {
               </div>
 
               <CardHeader>
-                <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="line-clamp-2">{course.title}</CardTitle>
+                  {/* Show tenant badge in global view */}
+                  {isGlobal && course.tenant_name && (
+                    <Badge variant="default" className="bg-primary/90 shrink-0 text-xs flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      {course.tenant_name}
+                    </Badge>
+                  )}
+                </div>
                 <CardDescription className="line-clamp-2">
                   {course.short_description}
                 </CardDescription>
@@ -251,7 +290,7 @@ export default function CoursesPage() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => handleEnroll(course.id as unknown as number)}
+                    onClick={() => handleEnroll(course)}
                     disabled={enrollMutation.isPending}
                     className="flex-1"
                   >

@@ -27,30 +27,26 @@ import { GraduationCap, BookOpen, User, Settings, LogOut, LayoutDashboard, Spark
 import { useAuth } from "@/lib/contexts/auth-context"
 import { useTenantTheme } from "@/components/tenant-theme-provider"
 import { courseService, type CourseReponse } from "@/lib/services/courses"
+import { isGlobalDomain } from "@/lib/utils/domain"
 
 export default function SiteHeader() {
   const { user, isAuthenticated, logout } = useAuth()
   const { theme } = useTenantTheme()
   const router = useRouter()
   const [isMounted, setIsMounted] = useState(false)
-  
-  // Determine if we are on global domain or tenant subdomain
-  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.test"
+  const [isGlobal, setIsGlobal] = useState(false)
   
   useEffect(() => {
     setIsMounted(true)
+    setIsGlobal(isGlobalDomain())
   }, [])
 
   // Fetch featured courses using courseService (matching landing page logic)
   const { data: featuredCourses = [] } = useQuery({
-    queryKey: ["featuredCourses", isMounted],
+    queryKey: ["featuredCourses", isMounted, isGlobal],
     queryFn: async () => {
       if (!isMounted) return []
       try {
-        // Use getGlobalFeaturedCourses for global domain, getFeaturedCourses for tenant
-        const hostname = window.location.hostname
-        const isGlobal = hostname === baseDomain || hostname === "localhost" || hostname === "127.0.0.1" || hostname === `www.${baseDomain}`
-        
         if (isGlobal) {
           return await courseService.getGlobalFeaturedCourses()
         } else {

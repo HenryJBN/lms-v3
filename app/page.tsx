@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { motion, useMotionValue, useTransform, animate, useInView } from "framer-motion"
 import { useRef } from "react"
+import { isGlobalDomain, buildTenantUrl } from "@/lib/utils/domain"
 
 function AnimatedCounter({ from = 0, to, duration = 2 }: { from?: number, to: number, duration?: number }) {
   const nodeRef = useRef<HTMLSpanElement>(null)
@@ -35,23 +36,11 @@ export default function HomePage() {
   const { toast } = useToast()
   const [isGlobal, setIsGlobal] = useState(true)
   const [isMounted, setIsMounted] = useState(false)
-  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "dcalms.test"
 
   useEffect(() => {
     setIsMounted(true)
-    const hostname = window.location.hostname
-    // Determine if we are on the global domain or a tenant subdomain
-    if (
-      hostname === baseDomain || 
-      hostname === "localhost" || 
-      hostname === "127.0.0.1" || 
-      hostname === `www.${baseDomain}`
-    ) {
-      setIsGlobal(true)
-    } else {
-      setIsGlobal(false)
-    }
-  }, [baseDomain])
+    setIsGlobal(isGlobalDomain())
+  }, [])
 
   const { data: featuredCourses = [], isLoading } = useQuery({
     queryKey: ["featuredCourses", isGlobal],
@@ -92,11 +81,7 @@ export default function HomePage() {
   // Dynamic Routing Logic for courses
   const getCourseUrl = (course: CourseReponse) => {
     if (isGlobal && course.tenant_domain) {
-      const protocol = window.location.protocol
-      const isLocalhost = window.location.hostname === "localhost"
-      const port = window.location.port ? `:${window.location.port}` : ""
-      const domain = isLocalhost ? `localhost${port}` : baseDomain
-      return `${protocol}//${course.tenant_domain}.${domain}/courses/${course.slug || course.id}`
+      return buildTenantUrl(course.tenant_domain, `/courses/${course.slug || course.id}`)
     }
     return `/courses/${course.slug || course.id}`
   }

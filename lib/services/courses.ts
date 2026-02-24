@@ -194,6 +194,43 @@ class CourseService {
   }
 
   /**
+   * ✅ Fetch paginated courses across all tenants (global courses)
+   */
+  async getGlobalCourses(filters?: CourseFilters): Promise<GetCoursesResponse> {
+    try {
+      const params = new URLSearchParams()
+
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            params.append(key, String(value))
+          }
+        })
+      }
+
+      const endpoint = `${API_ENDPOINTS.courses}/global${params.toString() ? `?${params.toString()}` : ""}`
+
+      const response = await apiClient.get<GetCoursesResponse>(endpoint)
+
+      // Ensure consistent structure if API returns array instead of paginated object
+      if (!("items" in response)) {
+        return {
+          items: Array.isArray(response) ? response : [],
+          total: 0,
+          page: 1,
+          size: 0,
+          pages: 1,
+        }
+      }
+
+      return response
+    } catch (error) {
+      console.error("❌ Failed to get global courses:", error)
+      throw error
+    }
+  }
+
+  /**
    * ✅ Fetch single course details by slug
    */
   async getCourse(courseSlug: string, options?: RequestInit): Promise<CourseReponse> {

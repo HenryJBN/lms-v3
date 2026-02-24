@@ -197,6 +197,80 @@ async def get_global_featured_courses(
     
     return items
 
+@router.get("/global", response_model=PaginatedResponse[CourseResponse])
+async def get_global_courses(
+    pagination: PaginationParams = Depends(),
+    category_id: Optional[uuid.UUID] = Query(None),
+    level: Optional[CourseLevel] = Query(None),
+    search: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Fetch paginated courses across ALL tenants (global courses).
+    Supports filtering by category, level, and search query.
+    """
+    # Query for counting first
+    query_count = select(func.count(Course.id)).where(Course.status == CourseStatus.published)
+
+    # Apply filters
+    if category_id:
+        query_count = query_count.where(Course.category_id == category_id)
+    if level:
+        query_count = query_count.where(Course.level == level)
+    if search:
+        search_fmt = f"%{search}%"
+        query_count = query_count.where(
+            (col(Course.title).ilike(search_fmt)) | 
+            (col(Course.description).ilike(search_fmt)) |
+            (col(Course.short_description).ilike(search_fmt))
+        )
+        
+    total_result = await session.exec(query_count)
+    total = total_result.one()
+    
+    # Main Query - join with Site to get tenant info
+    query = select(Course, User, Site).outerjoin(User, Course.instructor_id == User.id).join(Site, Course.site_id == Site.id).where(
+        Course.status == CourseStatus.published
+    )
+
+    # Apply same filters
+    if category_id:
+        query = query.where(Course.category_id == category_id)
+    if level:
+        query = query.where(Course.level == level)
+    if search:
+        search_fmt = f"%{search}%"
+        query = query.where(
+            (col(Course.title).ilike(search_fmt)) | 
+            (col(Course.description).ilike(search_fmt)) |
+            (col(Course.short_description).ilike(search_fmt))
+        )
+        
+    query = query.order_by(col(Course.created_at).desc())
+    query = query.offset((pagination.page - 1) * pagination.size).limit(pagination.size)
+    
+    results = await session.exec(query)
+    rows = results.all()
+    
+    items = []
+    for course, instructor, site in rows:
+        item = CourseResponse(
+            **course.model_dump(),
+            instructor_first_name=instructor.first_name if instructor else None,
+            instructor_last_name=instructor.last_name if instructor else None,
+            tenant_name=site.name,
+            tenant_domain=site.subdomain
+        )
+        items.append(item)
+        
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=pagination.page,
+        size=pagination.size,
+        pages=(total + pagination.size - 1) // pagination.size
+    )
+
 @router.get("/featured", response_model=List[CourseResponse])
 async def get_featured_courses(
     session: AsyncSession = Depends(get_session),
