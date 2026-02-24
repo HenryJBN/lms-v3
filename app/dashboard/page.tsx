@@ -30,6 +30,7 @@ import TokenBalance from "@/components/token-balance"
 import RecommendedCourses from "@/components/recommended-courses"
 import LearningPathProgress from "@/components/learning-path-progress"
 import RecentActivity from "@/components/recent-activity"
+import { PendingEnrollmentDialog, usePendingEnrollment } from "@/components/pending-enrollment-dialog"
 import { useAuth } from "@/lib/contexts/auth-context"
 import { apiClient } from "@/lib/api-client"
 import { API_ENDPOINTS } from "@/lib/api-config"
@@ -47,6 +48,9 @@ interface Course {
 
 export default function DashboardPage() {
   const { user, tokenBalance, isLoading } = useAuth()
+  
+  // Handle pending enrollment from global courses page
+  const { pendingEnrollment, dialogOpen, setDialogOpen } = usePendingEnrollment()
 
   const { data: dashboardData } = useQuery({
     queryKey: ["dashboard"],
@@ -100,6 +104,13 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen">
+      {/* Pending Enrollment Dialog */}
+      <PendingEnrollmentDialog 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen}
+        pendingEnrollment={pendingEnrollment}
+      />
+      
       {/* Sidebar */}
       <aside className="hidden w-64 flex-col border-r bg-muted/40 md:flex">
         <div className="flex h-14 items-center border-b px-4">

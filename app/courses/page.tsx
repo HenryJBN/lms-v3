@@ -33,6 +33,7 @@ import { enrollmentsService } from "@/lib/services/enrollments"
 import { useDebounce } from "@/hooks/use-debounce"
 import { categoryService, type Category } from "@/lib/services/categories"
 import { isGlobalDomain, buildTenantUrl } from "@/lib/utils/domain"
+import { setPendingEnrollment } from "@/lib/utils/enrollment"
 
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -111,6 +112,8 @@ export default function CoursesPage() {
   const handleEnroll = (course: CourseReponse) => {
     // In global view, redirect to tenant's signup portal
     if (isGlobal && course.tenant_domain) {
+      // Store pending enrollment before redirect
+      setPendingEnrollment(course)
       const signupUrl = getTenantSignupUrl(course)
       window.location.href = signupUrl
       return
