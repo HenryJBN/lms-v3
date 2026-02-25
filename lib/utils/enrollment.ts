@@ -7,6 +7,7 @@
 export interface PendingEnrollment {
   courseId: string | number
   courseTitle: string
+  courseSlug: string
   tenantDomain: string
   timestamp: number
 }
@@ -79,10 +80,11 @@ function eraseCookie(name: string): void {
  * Store pending enrollment in cookie before redirecting to signup
  * Cookie is set with cross-subdomain domain so it can be accessed on tenant subdomains
  */
-export function setPendingEnrollment(course: { id: string | number; title: string; tenant_domain?: string }): void {
+export function setPendingEnrollment(course: { id: string | number; title: string; slug?: string; tenant_domain?: string }): void {
   const pendingEnrollment: PendingEnrollment = {
     courseId: course.id,
     courseTitle: course.title,
+    courseSlug: course.slug || "",
     tenantDomain: course.tenant_domain || "",
     timestamp: Date.now(),
   }

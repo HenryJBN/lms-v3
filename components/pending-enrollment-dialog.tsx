@@ -43,6 +43,11 @@ export function PendingEnrollmentDialog({
       queryClient.invalidateQueries({ queryKey: ["enrollments"] })
       clearPendingEnrollment()
       onOpenChange(false)
+      
+      // Route to the learn page after successful enrollment
+      if (pendingEnrollment?.courseSlug) {
+        router.push(`/learn/${pendingEnrollment.courseSlug}`)
+      }
     },
     onError: (err: any) => {
       toast({ 

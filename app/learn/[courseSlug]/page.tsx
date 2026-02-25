@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
-import { ChevronLeft, ChevronRight, Lock, CheckCircle, Play, AlertCircle, Trophy, Award } from "lucide-react"
+import { ChevronLeft, ChevronRight, Lock, CheckCircle, Play, AlertCircle, Trophy, Award, Gem } from "lucide-react"
 import VideoPlayer from "@/components/video-player"
 import LessonQuiz from "@/components/lesson-quiz"
 import SiteHeader from "@/components/site-header"
@@ -22,8 +22,13 @@ import SiteFooter from "@/components/site-footer"
 import Link from "next/link"
 import { courseService, progressService } from "@/lib/services/courses"
 import { formatDuration } from "@/lib/utils"
+import { toast } from "@/hooks/use-toast"
 
 const PLAYBACK_RATE_STORAGE_KEY = "lms-playback-rate"
+
+// Default token reward for lesson completion (should match backend settings)
+const LESSON_TOKEN_REWARD = 10
+const QUIZ_TOKEN_REWARD = 15
 
 export default function CourseLessonPage({ params }: { params: { courseSlug: string } }) {
   const router = useRouter()
@@ -39,6 +44,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const [autoPlayNext, setAutoPlayNext] = useState(false)
   const [savedPlaybackRate, setSavedPlaybackRate] = useState(1)
   const prevLessonCompletedRef = useRef(false)
+  const [justEarnedTokens, setJustEarnedTokens] = useState<{ amount: number; type: string } | null>(null)
 
   // 1. Fetch Course Lessons
   const { data: rawLessons = [], isLoading: lessonsLoading } = useQuery({
@@ -92,6 +98,26 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       }
     }
   }, [])
+
+  // Show reward toast when tokens are earned
+  useEffect(() => {
+    if (justEarnedTokens) {
+      toast({
+        title: (
+          <div className="flex items-center gap-2">
+            <Gem className="h-5 w-5 text-amber-500" />
+            <span>+{justEarnedTokens.amount} Tokens Earned!</span>
+          </div>
+        ),
+        description: justEarnedTokens.type === 'lesson' 
+          ? `You earned ${justEarnedTokens.amount} tokens for completing the lesson.`
+          : `You earned ${justEarnedTokens.amount} tokens for passing the quiz!`,
+        duration: 5000,
+        className: "border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800",
+      })
+      setJustEarnedTokens(null)
+    }
+  }, [justEarnedTokens])
 
   // Track when previous lesson was completed to trigger autoplay
   useEffect(() => {
@@ -189,12 +215,18 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const handleVideoComplete = async () => {
     setVideoCompleted(true)
     
-    let updatedCompletedLessons: string[] = userProgress.completedLessons || []
+    // Track if this is a NEW completion (not previously completed)
+    const isNewCompletion = !isLessonCompleted
 
     // Always check if we need to mark the lesson as completed
     if (!isLessonCompleted) {
       try {
         await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        
+        // Show reward notification for NEW completions
+        if (isNewCompletion) {
+          setJustEarnedTokens({ amount: LESSON_TOKEN_REWARD, type: 'lesson' })
+        }
         
         // Sync progress and enrollment data
         queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "progress"] })
@@ -226,6 +258,8 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
   const handleQuizComplete = async (passed: boolean) => {
     if (passed) {
+      const isNewQuizCompletion = !isQuizCompleted
+      
       try {
         // Submit quiz attempt (assuming quiz ID is available)
         if (currentLesson.quiz?.id) {
@@ -234,6 +268,11 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
         // Re-call progress update to sync completion status now that quiz is passed
         await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+
+        // Show reward notification for NEW quiz completions
+        if (isNewQuizCompletion) {
+          setJustEarnedTokens({ amount: QUIZ_TOKEN_REWARD, type: 'quiz' })
+        }
 
         // Sync progress and enrollment data
         queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "progress"] })

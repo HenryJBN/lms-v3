@@ -1,10 +1,10 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.communication import Notification, NotificationSettings
-from database.session import engine
+from database.session import engine, async_session_factory
 
 async def create_notification(
     user_id: uuid.UUID,
@@ -15,39 +15,74 @@ async def create_notification(
     notification_type: str = "system",
     priority: str = "medium",
     data: Optional[Dict[str, Any]] = None,
-    action_url: Optional[str] = None
+    action_url: Optional[str] = None,
+    use_own_session: bool = False
 ) -> dict:
     """Create a new notification for a user"""
-    try:
-        new_notification = Notification(
-            user_id=user_id,
-            site_id=site_id,
-            title=title,
-            message=message,
-            type=notification_type,
-            priority=priority,
-            data=data,
-            link=action_url
-        )
-        session.add(new_notification)
-        await session.commit()
-        await session.refresh(new_notification)
-        
-        # Send push notification if user has it enabled
-        await send_push_notification(user_id, title, message, session, data)
-        
-        return {
-            "success": True,
-            "notification_id": new_notification.id,
-            "notification": new_notification.model_dump()
-        }
-    except Exception as e:
-        await session.rollback()
-        print(f"Failed to create notification: {e}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+    # Use own session if requested or if the passed session might be in a bad state
+    if use_own_session:
+        async with async_session_factory() as notification_session:
+            try:
+                new_notification = Notification(
+                    user_id=user_id,
+                    site_id=site_id,
+                    title=title,
+                    message=message,
+                    type=notification_type,
+                    priority=priority,
+                    data=data,
+                    link=action_url
+                )
+                notification_session.add(new_notification)
+                await notification_session.commit()
+                await notification_session.refresh(new_notification)
+                
+                # Send push notification if user has it enabled
+                await send_push_notification(user_id, title, message, notification_session, data)
+                
+                return {
+                    "success": True,
+                    "notification_id": new_notification.id,
+                    "notification": new_notification.model_dump()
+                }
+            except Exception as e:
+                await notification_session.rollback()
+                print(f"Failed to create notification: {e}")
+                return {
+                    "success": False,
+                    "error": str(e)
+                }
+    else:
+        try:
+            new_notification = Notification(
+                user_id=user_id,
+                site_id=site_id,
+                title=title,
+                message=message,
+                type=notification_type,
+                priority=priority,
+                data=data,
+                link=action_url
+            )
+            session.add(new_notification)
+            await session.commit()
+            await session.refresh(new_notification)
+            
+            # Send push notification if user has it enabled
+            await send_push_notification(user_id, title, message, session, data)
+            
+            return {
+                "success": True,
+                "notification_id": new_notification.id,
+                "notification": new_notification.model_dump()
+            }
+        except Exception as e:
+            await session.rollback()
+            print(f"Failed to create notification: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
 async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Send notification when user enrolls in a course"""
@@ -60,7 +95,8 @@ async def send_enrollment_notification(user_id: uuid.UUID, course_title: str, co
         notification_type="course",
         priority="medium",
         data={"course_id": str(course_id), "course_title": course_title},
-        action_url=f"/learn/{course_id}"
+        action_url=f"/learn/{course_id}",
+        use_own_session=True  # Use separate session to avoid greenlet issues
     )
 
 async def send_lesson_completion_notification(user_id: uuid.UUID, lesson_title: str, course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
@@ -154,18 +190,22 @@ async def send_push_notification(user_id: uuid.UUID, title: str, message: str, s
             return
         
         # Get user's push tokens
-        from models.user import UserDevice
-        tokens_query = select(UserDevice.device_token).where(
-            UserDevice.user_id == user_id, 
-            UserDevice.device_token != None
-        )
-        result = await session.exec(tokens_query)
-        device_tokens = result.all()
-        
-        if not device_tokens:
-            return
+        try:
+            from models.user import UserDevice
+            tokens_query = select(UserDevice.device_token).where(
+                UserDevice.user_id == user_id, 
+                UserDevice.device_token != None
+            )
+            result = await session.exec(tokens_query)
+            device_tokens = result.all()
             
-        print(f"Push notification sent to {len(device_tokens)} devices for user {user_id}")
+            if not device_tokens:
+                return
+                
+            print(f"Push notification sent to {len(device_tokens)} devices for user {user_id}")
+        except ImportError:
+            # UserDevice model not yet implemented, skip push notification
+            pass
     except Exception as e:
         print(f"Failed to send push notification: {e}")
 

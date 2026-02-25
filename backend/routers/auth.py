@@ -29,7 +29,7 @@ from utils.email import send_password_reset_email
 from utils.email_async import send_welcome_email_async, send_two_factor_auth_email_async, send_email_verification_async
 from utils.validation import validate_email
 from utils.redis_client import two_fa_manager
-from utils.site_settings import is_registration_enabled, is_email_verification_required
+from utils.site_settings import is_registration_enabled, is_email_verification_required, are_token_rewards_enabled
 
 router = APIRouter()
 
@@ -67,7 +67,8 @@ async def register(
 
     # Create new user
     # If email verification is not required, set status to active immediately
-    user_status = UserStatus.pending if is_email_verification_required(current_site) else UserStatus.active
+    requires_verification = is_email_verification_required(current_site)
+    user_status = UserStatus.pending if requires_verification else UserStatus.active
     
     new_user = User(
         email=user_in.email,
@@ -116,6 +117,7 @@ async def register(
             amount=float(get_signup_token_reward(current_site)),
             description="Welcome bonus for joining our academy!",
             session=session,
+            site_id=current_site.id,
             reference_type="signup_bonus"
         )
 
@@ -300,6 +302,16 @@ async def verify_email_code(
 
     record, user = record_pair
 
+    # Capture user attributes before commit to avoid expired object issues
+    user_id = user.id
+    user_email = user.email
+    user_username = user.username
+    user_first_name = user.first_name
+    user_last_name = user.last_name
+    user_role = user.role
+    user_site_id = user.site_id
+    user_created_at = user.created_at
+
     # Update user
     user.status = UserStatus.active
     session.add(user)
@@ -314,16 +326,17 @@ async def verify_email_code(
         from utils.tokens import award_tokens
         from utils.site_settings import get_signup_token_reward
         await award_tokens(
-            user_id=user.id,
+            user_id=user_id,
             amount=float(get_signup_token_reward(current_site)),
             description="Welcome bonus for verifying your email!",
             session=session,
+            site_id=current_site.id,
             reference_type="signup_bonus"
         )
 
     # Issue tokens
-    access_token = create_access_token(data={"sub": str(user.id)})
-    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    access_token = create_access_token(data={"sub": str(user_id)})
+    refresh_token = create_refresh_token(data={"sub": str(user_id)})
 
     response.set_cookie(
         key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None, max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400, path="/api/auth"
@@ -334,17 +347,17 @@ async def verify_email_code(
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         "user": UserResponse(
-            id=user.id,
-            email=user.email,
-            username=user.username,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            role=user.role,
-            status=user.status,
-            site_id=user.site_id,
+            id=user_id,
+            email=user_email,
+            username=user_username,
+            first_name=user_first_name,
+            last_name=user_last_name,
+            role=user_role,
+            status=UserStatus.active,
+            site_id=user_site_id,
             email_verified=True,
-            created_at=user.created_at,
-            updated_at=user.updated_at
+            created_at=user_created_at,
+            updated_at=datetime.utcnow()
         )
     }
 
@@ -366,6 +379,7 @@ async def resend_verification_code(
         return {"message": "If the email exists, a new verification code has been sent", "email": email}
 
     # Check if user is already verified
+    print(user, 'user status')
     if user.status == UserStatus.active:
         raise HTTPException(status_code=400, detail="Email is already verified")
 

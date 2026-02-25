@@ -4,8 +4,6 @@ from typing import Optional
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.gamification import TokenBalance, TokenTransaction
-from models.enums import TokenTransactionType
-from database.session import engine # Fallback for non-dep calls if needed, but better to pass
 
 async def award_tokens(
     user_id: uuid.UUID,
@@ -42,7 +40,7 @@ async def award_tokens(
         transaction = TokenTransaction(
             user_id=user_id,
             amount=amount,
-            transaction_type=TokenTransactionType.credit,
+            transaction_type="credit",
             balance_after=balance.balance,
             description=description,
             reference_type=reference_type,
@@ -64,7 +62,6 @@ async def award_tokens(
         
     except Exception as e:
         await session.rollback()
-        import sys
         logger.error(f"CRITICAL TOKEN AWARD FAILURE: {e}")
         return {
             "success": False,
@@ -105,7 +102,7 @@ async def spend_tokens(
         transaction = TokenTransaction(
             user_id=user_id,
             amount=-amount,
-            transaction_type=TokenTransactionType.debit,
+            transaction_type="debit",
             balance_after=balance.balance,
             description=description,
             reference_type=reference_type,

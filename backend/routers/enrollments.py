@@ -20,6 +20,10 @@ from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, get_current_user
 from utils.tokens import award_tokens
 from utils.notifications import send_enrollment_notification
+from utils.site_settings import are_token_rewards_enabled, get_signup_token_reward
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -136,19 +140,25 @@ async def enroll_in_course(
     enrollment_enrolled_at = new_enrollment.enrolled_at
     enrollment_progress = new_enrollment.progress_percentage
     
-    # Award tokens logic (Refactored to utility)
-    try:
-        await award_tokens(
-            user_id=user_id,
-            amount=25.0,
-            description="First course enrollment bonus",
-            session=session,
-            site_id=current_site.id,
-            reference_type="first_course_enrollment",
-            reference_id=course_id
-        )
-    except Exception as e:
-        print(f"Failed to award tokens: {e}")
+    # Award tokens logic - now with proper site settings check and logging
+    if are_token_rewards_enabled(current_site):
+        try:
+            # Get the enrollment token reward amount from site settings (default 25)
+            token_amount = get_signup_token_reward(current_site)
+            await award_tokens(
+                user_id=user_id,
+                amount=float(token_amount),
+                description=f"Course enrollment bonus: {course_title}",
+                session=session,
+                site_id=current_site.id,
+                reference_type="first_course_enrollment",
+                reference_id=course_id
+            )
+            logger.info(f"Awarded {token_amount} tokens to user {user_id} for enrolling in course {course_id}")
+        except Exception as e:
+            logger.error(f"Failed to award tokens to user {user_id} for course enrollment: {e}")
+    else:
+        logger.info(f"Token rewards are disabled for site {current_site.id}, skipping enrollment bonus for user {user_id}")
         
     # Send enrollment notification
     try:
@@ -160,7 +170,7 @@ async def enroll_in_course(
             site_id=current_site.id
         )
     except Exception as e:
-        print(f"Failed to send enrollment notification: {e}")
+        logger.error(f"Failed to send enrollment notification: {e}")
              
     # Return response - use captured local variables to avoid MissingGreenlet
     return EnrollmentResponse(
