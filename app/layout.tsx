@@ -23,6 +23,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Pre-resolve DNS + establish TCP connection to API before JS loads */}
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} />
+      </head>
       <body className={inter.className}>
         <QueryProvider>
           <TenantThemeProvider>

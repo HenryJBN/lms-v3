@@ -57,7 +57,7 @@ async def get_global_theme(session: AsyncSession = Depends(get_session)):
     """
     # Check cache first (cache for 1 hour - theme doesn't change often)
     cache_key = "global_theme"
-    cached = cache_manager.get_json(cache_key)
+    cached = await cache_manager.get_json(cache_key)
     if cached:
         return cached
     
@@ -75,7 +75,7 @@ async def get_global_theme(session: AsyncSession = Depends(get_session)):
     }
     
     # Cache for 1 hour (3600 seconds)
-    cache_manager.set_json(cache_key, response_data, 3600)
+    await cache_manager.set_json(cache_key, response_data, 3600)
     
     return response_data
 
@@ -87,7 +87,7 @@ async def get_public_global_stats(session: AsyncSession = Depends(get_session)):
     """
     # Check cache first (cache for 5 minutes)
     cache_key = "global_stats"
-    cached = cache_manager.get_json(cache_key)
+    cached = await cache_manager.get_json(cache_key)
     if cached:
         return cached
     
@@ -106,7 +106,7 @@ async def get_public_global_stats(session: AsyncSession = Depends(get_session)):
     }
     
     # Cache for 5 minutes (300 seconds)
-    cache_manager.set_json(cache_key, response_data, 300)
+    await cache_manager.set_json(cache_key, response_data, 300)
     
     return response_data
 

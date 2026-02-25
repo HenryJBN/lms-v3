@@ -3,71 +3,91 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from database.session import get_session
 from models.site import Site
 from sqlmodel import select
+import time
+from typing import Dict, Tuple, Optional
+
+# In-memory site cache: key -> (site, timestamp)
+_site_cache: Dict[str, Tuple[Site, float]] = {}
+_SITE_CACHE_TTL = 300  # 5 minutes
+
+
+def _get_cached_site(cache_key: str) -> Optional[Site]:
+    """Return cached site if still valid, else None."""
+    entry = _site_cache.get(cache_key)
+    if entry and (time.monotonic() - entry[1]) < _SITE_CACHE_TTL:
+        return entry[0]
+    return None
+
+
+def _cache_site(cache_key: str, site: Site) -> None:
+    _site_cache[cache_key] = (site, time.monotonic())
+
+
+def invalidate_site_cache(subdomain: str = None) -> None:
+    """Call this when a site is updated. Pass subdomain to clear one, or None to clear all."""
+    if subdomain:
+        _site_cache.pop(f"sub:{subdomain}", None)
+    else:
+        _site_cache.clear()
+
+
+def _extract_subdomain(host: str) -> str:
+    """Extract subdomain from host string."""
+    if "localhost" in host or "127.0.0.1" in host:
+        parts = host.split(".")
+        return parts[0] if len(parts) > 1 else "localhost"
+    else:
+        parts = host.split(".")
+        return parts[0] if len(parts) >= 2 else host
+
 
 async def get_current_site(
     request: Request,
     session: AsyncSession = Depends(get_session)
 ) -> Site:
-    """
-    Resolve the current site based on the X-Tenant-Domain header or Host header.
-    
-    Priority:
-    1. X-Tenant-Domain (explicitly set by frontend middleware/client)
-    2. Host header (fallback for same-domain deployments or localhost)
-    
-    scenarios:
-    - distinct backend: frontend acts as proxy or sends header. 
-      Frontend at school.com -> calls api.lms.com with X-Tenant-Domain: school.lms.com
-    - same domain: school.lms.com/api -> Host header is school.lms.com
-    """
-    # 1. Try explicit custom header first (useful for split deployments)
-    host = request.headers.get("x-tenant-domain")
-    
-    # 2. Fallback to Host header
-    if not host:
-        host = request.headers.get("host", "")
-    
-    host = host.split(":")[0] # Remove port
+    # 1. Resolve host
+    host = request.headers.get("x-tenant-domain") or request.headers.get("host", "")
+    host = host.split(":")[0]
+    subdomain = _extract_subdomain(host)
 
-    # Handle localhost and extract subdomain
-    if "localhost" in host or "127.0.0.1" in host:
-        # localhost or subdomain.localhost
-        parts = host.split(".")
-        if len(parts) > 1:
-            subdomain = parts[0]  # e.g., "yappi" from "yappi.localhost"
-        else:
-            subdomain = "localhost"  # Default for plain "localhost"
-    else:
-        # Production: school.lms.com or dcalms.test
-        parts = host.split(".")
-        if len(parts) >= 2:
-            subdomain = parts[0]  # e.g., "yappi" from "yappi.dcalms.test"
-        else:
-            # Single domain -> use as-is
-            subdomain = host
-    
-    # Query Site by subdomain
+    # 2. Check in-memory cache first
+    cached = _get_cached_site(f"sub:{subdomain}")
+    if cached:
+        return cached
+
+    # 3. Query DB by subdomain
     query = select(Site).where(Site.subdomain == subdomain)
     result = await session.exec(query)
     site = result.first()
     
     if not site:
-        # 4. Fallback: Check custom domain
+        # Fallback: custom domain
+        cached_custom = _get_cached_site(f"dom:{host}")
+        if cached_custom:
+            return cached_custom
         query_custom = select(Site).where(Site.custom_domain == host)
         result_custom = await session.exec(query_custom)
         site = result_custom.first()
+        if site:
+            _cache_site(f"dom:{host}", site)
+            return site
         
     if not site:
-        # 5. Last Fallback: If on root domain or no site found, default to first site
-        # This allows global admin login on the root domain
+        # Last fallback: first site
+        cached_fallback = _get_cached_site("fallback")
+        if cached_fallback:
+            return cached_fallback
         query_fallback = select(Site).order_by(Site.id)
         result_fallback = await session.exec(query_fallback)
         site = result_fallback.first()
+        if site:
+            _cache_site("fallback", site)
         
     if not site:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Site not found for host: {host}"
         )
-        
+
+    _cache_site(f"sub:{subdomain}", site)
     return site

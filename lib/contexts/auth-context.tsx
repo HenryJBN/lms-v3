@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
 import { deleteCookie } from "cookies-next"
 import { authService, type User, type RegisterResponse } from "../services/auth"
 import { usersService, type TokenBalanceResponse } from "../services/users"
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tokenBalance, setTokenBalance] = useState<TokenBalanceResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [accessToken, setAccessToken] = useState<string | null>(null)
+  const initRef = useRef(false) // Guard against React Strict Mode double-init
 
   const isAuthenticated = !!user && !!accessToken
 
@@ -44,33 +45,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken])
 
   useEffect(() => {
+    if (initRef.current) return // Prevent duplicate init in React Strict Mode
+    initRef.current = true
+
     const initializeAuth = async () => {
       try {
-        // Always try to refresh using HTTP-only refresh token on app load
-        // This handles page refresh scenarios where access token in memory is lost
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${API_ENDPOINTS.refreshToken}`,
-            {
-              method: "POST",
-              credentials: "include", // Send HTTP-only cookie
-            }
-          )
-
-          if (response.ok) {
-            const data = await response.json()
-            apiClient.token = data.access_token
-            console.log("Refresh response:", data)
-            // Store access token in memory (state)
-            setAccessToken(data.access_token)
-            await refreshUser()
-            await refreshTokenBalance()
+        // Use apiClient.baseURL so refresh goes to the SAME origin as all other requests
+        // (avoids a second DNS lookup + TCP connection on macOS localhost)
+        const response = await fetch(
+          `${apiClient.baseURL}${API_ENDPOINTS.refreshToken}`,
+          {
+            method: "POST",
+            credentials: "include",
           }
-        } catch (refreshError) {
-          console.log("No valid refresh token available")
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          apiClient.token = data.access_token
+          setAccessToken(data.access_token)
+          // Fetch user profile and token balance in PARALLEL (not sequential)
+          await Promise.all([refreshUser(), refreshTokenBalance()])
         }
       } catch (error) {
-        console.error("Auth initialization failed:", error)
+        console.log("No valid refresh token available")
         setAccessToken(null)
         setUser(null)
       } finally {

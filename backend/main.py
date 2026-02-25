@@ -16,7 +16,7 @@ from routers import (
     progress, certificates, notifications, admin, analytics, sections, assignments,
     system_admin, onboarding, cohorts, admin_email, site
 )
-from middleware.auth import get_current_user
+from middleware.auth import get_current_user, init_admin_site_cache
 from middleware.logging import setup_logging
 
 load_dotenv()
@@ -30,6 +30,8 @@ async def lifespan(app: FastAPI):
     await init_db()
     # Pre-warm database connection pool
     await warmup_connections()
+    # Cache admin site ID for super-admin checks (avoids per-request DB query)
+    await init_admin_site_cache()
     yield
     # Shutdown
     pass
@@ -116,7 +118,7 @@ async def health_check():
 
     # Test Redis connection
     try:
-        if check_redis_connection():
+        if await check_redis_connection():
             health_status["redis"] = "connected"
         else:
             health_status["redis"] = "disconnected"

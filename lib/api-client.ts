@@ -19,34 +19,11 @@ class ApiClient {
     // baseURL is now computed dynamically
   }
 
-  // Dynamically compute the base URL based on the current hostname
-  private get baseURL(): string {
-    if (typeof window === "undefined") {
-      // Server-side: use the configured API URL
-      return API_BASE_URL
-    }
-
-    // Client-side: construct API URL from current hostname
-    const hostname = window.location.hostname
-    const port = window.location.port
-
-    // If we're on a subdomain (e.g., yappi.dcalms.test), use the same subdomain for API
-    // Otherwise, use the configured API_BASE_URL
-    if (hostname.includes(".")) {
-      // Extract the subdomain and base domain
-      const parts = hostname.split(".")
-
-      // For localhost development (e.g., yappi.localhost)
-      if (hostname.includes("localhost")) {
-        return `http://${hostname}:8000`
-      }
-
-      // For custom domains (e.g., yappi.dcalms.test)
-      // Use the same hostname but with port 8000
-      return `http://${hostname}:8000`
-    }
-
-    // Fallback to configured API URL
+  // Base URL for API calls.
+  // Tenant identification is handled via the X-Tenant-Domain header (set in getHeaders),
+  // so we don't need to embed the hostname in the URL. Using the configured API_BASE_URL
+  // (default: 127.0.0.1) avoids slow macOS DNS resolution for custom dev domains.
+  public get baseURL(): string {
     return API_BASE_URL
   }
 

@@ -1,7 +1,7 @@
 """
 Redis client for session management and caching
 """
-import redis
+import redis.asyncio as redis
 import json
 import os
 from typing import Optional, Dict, Any
@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get Redis URL from environment
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
-# Create Redis client
+# Create async Redis client
 redis_client = redis.from_url(
     REDIS_URL,
     decode_responses=True,  # Automatically decode responses to strings
@@ -30,29 +30,15 @@ class RedisSessionManager:
     def __init__(self, client: redis.Redis):
         self.client = client
     
-    def set_session(
+    async def set_session(
         self,
         session_id: str,
         data: Dict[str, Any],
         expiry_seconds: int = 600  # Default 10 minutes
     ) -> bool:
-        """
-        Store session data in Redis with expiration
-        
-        Args:
-            session_id: Unique session identifier
-            data: Session data to store
-            expiry_seconds: Time to live in seconds (default: 600 = 10 minutes)
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
         try:
-            # Serialize data to JSON
             json_data = json.dumps(data)
-            
-            # Store with expiration
-            self.client.setex(
+            await self.client.setex(
                 name=f"session:{session_id}",
                 time=expiry_seconds,
                 value=json_data
@@ -62,138 +48,68 @@ class RedisSessionManager:
             print(f"[Redis] Error setting session {session_id}: {e}")
             return False
     
-    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve session data from Redis
-        
-        Args:
-            session_id: Unique session identifier
-        
-        Returns:
-            dict: Session data if found, None otherwise
-        """
+    async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         try:
-            # Get data from Redis
-            json_data = self.client.get(f"session:{session_id}")
-            
+            json_data = await self.client.get(f"session:{session_id}")
             if json_data is None:
                 return None
-            
-            # Deserialize JSON
             return json.loads(json_data)
         except Exception as e:
             print(f"[Redis] Error getting session {session_id}: {e}")
             return None
     
-    def delete_session(self, session_id: str) -> bool:
-        """
-        Delete session from Redis
-        
-        Args:
-            session_id: Unique session identifier
-        
-        Returns:
-            bool: True if deleted, False otherwise
-        """
+    async def delete_session(self, session_id: str) -> bool:
         try:
-            result = self.client.delete(f"session:{session_id}")
+            result = await self.client.delete(f"session:{session_id}")
             return result > 0
         except Exception as e:
             print(f"[Redis] Error deleting session {session_id}: {e}")
             return False
     
-    def update_session(
+    async def update_session(
         self,
         session_id: str,
         data: Dict[str, Any],
         keep_ttl: bool = True
     ) -> bool:
-        """
-        Update session data while preserving TTL
-        
-        Args:
-            session_id: Unique session identifier
-            data: New session data
-            keep_ttl: Whether to preserve existing TTL (default: True)
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
         try:
             key = f"session:{session_id}"
-            
             if keep_ttl:
-                # Get remaining TTL
-                ttl = self.client.ttl(key)
+                ttl = await self.client.ttl(key)
                 if ttl <= 0:
-                    # Session expired or doesn't exist
                     return False
-                
-                # Update with same TTL
                 json_data = json.dumps(data)
-                self.client.setex(name=key, time=ttl, value=json_data)
+                await self.client.setex(name=key, time=ttl, value=json_data)
             else:
-                # Update without TTL (will persist)
                 json_data = json.dumps(data)
-                self.client.set(key, json_data)
-            
+                await self.client.set(key, json_data)
             return True
         except Exception as e:
             print(f"[Redis] Error updating session {session_id}: {e}")
             return False
     
-    def session_exists(self, session_id: str) -> bool:
-        """
-        Check if session exists in Redis
-        
-        Args:
-            session_id: Unique session identifier
-        
-        Returns:
-            bool: True if exists, False otherwise
-        """
+    async def session_exists(self, session_id: str) -> bool:
         try:
-            return self.client.exists(f"session:{session_id}") > 0
+            return await self.client.exists(f"session:{session_id}") > 0
         except Exception as e:
             print(f"[Redis] Error checking session {session_id}: {e}")
             return False
     
-    def get_session_ttl(self, session_id: str) -> int:
-        """
-        Get remaining time to live for session
-        
-        Args:
-            session_id: Unique session identifier
-        
-        Returns:
-            int: Remaining seconds (-1 if no expiry, -2 if doesn't exist)
-        """
+    async def get_session_ttl(self, session_id: str) -> int:
         try:
-            return self.client.ttl(f"session:{session_id}")
+            return await self.client.ttl(f"session:{session_id}")
         except Exception as e:
             print(f"[Redis] Error getting TTL for session {session_id}: {e}")
             return -2
     
-    def extend_session(self, session_id: str, additional_seconds: int) -> bool:
-        """
-        Extend session expiration time
-        
-        Args:
-            session_id: Unique session identifier
-            additional_seconds: Seconds to add to current TTL
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
+    async def extend_session(self, session_id: str, additional_seconds: int) -> bool:
         try:
             key = f"session:{session_id}"
-            current_ttl = self.client.ttl(key)
-            
+            current_ttl = await self.client.ttl(key)
             if current_ttl <= 0:
                 return False
-            
             new_ttl = current_ttl + additional_seconds
-            self.client.expire(key, new_ttl)
+            await self.client.expire(key, new_ttl)
             return True
         except Exception as e:
             print(f"[Redis] Error extending session {session_id}: {e}")
@@ -203,7 +119,7 @@ class RedisSessionManager:
 class TwoFactorSessionManager(RedisSessionManager):
     """Specialized manager for 2FA sessions"""
     
-    def create_2fa_session(
+    async def create_2fa_session(
         self,
         session_id: str,
         user_id: str,
@@ -211,75 +127,33 @@ class TwoFactorSessionManager(RedisSessionManager):
         code: str,
         expiry_minutes: int = 10
     ) -> bool:
-        """
-        Create a 2FA session
-        
-        Args:
-            session_id: Unique session identifier
-            user_id: User ID
-            email: User email
-            code: 6-digit authentication code
-            expiry_minutes: Session expiration in minutes (default: 10)
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
         data = {
             'user_id': user_id,
             'email': email,
             'code': code,
             'verified': False,
-            'created_at': str(timedelta(seconds=0))  # Will be replaced by Redis timestamp
+            'created_at': str(timedelta(seconds=0))
         }
-        
-        return self.set_session(
+        return await self.set_session(
             session_id=session_id,
             data=data,
             expiry_seconds=expiry_minutes * 60
         )
     
-    def verify_2fa_code(self, session_id: str, code: str) -> Optional[Dict[str, Any]]:
-        """
-        Verify 2FA code and return session data if valid
-        
-        Args:
-            session_id: Unique session identifier
-            code: 6-digit code to verify
-        
-        Returns:
-            dict: Session data if code is valid, None otherwise
-        """
-        session = self.get_session(session_id)
-        
+    async def verify_2fa_code(self, session_id: str, code: str) -> Optional[Dict[str, Any]]:
+        session = await self.get_session(session_id)
         if session is None:
-            print(f"[2FA] Session {session_id} not found or expired")
             return None
-        
         if session.get('code') != code:
-            print(f"[2FA] Invalid code for session {session_id}")
             return None
-        
         if session.get('verified'):
-            print(f"[2FA] Session {session_id} already verified")
             return None
-        
-        # Mark as verified
         session['verified'] = True
-        self.update_session(session_id, session)
-        
+        await self.update_session(session_id, session)
         return session
     
-    def invalidate_2fa_session(self, session_id: str) -> bool:
-        """
-        Invalidate (delete) a 2FA session
-        
-        Args:
-            session_id: Unique session identifier
-        
-        Returns:
-            bool: True if deleted, False otherwise
-        """
-        return self.delete_session(session_id)
+    async def invalidate_2fa_session(self, session_id: str) -> bool:
+        return await self.delete_session(session_id)
 
 
 # Initialize managers
@@ -288,15 +162,9 @@ two_fa_manager = TwoFactorSessionManager(redis_client)
 
 
 # Health check function
-def check_redis_connection() -> bool:
-    """
-    Check if Redis is connected and responsive
-    
-    Returns:
-        bool: True if connected, False otherwise
-    """
+async def check_redis_connection() -> bool:
     try:
-        return redis_client.ping()
+        return await redis_client.ping()
     except Exception as e:
         print(f"[Redis] Connection check failed: {e}")
         return False
@@ -306,39 +174,35 @@ def check_redis_connection() -> bool:
 class CacheManager:
     """Manager for caching API responses"""
     
-    def __init__(self, client: redis.Redis):
+    def __init__(self, client):
         self.client = client
     
-    def get(self, key: str) -> Optional[str]:
-        """Get cached value by key"""
+    async def get(self, key: str) -> Optional[str]:
         try:
-            return self.client.get(f"cache:{key}")
+            return await self.client.get(f"cache:{key}")
         except Exception as e:
             print(f"[Cache] Error getting key {key}: {e}")
             return None
     
-    def set(self, key: str, value: str, expiry_seconds: int = 300) -> bool:
-        """Set cached value with expiration"""
+    async def set(self, key: str, value: str, expiry_seconds: int = 300) -> bool:
         try:
-            self.client.setex(f"cache:{key}", expiry_seconds, value)
+            await self.client.setex(f"cache:{key}", expiry_seconds, value)
             return True
         except Exception as e:
             print(f"[Cache] Error setting key {key}: {e}")
             return False
     
-    def delete(self, key: str) -> bool:
-        """Delete cached value"""
+    async def delete(self, key: str) -> bool:
         try:
-            self.client.delete(f"cache:{key}")
+            await self.client.delete(f"cache:{key}")
             return True
         except Exception as e:
             print(f"[Cache] Error deleting key {key}: {e}")
             return False
     
-    def get_json(self, key: str) -> Optional[Dict[str, Any]]:
-        """Get cached JSON value"""
+    async def get_json(self, key: str) -> Optional[Dict[str, Any]]:
         try:
-            data = self.get(key)
+            data = await self.get(key)
             if data:
                 return json.loads(data)
             return None
@@ -346,11 +210,10 @@ class CacheManager:
             print(f"[Cache] Error getting JSON key {key}: {e}")
             return None
     
-    def set_json(self, key: str, value: Dict[str, Any], expiry_seconds: int = 300) -> bool:
-        """Set cached JSON value"""
+    async def set_json(self, key: str, value: Dict[str, Any], expiry_seconds: int = 300) -> bool:
         try:
             json_data = json.dumps(value)
-            return self.set(key, json_data, expiry_seconds)
+            return await self.set(key, json_data, expiry_seconds)
         except Exception as e:
             print(f"[Cache] Error setting JSON key {key}: {e}")
             return False

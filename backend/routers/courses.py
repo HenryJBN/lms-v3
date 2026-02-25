@@ -168,7 +168,7 @@ async def get_global_featured_courses(
 ):
     # Check cache first (cache for 5 minutes)
     cache_key = "global_featured_courses"
-    cached = cache_manager.get_json(cache_key)
+    cached = await cache_manager.get_json(cache_key)
     if cached:
         return [CourseResponse(**item) for item in cached]
     
@@ -193,7 +193,7 @@ async def get_global_featured_courses(
     
     # Cache the result for 5 minutes (300 seconds)
     cache_data = [item.model_dump() for item in items]
-    cache_manager.set_json(cache_key, cache_data, 300)
+    await cache_manager.set_json(cache_key, cache_data, 300)
     
     return items
 

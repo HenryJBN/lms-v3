@@ -4,6 +4,7 @@ from jose import JWTError, jwt, ExpiredSignatureError
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import uuid
 import os
 from dotenv import load_dotenv
 from sqlmodel import select
@@ -23,6 +24,23 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 security = HTTPBearer()
+
+# Cached admin site ID — resolved once at startup via init_admin_site_cache()
+_admin_site_id: Optional[uuid.UUID] = None
+
+
+async def init_admin_site_cache():
+    """Resolve the admin site ID once and cache it. Called during app lifespan startup."""
+    global _admin_site_id
+    from database.session import async_session_factory
+    async with async_session_factory() as session:
+        result = await session.exec(select(Site).where(Site.subdomain == "admin"))
+        admin_site = result.first()
+        if admin_site:
+            _admin_site_id = admin_site.id
+            print(f"✅ Admin site ID cached: {_admin_site_id}")
+        else:
+            print("⚠️  No admin site found — super admin bypass disabled")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash using bcrypt directly"""
@@ -104,14 +122,12 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
         
-    # Super Admin Bypass: If user is from the 'admin' site, allow access to any site
-    # This enables platform-wide impersonation
-    is_super_admin = False
-    query_admin_site = select(Site).where(Site.subdomain == "admin")
-    admin_site = (await session.exec(query_admin_site)).first()
-    
-    if admin_site and str(user.site_id) == str(admin_site.id) and user.role == UserRole.admin:
-        is_super_admin = True
+    # Super Admin Bypass: uses cached admin site ID (no DB query per request)
+    is_super_admin = (
+        _admin_site_id is not None
+        and user.site_id == _admin_site_id
+        and user.role == UserRole.admin
+    )
 
     if not is_super_admin and str(user.site_id) != str(current_site.id):
         raise HTTPException(
@@ -150,24 +166,16 @@ async def require_instructor_or_admin(current_user: User = Depends(get_current_a
 
 async def require_super_admin(
     current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session)
 ):
     """
     Require Super Admin status.
-    A Super Admin is an admin belonging to the default/system site.
+    Uses cached admin site ID — no DB query needed.
     """
-    # Find the root site (subdomain='admin' or first site created)
-    query = select(Site).where(Site.subdomain == "admin")
-    result = await session.exec(query)
-    root_site = result.first()
-    
-    if not root_site:
-        # Fallback to first site if 'admin' doesn't exist yet
-        query = select(Site).order_by(Site.created_at)
-        result = await session.exec(query)
-        root_site = result.first()
-        
-    if not root_site or str(current_user.site_id) != str(root_site.id) or current_user.role != UserRole.admin:
+    if (
+        _admin_site_id is None
+        or current_user.site_id != _admin_site_id
+        or current_user.role != UserRole.admin
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super Admin access required"

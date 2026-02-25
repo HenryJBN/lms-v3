@@ -114,8 +114,7 @@ export default function LessonsManagement() {
       if (searchTerm.trim()) params.append("search", searchTerm.trim())
       const response: { items: any[] } = await apiClient.get(`/api/lessons?${params.toString()}`)
       return (response.items || []).map((lesson: any) => {
-        console.log(lesson,'lesson')
-        
+              
         return {
           ...lesson,
         };
@@ -123,8 +122,6 @@ export default function LessonsManagement() {
     },
   })
   const lessons = lessonsData ?? []
-
-  console.log(lessons, 'lezzzz')
 
   // Fetch sections for a specific course (on-demand, not useQuery)
   const fetchSectionsForCourse = async (courseId: string) => {
