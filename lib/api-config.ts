@@ -1,6 +1,57 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
+// Check if we're in development mode
+export const IS_DEVELOPMENT = process.env.NODE_ENV === "development"
+
 export const REQUEST_TIMEOUT = 30000
+
+/**
+ * Convert a video URL to use the streaming endpoint in development mode.
+ * In production, videos are served directly from S3/CDN which supports Range requests natively.
+ * 
+ * @param videoUrl - The original video URL
+ * @returns The streaming URL for development, or original URL for production
+ */
+export function getVideoStreamUrl(videoUrl: string | null | undefined): string | null {
+  if (!videoUrl) return null
+  
+  // In production, return the original URL (S3/CDN handles Range requests)
+  if (!IS_DEVELOPMENT) return videoUrl
+  
+  // In development, convert to streaming endpoint
+  // Handle both full URLs and relative paths
+  if (videoUrl.includes('/uploads/')) {
+    // Extract the path after /uploads/
+    const uploadsIndex = videoUrl.indexOf('/uploads/')
+    const relativePath = videoUrl.substring(uploadsIndex + 9) // Remove '/uploads/'
+    return `${API_BASE_URL}/api/videos/stream/${relativePath}`
+  }
+  
+  // If it's already a relative path or different format, return as-is
+  return videoUrl
+}
+
+/**
+ * Convert an HLS playlist URL for development mode.
+ * 
+ * @param hlsUrl - The original HLS URL
+ * @returns The HLS streaming URL for development, or original URL for production
+ */
+export function getHlsStreamUrl(hlsUrl: string | null | undefined): string | null {
+  if (!hlsUrl) return null
+  
+  // In production, return the original URL (S3/CDN serves HLS files)
+  if (!IS_DEVELOPMENT) return hlsUrl
+  
+  // In development, convert to HLS endpoint
+  if (hlsUrl.includes('/uploads/')) {
+    const uploadsIndex = hlsUrl.indexOf('/uploads/')
+    const relativePath = hlsUrl.substring(uploadsIndex + 9)
+    return `${API_BASE_URL}/api/videos/hls/${relativePath}`
+  }
+  
+  return hlsUrl
+}
 
 export const COOKIE_NAMES = {
   userId: "user_id",

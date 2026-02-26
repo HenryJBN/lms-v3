@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, RotateCcw, RotateCw, Settings } from "lucide-react"
+import { getVideoStreamUrl } from "@/lib/api-config"
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -43,9 +44,23 @@ export default function VideoPlayer({
   const [showControls, setShowControls] = useState(true)
   const [hasWatched85Percent, setHasWatched85Percent] = useState(isCompleted)
   const [playbackRate, setPlaybackRate] = useState(1)
-  const [isDragging, setIsDragging] = useState(false)
+  // Use ref for isDragging to prevent useEffect re-runs during seek operations
+  const isDraggingRef = useRef(false)
+  const hasWatched85PercentRef = useRef(isCompleted)
+  // Use ref for onComplete callback to prevent useEffect re-runs when parent re-renders
+  const onCompleteRef = useRef(onComplete)
+  // Track intended seek position for rapid button presses
+  const intendedTimeRef = useRef(0)
+  // Track if we're currently seeking (to protect loadedmetadata handler)
+  const isSeekingRef = useRef(false)
+  
+  // Keep the ref updated with the latest callback
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   // Consolidate initialization and event handlers
+  // Note: Using refs for isDragging, hasWatched85Percent, and onComplete to prevent event listener re-registration
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -57,49 +72,86 @@ export default function VideoPlayer({
 
     const handleTimeUpdate = () => {
       if (!video.duration || !isFinite(video.duration)) return
-      if (!isDragging) {
+      // Use ref to check dragging state without triggering re-renders
+      if (!isDraggingRef.current && !isSeekingRef.current) {
         setCurrentTime(video.currentTime)
         setProgress((video.currentTime / video.duration) * 100)
+        // Update intended time ref when playback progresses normally
+        intendedTimeRef.current = video.currentTime
       }
-      if (!hasWatched85Percent && video.currentTime / video.duration >= 0.85) {
+      // Use ref to track completion without triggering re-renders
+      // Use ref for callback to avoid dependency issues
+      if (!hasWatched85PercentRef.current && video.currentTime / video.duration >= 0.85) {
+        hasWatched85PercentRef.current = true
         setHasWatched85Percent(true)
-        onComplete()
+        onCompleteRef.current()
       }
     }
 
     const handleLoadedMetadata = () => {
+      // Don't interfere during active seeking
+      if (isSeekingRef.current) return
+      
       if (video.duration && isFinite(video.duration)) {
         setDuration(video.duration)
         video.playbackRate = initialRate
-        if (initialTime > 0 && video.currentTime === 0) {
+        // Only set initial time once at the beginning
+        if (initialTime > 0 && video.currentTime === 0 && !isSeekingRef.current) {
           video.currentTime = Math.min(initialTime, video.duration)
           setCurrentTime(video.currentTime)
           setProgress((video.currentTime / video.duration) * 100)
+          intendedTimeRef.current = video.currentTime
         }
+      }
+    }
+
+    const handleSeeking = () => {
+      // Seeking has started
+      isSeekingRef.current = true
+      isDraggingRef.current = true
+    }
+
+    const handleSeeked = () => {
+      // Seeking has completed
+      isSeekingRef.current = false
+      isDraggingRef.current = false
+      // Sync state with actual video position after seek completes
+      if (video.duration && isFinite(video.duration)) {
+        setCurrentTime(video.currentTime)
+        setProgress((video.currentTime / video.duration) * 100)
+        intendedTimeRef.current = video.currentTime
       }
     }
 
     const handleEnded = () => {
       setIsPlaying(false)
-      if (!hasWatched85Percent) {
+      if (!hasWatched85PercentRef.current) {
+        hasWatched85PercentRef.current = true
         setHasWatched85Percent(true)
-        onComplete()
+        onCompleteRef.current()
       }
     }
 
     video.addEventListener("timeupdate", handleTimeUpdate)
     video.addEventListener("loadedmetadata", handleLoadedMetadata)
+    video.addEventListener("seeking", handleSeeking)
+    video.addEventListener("seeked", handleSeeked)
     video.addEventListener("ended", handleEnded)
 
-    // Handle initial state if video is already ready
-    if (video.readyState >= 1) handleLoadedMetadata()
+    // Only call handleLoadedMetadata if video is already ready AND we need to set initial time
+    // This prevents interfering with ongoing playback/seeking
+    if (video.readyState >= 1 && initialTime > 0 && !isSeekingRef.current) {
+      handleLoadedMetadata()
+    }
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate)
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
+      video.removeEventListener("seeking", handleSeeking)
+      video.removeEventListener("seeked", handleSeeked)
       video.removeEventListener("ended", handleEnded)
     }
-  }, [initialPlaybackRate, initialTime, onComplete, isDragging, hasWatched85Percent])
+  }, [initialPlaybackRate, initialTime]) // Removed onComplete from deps - now using ref
 
   // Periodic progress tracking
   useEffect(() => {
@@ -175,7 +227,8 @@ export default function VideoPlayer({
       return
     }
 
-    setIsDragging(true)
+    // Set dragging state using ref to prevent useEffect re-runs
+    isDraggingRef.current = true
     const newTime = (value[0] / 100) * video.duration
     setProgress(value[0])
     setCurrentTime(newTime)
@@ -187,18 +240,22 @@ export default function VideoPlayer({
 
     // Guard against invalid duration
     if (!Number.isFinite(video.duration) || video.duration <= 0) {
-      setIsDragging(false)
+      isDraggingRef.current = false
       return
     }
 
-    setIsDragging(false)
     const newTime = (value[0] / 100) * video.duration
     
     // Ensure newTime is valid before setting
     if (Number.isFinite(newTime)) {
-        video.currentTime = newTime
-        setCurrentTime(newTime)
-        setProgress(value[0])
+      // Update intended time ref
+      intendedTimeRef.current = newTime
+      
+      // Set the video time - this is async
+      video.currentTime = newTime
+      // UI is already updated during seek change, but ensure final value
+      setCurrentTime(newTime)
+      setProgress(value[0])
     }
   }
 
@@ -210,13 +267,23 @@ export default function VideoPlayer({
         return
     }
 
-    const newTime = video.currentTime + seconds
+    // Use intendedTimeRef for accumulation during rapid button presses
+    // This ensures we accumulate from the last intended position, not the current video.currentTime
+    // (which might be outdated during an active seek)
+    const baseTime = isSeekingRef.current ? intendedTimeRef.current : video.currentTime
+    const newTime = baseTime + seconds
     // Clamp time between 0 and duration
     const clampedTime = Math.max(0, Math.min(newTime, video.duration))
     
-    video.currentTime = clampedTime
+    // Update intended time ref
+    intendedTimeRef.current = clampedTime
+    
+    // Update UI immediately for responsive feedback
     setCurrentTime(clampedTime)
     setProgress((clampedTime / video.duration) * 100)
+    
+    // Set the video time - this is async
+    video.currentTime = clampedTime
 
     // Notify parent immediately on skip
     if (onTimeUpdate) {
@@ -318,6 +385,9 @@ export default function VideoPlayer({
   const embedUrl = getYouTubeEmbedUrl(videoUrl)
   const isYouTube = embedUrl.includes("youtube.com/embed/")
 
+  // Convert video URL to streaming URL for development
+  const streamUrl = getVideoStreamUrl(videoUrl)
+
   if (isYouTube) {
     return (
       <div className="relative aspect-video rounded-md overflow-hidden bg-black">
@@ -347,7 +417,7 @@ export default function VideoPlayer({
     >
       <video
         ref={videoRef}
-        src={videoUrl}
+        src={streamUrl || undefined}
         className="w-full h-full"
         onClick={togglePlay}
         playsInline
