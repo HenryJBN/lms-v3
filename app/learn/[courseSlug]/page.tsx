@@ -170,15 +170,38 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
   // Handle target lesson index when lessonParam changes or rawLessons load
   useEffect(() => {
-    if (!course || !lessonParam) return
+    if (!course || !userProgress) return
 
-    const targetIndex = course.lessons.findIndex((l: any) => l.id === lessonParam)
-    if (targetIndex !== -1 && targetIndex !== currentLessonIndex) {
-      setCurrentLessonIndex(targetIndex)
-      setShowQuiz(false)
-      setVideoCompleted(userProgress?.completedLessons?.includes(course.lessons[targetIndex].id) || false)
+    // If lessonParam is provided, navigate to that specific lesson
+    if (lessonParam) {
+      const targetIndex = course.lessons.findIndex((l: any) => l.id === lessonParam)
+      if (targetIndex !== -1 && targetIndex !== currentLessonIndex) {
+        setCurrentLessonIndex(targetIndex)
+        setShowQuiz(false)
+        setVideoCompleted(userProgress.completedLessons?.includes(course.lessons[targetIndex].id) || false)
+      }
+    } else {
+      // No lessonParam - find the first lesson that hasn't been completed (not_started)
+      const completedLessons = userProgress.completedLessons || []
+      const firstIncompleteIndex = course.lessons.findIndex(
+        (lesson: any) => !completedLessons.includes(lesson.id)
+      )
+      
+      // If there's an incomplete lesson, navigate to it; otherwise go to first lesson
+      const targetIndex = firstIncompleteIndex !== -1 ? firstIncompleteIndex : 0
+      
+      if (targetIndex !== currentLessonIndex) {
+        setCurrentLessonIndex(targetIndex)
+        setShowQuiz(false)
+        setVideoCompleted(completedLessons.includes(course.lessons[targetIndex].id) || false)
+        
+        // Update URL to reflect the current lesson
+        const targetLesson = course.lessons[targetIndex]
+        const url = `/learn/${courseSlug}?lesson=${targetLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
+        router.replace(url)
+      }
     }
-  }, [lessonParam, course, userProgress, currentLessonIndex])
+  }, [lessonParam, course, userProgress, currentLessonIndex, cohortId, courseSlug, router])
 
   // Initial redirect if no lessons or invalid slug (handled by query success/error later if needed)
   useEffect(() => {
@@ -410,7 +433,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                     <Button
                       variant="outline"
                       onClick={() => navigateToLesson(currentLessonIndex - 1)}
-                      disabled={currentLessonIndex === 0}
+                      disabled={!previousLesson}
                     >
                       <ChevronLeft className="mr-2 h-4 w-4" />
                       Previous Lesson
@@ -418,11 +441,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
 
                     <Button
                       onClick={() => navigateToLesson(currentLessonIndex + 1)}
-                      disabled={
-                        !canNavigateToNext ||
-                        (currentLesson.hasQuiz && !isQuizCompleted) ||
-                        !videoCompleted
-                      }
+                      disabled={!nextLesson}
                     >
                       Next Lesson
                       <ChevronRight className="ml-2 h-4 w-4" />
