@@ -106,7 +106,7 @@ class AuthService {
       return await apiClient.post<T>(endpoint, data)
     } catch (error: any) {
       console.error(`Error on ${endpoint}:`, error?.response?.data || error)
-      throw new Error(error || error?.response?.data || "Something went wrong. Please try again.")
+      throw new Error(error?.message || error?.response?.data?.detail || "Something went wrong. Please try again.")
     }
   }
 

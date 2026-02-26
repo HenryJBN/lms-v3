@@ -214,8 +214,12 @@ async def refresh_token_endpoint(request: Request, response: Response):
     }
 
 @router.post("/logout")
-async def logout(response: Response):
-    response.delete_cookie(key="refresh_token", path="/api/auth")
+async def logout(request: Request, response: Response):
+    response.delete_cookie(
+        key="refresh_token", 
+        path="/api/auth",
+        domain=".dcalms.test" if "dcalms.test" in request.url.hostname else None
+    )
     return {"message": "Logged out successfully"}
 
 @router.post("/forgot-password")

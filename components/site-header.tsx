@@ -64,7 +64,12 @@ export default function SiteHeader() {
 
   const handleLogout = () => {
     logout()
-    router.push("/")
+    // Redirect tenant users to login page, global users to home
+    if (isGlobal) {
+      router.push("/")
+    } else {
+      router.push("/login")
+    }
   }
 
   const getUserInitials = () => {
@@ -78,20 +83,37 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-6">
-          <Link href="/" className="flex items-center space-x-2">
-            {theme?.logo_url ? (
-              <Image
-                src={theme.logo_url}
-                alt={theme.site_name || "Logo"}
-                width={32}
-                height={32}
-                className="h-8 w-auto object-contain"
-              />
-            ) : (
-              <GraduationCap className="h-6 w-6" />
-            )}
-            <span className="font-bold">{theme?.site_name || "DCA LMS"}</span>
-          </Link>
+          {isGlobal ? (
+            <Link href="/" className="flex items-center space-x-2">
+              {theme?.logo_url ? (
+                <Image
+                  src={theme.logo_url}
+                  alt={theme.site_name || "Logo"}
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <GraduationCap className="h-6 w-6" />
+              )}
+              <span className="font-bold">{theme?.site_name || "DCA LMS"}</span>
+            </Link>
+          ) : (
+            <span className="flex items-center space-x-2 cursor-default">
+              {theme?.logo_url ? (
+                <Image
+                  src={theme.logo_url}
+                  alt={theme.site_name || "Logo"}
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <GraduationCap className="h-6 w-6" />
+              )}
+              <span className="font-bold">{theme?.site_name || "DCA LMS"}</span>
+            </span>
+          )}
 
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>

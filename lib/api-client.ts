@@ -114,8 +114,18 @@ class ApiClient {
       const response = await fetch(url, config)
       clearTimeout(timeoutId)
 
-      // Handle 401 - Try to refresh token
+      // Handle 401 - Try to refresh token (but NOT for login/register endpoints)
       if (response.status === 401) {
+        // For auth endpoints like login/register, just throw the original error
+        if (endpoint.includes('/login') || endpoint.includes('/register')) {
+          const error = await response.json().catch(() => ({}))
+          throw new ApiError(
+            response.status,
+            error.detail || error.message || "Authentication failed",
+            error
+          )
+        }
+        
         const refreshed = await this.refreshAccessToken()
         if (refreshed) {
           // Retry the request with new token
