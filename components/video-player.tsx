@@ -136,7 +136,7 @@ export default function VideoPlayer({
       console.log('[VideoPlayer] Using native video (MP4)')
       setUseHls(false)
       const streamUrl = getVideoStreamUrl(videoUrl)
-      video.src = streamUrl
+      video.src = streamUrl || ""
     }
   }, [videoUrl, hlsUrl])
 
@@ -469,7 +469,7 @@ export default function VideoPlayer({
                     {qualityLabel}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" portal={false}>
                   <DropdownMenuLabel>Quality</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => handleQualityChange(-1)}>
@@ -491,7 +491,7 @@ export default function VideoPlayer({
                   {playbackRate}x
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" portal={false}>
                 <DropdownMenuLabel>Speed</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {playbackSpeeds.map((speed) => (
