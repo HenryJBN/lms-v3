@@ -15,7 +15,7 @@ celery_app = Celery(
     "dca_lms",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['tasks.email_tasks']  # Import task modules
+    include=['tasks.email_tasks', 'tasks.video_tasks']  # Import task modules
 )
 
 # Celery configuration
@@ -47,7 +47,7 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,
 
     # Task autodiscovery
-    imports=['tasks.email_tasks'],  # Explicitly import task modules
+    imports=['tasks.email_tasks', 'tasks.video_tasks'],  # Explicitly import task modules
 
     # Beat schedule (for periodic tasks)
     beat_schedule={

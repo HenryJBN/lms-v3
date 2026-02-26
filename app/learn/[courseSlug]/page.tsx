@@ -73,6 +73,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       title: lesson.title,
       description: lesson.description || lesson.content || "",
       videoUrl: lesson.video_url || "",
+      hlsUrl: lesson.resources?.hls_url || null,
       duration: formatDuration(lesson.estimated_duration || lesson.video_duration || 0),
       hasQuiz: lesson.has_quiz || false,
       prerequisites: lesson.prerequisites || [],
@@ -423,6 +424,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                     <VideoPlayer
                       key={currentLesson.id}
                       videoUrl={currentLesson.videoUrl}
+                      hlsUrl={currentLesson.hlsUrl}
                       onComplete={handleVideoComplete}
                       isCompleted={isLessonCompleted}
                       initialPlaybackRate={savedPlaybackRate}

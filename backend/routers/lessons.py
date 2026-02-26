@@ -25,9 +25,88 @@ from schemas.lesson import (
 )
 from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, require_instructor_or_admin
-from utils.file_upload import upload_video, upload_image, upload_file
+from utils.file_upload import upload_video, upload_image, upload_file, FILE_UPLOAD_PROVIDER
 
 router = APIRouter()
+
+
+async def check_and_trigger_video_transcoding(
+    lesson_id: uuid.UUID,
+    video_url: Optional[str],
+    session: AsyncSession
+):
+    """
+    Check if a lesson's video needs transcoding and trigger it if needed.
+    
+    This is called after lesson creation or update to automatically
+    generate HLS files for video lessons.
+    """
+    if not video_url:
+        return
+    
+    # Get the lesson to check current HLS status
+    query = select(Lesson).where(Lesson.id == lesson_id)
+    result = await session.exec(query)
+    lesson = result.first()
+    
+    if not lesson:
+        return
+    
+    # Check if HLS already exists
+    resources = lesson.resources or {}
+    if resources.get('hls_url'):
+        print(f"[Lesson Transcode] Lesson {lesson_id} already has HLS, skipping")
+        return
+    
+    # Check if video is a valid video file (not YouTube, not audio, etc.)
+    video_extensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv']
+    is_video_file = any(video_url.lower().endswith(ext) for ext in video_extensions)
+    
+    if not is_video_file:
+        print(f"[Lesson Transcode] URL is not a video file: {video_url}")
+        return
+    
+    # Extract the video path from URL
+    # URL format: http://localhost:8000/uploads/temp/20260214/uuid.mp4
+    # We need: temp/20260214/uuid.mp4
+    try:
+        from tasks.video_tasks import trigger_video_transcoding
+        
+        # Parse the video path from URL
+        if '/uploads/' in video_url:
+            video_path = video_url.split('/uploads/')[-1]
+        else:
+            # Already a relative path
+            video_path = video_url.lstrip('/')
+        
+        # Extract video_id from filename (without extension)
+        filename = os.path.basename(video_path)
+        video_id = os.path.splitext(filename)[0]
+        
+        print(f"[Lesson Transcode] Triggering transcoding for lesson {lesson_id}")
+        print(f"[Lesson Transcode] Video path: {video_path}")
+        print(f"[Lesson Transcode] Video ID: {video_id}")
+        
+        # Trigger transcoding task
+        task_id = trigger_video_transcoding(
+            video_path=video_path,
+            video_id=video_id,
+            lesson_id=str(lesson_id),
+            provider=FILE_UPLOAD_PROVIDER
+        )
+        
+        # Update lesson resources with task ID and status
+        resources['transcoding_task_id'] = task_id
+        resources['video_status'] = 'processing'
+        lesson.resources = resources
+        session.add(lesson)
+        await session.commit()
+        
+        print(f"[Lesson Transcode] Triggered task: {task_id}")
+        
+    except Exception as e:
+        print(f"[Lesson Transcode] Error triggering transcoding: {e}")
+        # Don't fail the request, just log the error
 
 @router.get("/", response_model=PaginatedResponse)
 async def get_all_lessons(
@@ -361,6 +440,9 @@ async def create_lesson(
         if new_lesson.is_published:
             await recalculate_course_progress_all_users(lesson_in.course_id, session, current_site.id)
 
+        # Auto-transcode video if lesson has video_url
+        await check_and_trigger_video_transcoding(new_lesson.id, new_lesson.video_url, session)
+
         return new_lesson
     except Exception as e:
         if "unique constraint" in str(e).lower() and "slug" in str(e).lower():
@@ -434,6 +516,10 @@ async def update_lesson(
     # Recalculate progress for all enrolled users if publish status changed
     if publish_changed:
         await recalculate_course_progress_all_users(lesson.course_id, session, current_site.id)
+    
+    # Auto-transcode video if video_url was updated or changed
+    if 'video_url' in update_data:
+        await check_and_trigger_video_transcoding(lesson.id, lesson.video_url, session)
     
     return lesson
 
@@ -528,15 +614,37 @@ async def upload_lesson_video(
     
     # Upload video file
     try:
-        video_url = await upload_video(file, f"lessons/{lesson_id}")
+        video_result = await upload_video(file, f"lessons/{lesson_id}")
         
-        # Update lesson with video URL
-        lesson.video_url = video_url
+        # Extract just the URL string from the upload result
+        video_url_str = video_result.get("url") or video_result.get("filename")
+        
+        # Store metadata in resources JSON field
+        resources = lesson.resources or {}
+        resources["video_metadata"] = {
+            "filename": video_result.get("filename"),
+            "original_filename": video_result.get("original_filename"),
+            "size": video_result.get("size"),
+            "duration": video_result.get("duration"),
+            "width": video_result.get("width"),
+            "height": video_result.get("height"),
+            "codec": video_result.get("codec"),
+            "bitrate": video_result.get("bitrate"),
+            "transcoding_task_id": video_result.get("transcoding_task_id"),
+            "video_status": video_result.get("video_status")
+        }
+        
+        # Update lesson with video URL string and metadata
+        lesson.video_url = video_url_str
+        lesson.resources = resources
         lesson.updated_at = datetime.utcnow()
         session.add(lesson)
         await session.commit()
         
-        return {"video_url": video_url, "message": "Video uploaded successfully"}
+        # Trigger transcoding for the uploaded video
+        await check_and_trigger_video_transcoding(lesson_id, video_url_str, session)
+        
+        return {"video_url": video_url_str, "message": "Video uploaded successfully", "metadata": resources["video_metadata"]}
         
     except Exception as e:
         raise HTTPException(
@@ -596,13 +704,27 @@ async def upload_lesson_audio(
     try:
         audio_result = await upload_file(file, f"lessons/{lesson_id}/audio")
 
-        # Update lesson with audio URL
-        lesson.video_url = audio_result["url"]
+        # Extract just the URL string from the upload result
+        audio_url_str = audio_result.get("url") or audio_result.get("filename")
+
+        # Store metadata in resources JSON field
+        resources = lesson.resources or {}
+        resources["audio_metadata"] = {
+            "filename": audio_result.get("filename"),
+            "original_filename": audio_result.get("original_filename"),
+            "size": audio_result.get("size"),
+            "content_type": audio_result.get("content_type"),
+            "uploaded_at": audio_result.get("uploaded_at")
+        }
+
+        # Update lesson with audio URL string and metadata
+        lesson.video_url = audio_url_str
+        lesson.resources = resources
         lesson.updated_at = datetime.utcnow()
         session.add(lesson)
         await session.commit()
 
-        return {"audio_url": audio_result["url"], "message": "Audio uploaded successfully"}
+        return {"audio_url": audio_url_str, "message": "Audio uploaded successfully", "metadata": resources["audio_metadata"]}
 
     except Exception as e:
         raise HTTPException(

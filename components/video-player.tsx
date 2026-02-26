@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import {
@@ -10,12 +10,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
-import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, RotateCcw, RotateCw, Settings } from "lucide-react"
-import { getVideoStreamUrl } from "@/lib/api-config"
+import { Play, Pause, Volume2, VolumeX, Maximize, CheckCircle, RotateCcw, RotateCw, Settings, Monitor } from "lucide-react"
+import { getVideoStreamUrl, getHlsStreamUrl } from "@/lib/api-config"
+import Hls from "hls.js"
 
 interface VideoPlayerProps {
   videoUrl: string
+  hlsUrl?: string
   onComplete: () => void
   onTimeUpdate?: (currentTime: number, progress: number) => void
   isCompleted?: boolean
@@ -28,6 +32,7 @@ const PLAYBACK_RATE_STORAGE_KEY = "lms-playback-rate"
 
 export default function VideoPlayer({
   videoUrl,
+  hlsUrl,
   onComplete,
   onTimeUpdate,
   isCompleted = false,
@@ -36,6 +41,7 @@ export default function VideoPlayer({
   autoPlay = false,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -44,43 +50,112 @@ export default function VideoPlayer({
   const [showControls, setShowControls] = useState(true)
   const [hasWatched85Percent, setHasWatched85Percent] = useState(isCompleted)
   const [playbackRate, setPlaybackRate] = useState(1)
-  // Use ref for isDragging to prevent useEffect re-runs during seek operations
+  const [currentQuality, setCurrentQuality] = useState<number>(-1)
+  const [availableQualities, setAvailableQualities] = useState<Array<{ height: number; level: number }>>([])
+  const [useHls, setUseHls] = useState(false)
+  const [hlsError, setHlsError] = useState<string | null>(null)
+  
   const isDraggingRef = useRef(false)
   const hasWatched85PercentRef = useRef(isCompleted)
-  // Use ref for onComplete callback to prevent useEffect re-runs when parent re-renders
   const onCompleteRef = useRef(onComplete)
-  // Track intended seek position for rapid button presses
   const intendedTimeRef = useRef(0)
-  // Track if we're currently seeking (to protect loadedmetadata handler)
   const isSeekingRef = useRef(false)
   
-  // Keep the ref updated with the latest callback
   useEffect(() => {
     onCompleteRef.current = onComplete
   }, [onComplete])
 
-  // Consolidate initialization and event handlers
-  // Note: Using refs for isDragging, hasWatched85Percent, and onComplete to prevent event listener re-registration
+  // Initialize HLS or native video
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
-    // Get initial playback rate once
+    const hlsSupported = Hls.isSupported()
+    const nativeHls = video.canPlayType('application/vnd.apple.mpegurl')
+    
+    const hlsManifestUrl = hlsUrl || getHlsStreamUrl(videoUrl)
+    const shouldUseHls = hlsManifestUrl && hlsManifestUrl.endsWith('.m3u8')
+    
+    if (shouldUseHls && hlsSupported) {
+      console.log('[VideoPlayer] Using HLS.js for playback')
+      setUseHls(true)
+      
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 90,
+      })
+      hlsRef.current = hls
+      
+      hls.loadSource(hlsManifestUrl)
+      hls.attachMedia(video)
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        console.log('[VideoPlayer] HLS manifest parsed, levels:', data.levels.length)
+        
+        const qualities = data.levels.map((level, index) => ({
+          height: level.height,
+          level: index,
+        })).sort((a, b) => b.height - a.height)
+        
+        setAvailableQualities(qualities)
+        setHlsError(null)
+      })
+      
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('[VideoPlayer] HLS error:', data)
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log('[VideoPlayer] Network error, trying to recover...')
+              hls.startLoad()
+              break
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log('[VideoPlayer] Media error, trying to recover...')
+              hls.recoverMediaError()
+              break
+            default:
+              console.log('[VideoPlayer] Fatal error, falling back to MP4')
+              setHlsError('HLS playback failed')
+              hls.destroy()
+              setUseHls(false)
+              break
+          }
+        }
+      })
+      
+      return () => {
+        hls.destroy()
+        hlsRef.current = null
+      }
+    } else if (shouldUseHls && nativeHls && hlsManifestUrl) {
+      console.log('[VideoPlayer] Using native HLS (Safari)')
+      setUseHls(true)
+      video.src = hlsManifestUrl
+    } else {
+      console.log('[VideoPlayer] Using native video (MP4)')
+      setUseHls(false)
+      const streamUrl = getVideoStreamUrl(videoUrl)
+      video.src = streamUrl
+    }
+  }, [videoUrl, hlsUrl])
+
+  // Video event handlers
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
     const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
     const initialRate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
     setPlaybackRate(initialRate)
 
     const handleTimeUpdate = () => {
       if (!video.duration || !isFinite(video.duration)) return
-      // Use ref to check dragging state without triggering re-renders
       if (!isDraggingRef.current && !isSeekingRef.current) {
         setCurrentTime(video.currentTime)
         setProgress((video.currentTime / video.duration) * 100)
-        // Update intended time ref when playback progresses normally
         intendedTimeRef.current = video.currentTime
       }
-      // Use ref to track completion without triggering re-renders
-      // Use ref for callback to avoid dependency issues
       if (!hasWatched85PercentRef.current && video.currentTime / video.duration >= 0.85) {
         hasWatched85PercentRef.current = true
         setHasWatched85Percent(true)
@@ -89,13 +164,10 @@ export default function VideoPlayer({
     }
 
     const handleLoadedMetadata = () => {
-      // Don't interfere during active seeking
       if (isSeekingRef.current) return
-      
       if (video.duration && isFinite(video.duration)) {
         setDuration(video.duration)
         video.playbackRate = initialRate
-        // Only set initial time once at the beginning
         if (initialTime > 0 && video.currentTime === 0 && !isSeekingRef.current) {
           video.currentTime = Math.min(initialTime, video.duration)
           setCurrentTime(video.currentTime)
@@ -106,16 +178,13 @@ export default function VideoPlayer({
     }
 
     const handleSeeking = () => {
-      // Seeking has started
       isSeekingRef.current = true
       isDraggingRef.current = true
     }
 
     const handleSeeked = () => {
-      // Seeking has completed
       isSeekingRef.current = false
       isDraggingRef.current = false
-      // Sync state with actual video position after seek completes
       if (video.duration && isFinite(video.duration)) {
         setCurrentTime(video.currentTime)
         setProgress((video.currentTime / video.duration) * 100)
@@ -138,8 +207,6 @@ export default function VideoPlayer({
     video.addEventListener("seeked", handleSeeked)
     video.addEventListener("ended", handleEnded)
 
-    // Only call handleLoadedMetadata if video is already ready AND we need to set initial time
-    // This prevents interfering with ongoing playback/seeking
     if (video.readyState >= 1 && initialTime > 0 && !isSeekingRef.current) {
       handleLoadedMetadata()
     }
@@ -151,7 +218,7 @@ export default function VideoPlayer({
       video.removeEventListener("seeked", handleSeeked)
       video.removeEventListener("ended", handleEnded)
     }
-  }, [initialPlaybackRate, initialTime]) // Removed onComplete from deps - now using ref
+  }, [initialPlaybackRate, initialTime])
 
   // Periodic progress tracking
   useEffect(() => {
@@ -173,61 +240,40 @@ export default function VideoPlayer({
 
     const handleMouseMove = () => {
       setShowControls(true)
-
-      if (timeout) {
-        clearTimeout(timeout)
-      }
-
+      if (timeout) clearTimeout(timeout)
       if (isPlaying) {
-        timeout = setTimeout(() => {
-          setShowControls(false)
-        }, 3000)
+        timeout = setTimeout(() => setShowControls(false), 3000)
       }
     }
 
     document.addEventListener("mousemove", handleMouseMove)
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove)
-      if (timeout) {
-        clearTimeout(timeout)
-      }
+      if (timeout) clearTimeout(timeout)
     }
   }, [isPlaying])
 
   const togglePlay = () => {
     const video = videoRef.current
     if (!video) return
-
     if (isPlaying) {
       video.pause()
     } else {
-      video.play().catch((error) => {
-        console.error("Error playing video:", error)
-      })
+      video.play().catch((error) => console.error("Error playing video:", error))
     }
-
     setIsPlaying(!isPlaying)
   }
 
   const toggleMute = () => {
     const video = videoRef.current
     if (!video) return
-
     video.muted = !video.muted
     setIsMuted(!isMuted)
   }
 
   const handleSeekChange = (value: number[]) => {
     const video = videoRef.current
-    if (!video) return
-
-    // Guard against invalid duration
-    if (!Number.isFinite(video.duration) || video.duration <= 0) {
-      return
-    }
-
-    // Set dragging state using ref to prevent useEffect re-runs
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
     isDraggingRef.current = true
     const newTime = (value[0] / 100) * video.duration
     setProgress(value[0])
@@ -236,24 +282,14 @@ export default function VideoPlayer({
 
   const handleSeekCommit = (value: number[]) => {
     const video = videoRef.current
-    if (!video) return
-
-    // Guard against invalid duration
-    if (!Number.isFinite(video.duration) || video.duration <= 0) {
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) {
       isDraggingRef.current = false
       return
     }
-
     const newTime = (value[0] / 100) * video.duration
-    
-    // Ensure newTime is valid before setting
     if (Number.isFinite(newTime)) {
-      // Update intended time ref
       intendedTimeRef.current = newTime
-      
-      // Set the video time - this is async
       video.currentTime = newTime
-      // UI is already updated during seek change, but ensure final value
       setCurrentTime(newTime)
       setProgress(value[0])
     }
@@ -261,83 +297,55 @@ export default function VideoPlayer({
 
   const skip = (seconds: number) => {
     const video = videoRef.current
-    if (!video) return
-
-    if (!Number.isFinite(video.duration) || video.duration <= 0) {
-        return
-    }
-
-    // Use intendedTimeRef for accumulation during rapid button presses
-    // This ensures we accumulate from the last intended position, not the current video.currentTime
-    // (which might be outdated during an active seek)
+    if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
     const baseTime = isSeekingRef.current ? intendedTimeRef.current : video.currentTime
-    const newTime = baseTime + seconds
-    // Clamp time between 0 and duration
-    const clampedTime = Math.max(0, Math.min(newTime, video.duration))
-    
-    // Update intended time ref
+    const clampedTime = Math.max(0, Math.min(baseTime + seconds, video.duration))
     intendedTimeRef.current = clampedTime
-    
-    // Update UI immediately for responsive feedback
     setCurrentTime(clampedTime)
     setProgress((clampedTime / video.duration) * 100)
-    
-    // Set the video time - this is async
     video.currentTime = clampedTime
-
-    // Notify parent immediately on skip
     if (onTimeUpdate) {
       onTimeUpdate(clampedTime, (clampedTime / video.duration) * 100)
     }
   }
 
-  // Handle playback rate changes and persist to localStorage
   const handleSpeedChange = (speed: number) => {
     const video = videoRef.current
     if (!video) return
-
     video.playbackRate = speed
     setPlaybackRate(speed)
-    
-    // Save to localStorage for persistence across lessons
     localStorage.setItem(PLAYBACK_RATE_STORAGE_KEY, String(speed))
   }
 
-  // Handle autoplay when autoPlay prop is true - with proper timing
+  const handleQualityChange = (level: number) => {
+    const hls = hlsRef.current
+    if (!hls) return
+    hls.currentLevel = level
+    setCurrentQuality(level)
+  }
+
+  // Handle autoplay
   useEffect(() => {
     if (autoPlay && !isPlaying) {
-      // Wait for video to be ready by checking videoRef
       const tryPlay = () => {
         if (videoRef.current) {
-          // Apply playback rate first
           const storedRate = localStorage.getItem(PLAYBACK_RATE_STORAGE_KEY)
           const rate = initialPlaybackRate ?? (storedRate ? parseFloat(storedRate) : 1)
           videoRef.current.playbackRate = rate
-          
           videoRef.current.play()
-            .then(() => {
-              setIsPlaying(true)
-            })
-            .catch((error) => {
-              console.error("Error auto-playing video:", error)
-            })
+            .then(() => setIsPlaying(true))
+            .catch((error) => console.error("Error auto-playing video:", error))
         }
       }
-      
-      // If video is already loaded, play now
       if (videoRef.current && videoRef.current.readyState >= 2) {
         tryPlay()
       } else {
-        // Wait for loadedmetadata event
         const handleCanPlay = () => {
           tryPlay()
           videoRef.current?.removeEventListener('loadedmetadata', handleCanPlay)
         }
         videoRef.current?.addEventListener('loadedmetadata', handleCanPlay)
-        
-        return () => {
-          videoRef.current?.removeEventListener('loadedmetadata', handleCanPlay)
-        }
+        return () => videoRef.current?.removeEventListener('loadedmetadata', handleCanPlay)
       }
     }
   }, [autoPlay, initialPlaybackRate])
@@ -345,15 +353,10 @@ export default function VideoPlayer({
   const toggleFullscreen = () => {
     const videoContainer = document.getElementById("video-container")
     if (!videoContainer) return
-
     if (document.fullscreenElement) {
-      document.exitFullscreen().catch((err) => {
-        console.error("Error exiting fullscreen:", err)
-      })
+      document.exitFullscreen().catch((err) => console.error("Error exiting fullscreen:", err))
     } else {
-      videoContainer.requestFullscreen().catch((err) => {
-        console.error("Error entering fullscreen:", err)
-      })
+      videoContainer.requestFullscreen().catch((err) => console.error("Error entering fullscreen:", err))
     }
   }
 
@@ -365,28 +368,16 @@ export default function VideoPlayer({
 
   const playbackSpeeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-  // Extract video ID from YouTube URL if it's a YouTube video
   const getYouTubeEmbedUrl = (url: string) => {
-    if (url.includes("youtube.com/embed/")) {
-      return url // Already an embed URL
-    }
-
-    const youtubeRegex =
-      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
+    if (url.includes("youtube.com/embed/")) return url
+    const youtubeRegex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
     const match = url.match(youtubeRegex)
-
-    if (match && match[1]) {
-      return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`
-    }
-
-    return url // Return original URL if not YouTube
+    if (match && match[1]) return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1`
+    return url
   }
 
   const embedUrl = getYouTubeEmbedUrl(videoUrl)
   const isYouTube = embedUrl.includes("youtube.com/embed/")
-
-  // Convert video URL to streaming URL for development
-  const streamUrl = getVideoStreamUrl(videoUrl)
 
   if (isYouTube) {
     return (
@@ -408,6 +399,8 @@ export default function VideoPlayer({
     )
   }
 
+  const qualityLabel = currentQuality === -1 ? 'Auto' : `${availableQualities.find(q => q.level === currentQuality)?.height || 'Auto'}p`
+
   return (
     <div
       id="video-container"
@@ -417,7 +410,6 @@ export default function VideoPlayer({
     >
       <video
         ref={videoRef}
-        src={streamUrl || undefined}
         className="w-full h-full"
         onClick={togglePlay}
         playsInline
@@ -425,7 +417,7 @@ export default function VideoPlayer({
       />
 
       {hasWatched85Percent && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-md flex items-center text-xs">
+        <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-md flex items-center text-xs z-30">
           <CheckCircle className="mr-1 h-3 w-3" />
           Completed
         </div>
@@ -437,7 +429,6 @@ export default function VideoPlayer({
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Progress bar */}
         <div className="mb-3">
           <Slider
             value={[progress]}
@@ -451,48 +442,48 @@ export default function VideoPlayer({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={() => skip(-10)}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => skip(-10)}>
               <RotateCcw className="h-5 w-5" />
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={togglePlay}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={togglePlay}>
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={() => skip(10)}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => skip(10)}>
               <RotateCw className="h-5 w-5" />
             </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={toggleMute}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleMute}>
               {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </Button>
-
             <span className="text-white text-xs">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* Quality selector - only show for HLS */}
+            {useHls && availableQualities.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 h-8 px-2 text-xs">
+                    <Monitor className="h-4 w-4 mr-1" />
+                    {qualityLabel}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Quality</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleQualityChange(-1)}>
+                    Auto {currentQuality === -1 && "✓"}
+                  </DropdownMenuItem>
+                  {availableQualities.map((q) => (
+                    <DropdownMenuItem key={q.level} onClick={() => handleQualityChange(q.level)}>
+                      {q.height}p {currentQuality === q.level && "✓"}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 h-8 px-2 text-xs">
@@ -501,20 +492,17 @@ export default function VideoPlayer({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Speed</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 {playbackSpeeds.map((speed) => (
                   <DropdownMenuItem key={speed} onClick={() => handleSpeedChange(speed)}>
-                    {speed}x
+                    {speed}x {playbackRate === speed && "✓"}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-white hover:bg-white/20"
-              onClick={toggleFullscreen}
-            >
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={toggleFullscreen}>
               <Maximize className="h-5 w-5" />
             </Button>
           </div>
@@ -523,10 +511,7 @@ export default function VideoPlayer({
 
       {/* Play button overlay when paused */}
       {!isPlaying && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10"
-          onClick={togglePlay}
-        >
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer z-10" onClick={togglePlay}>
           <div className="rounded-full bg-red/80 p-4">
             <Play className="h-8 w-8 text-white" />
           </div>

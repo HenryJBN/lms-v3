@@ -498,8 +498,13 @@ class FileUploadService:
         
         return result
     
-    async def upload_video(self, file: UploadFile, prefix: str = "videos") -> Dict[str, Any]:
-        """Upload and process video file"""
+    async def upload_video(self, file: UploadFile, prefix: str = "videos", lesson_id: Optional[str] = None) -> Dict[str, Any]:
+        """Upload and process video file.
+        
+        Note: HLS transcoding is NOT triggered here to avoid duplicate processing.
+        Transcoding is handled by check_and_trigger_video_transcoding() in lessons.py
+        which has the proper lesson_id and can check for existing HLS files.
+        """
         self.validate_file(file, ALLOWED_VIDEO_TYPES, MAX_VIDEO_SIZE)
         
         # Upload original video
@@ -512,6 +517,9 @@ class FileUploadService:
             result.update(metadata)
         except Exception as e:
             print(f"Failed to extract video metadata: {e}")
+        
+        # Note: Transcoding is now handled by check_and_trigger_video_transcoding() 
+        # inअड lessons.py to avoid duplicate triggers and ensure proper lesson context
         
         return result
     

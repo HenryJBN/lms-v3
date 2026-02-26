@@ -248,15 +248,47 @@ class ApiClient {
   }
 
   async postFormData<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<T> {
-    return this.request<T>(endpoint, {
-      ...options,
+    const url = endpoint.startsWith("http") ? endpoint : `${this.baseURL}${endpoint}`
+    
+    const headers: Record<string, string> = {}
+    
+    // Add tenant domain header
+    if (typeof window !== "undefined") {
+      const tenantDomain = window.location.host
+      if (tenantDomain) {
+        headers["X-Tenant-Domain"] = tenantDomain
+      }
+    }
+    
+    // Add auth token if available
+    if (this.token) {
+      headers["Authorization"] = `Bearer ${this.token}`
+    }
+    
+    // Note: Do NOT set Content-Type header - let the browser set it with the correct boundary for multipart/form-data
+    
+    const response = await fetch(url, {
       method: "POST",
+      headers,
       body: formData,
-      headers: {
-          // Fetch will set the correct Boundary for FormData if Content-Type is NOT set
-          ...options?.headers,
-      } as any
+      credentials: "include",
     })
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new ApiError(
+        response.status,
+        error.detail || error.message || "Upload failed",
+        error
+      )
+    }
+    
+    const contentType = response.headers.get("content-type")
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json()
+    }
+    
+    return {} as T
   }
 
   async downloadFile(endpoint: string, options?: RequestInit): Promise<Blob> {
