@@ -234,7 +234,8 @@ async def get_my_enrollments(
             description=course.description,
             level=course.level,
             instructor_first_name=instructor.first_name,
-            instructor_last_name=instructor.last_name
+            instructor_last_name=instructor.last_name,
+            course_slug=course.slug
         ))
         
     return PaginatedResponse(

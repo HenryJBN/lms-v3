@@ -6,6 +6,7 @@ import Link from "next/link"
 
 interface CourseCardProps {
   id?: string
+  course_slug?: string
   title: string
   description: string
   progress: number
@@ -16,6 +17,7 @@ interface CourseCardProps {
 
 export default function CourseCard({
   id,
+  course_slug,
   title,
   description,
   progress,
@@ -51,7 +53,7 @@ export default function CourseCard({
           <Gem className="h-4 w-4 text-red" />
           <span className="text-sm font-medium">{tokens} Tokens</span>
         </div>
-        <Link href={`/learn/${id || "web-development"}`}>
+        <Link href={`/learn/${course_slug || id || "web-development"}`}>
           <Button size="sm" variant={completed ? "outline" : "default"}>
             {completed ? "Review" : "Continue"}
           </Button>

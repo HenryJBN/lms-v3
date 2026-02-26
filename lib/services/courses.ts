@@ -416,8 +416,9 @@ class CourseService {
       const options = { signal }
       // Check if it's a UUID or slug - UUIDs are 36 chars, slugs are typically shorter
       const isUUID = courseIdOrSlug.length === 36 && courseIdOrSlug.includes("-")
+      // Use the lessons router endpoint for both UUID and slug
       const endpoint = isUUID
-        ? `${API_ENDPOINTS.courses}/course/${courseIdOrSlug}/lessons`
+        ? `${API_ENDPOINTS.courseLessons}/course/${courseIdOrSlug}`
         : `${API_ENDPOINTS.courseLessons}/course/slug/${courseIdOrSlug}`
 
       return await apiClient.get(endpoint, options)

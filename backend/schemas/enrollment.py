@@ -25,6 +25,7 @@ class EnrollmentResponse(BaseSchema):
     level: Optional[str] = None
     instructor_first_name: Optional[str] = None
     instructor_last_name: Optional[str] = None
+    course_slug: Optional[str] = None
 
 # Progress schemas
 class LessonProgressUpdate(BaseSchema):

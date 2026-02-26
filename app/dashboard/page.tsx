@@ -44,6 +44,14 @@ interface Course {
   progress: number
   tokens: number
   completed?: boolean
+  course_slug?: string
+  course?: {
+    title?: string
+    description?: string
+    thumbnail_url?: string
+  }
+  progress_percentage?: number
+  thumbnail_url?: string
 }
 
 export default function DashboardPage() {
@@ -72,8 +80,8 @@ export default function DashboardPage() {
     enabled: !!user,
   })
 
-  const inProgressCourses = dashboardData?.inProgressCourses ?? []
-  const completedCourses = dashboardData?.completedCourses ?? []
+  const inProgressCourses: Course[] = (dashboardData?.inProgressCourses ?? []) as Course[]
+  const completedCourses: Course[] = (dashboardData?.completedCourses ?? []) as Course[]
   const analytics = dashboardData?.analytics ?? null
 
   if (isLoading) {
@@ -224,7 +232,7 @@ export default function DashboardPage() {
                         ? `/learn/${
                             analytics.last_accessed.course_slug || inProgressCourses[0]?.id || "default-course"
                           }?lesson=${analytics.last_accessed.lesson_id}`
-                        : `/learn/${inProgressCourses[0]?.id || "default-course"}`
+                        : `/learn/${inProgressCourses[0]?.course_slug || "default-course"}`
                     }
                   >
                     Continue Learning
@@ -251,7 +259,18 @@ export default function DashboardPage() {
 
               <TabsContent value="in-progress" className="mt-4 space-y-4">
                 {inProgressCourses.length > 0 ? (
-                  inProgressCourses.map((course) => <CourseCard key={course.id} {...course} />)
+                  inProgressCourses.map((course) => (
+                    <CourseCard 
+                      key={course.id} 
+                      id={course.id}
+                      course_slug={course.course_slug}
+                      title={course.title || course.course?.title || 'Untitled Course'}
+                      description={course.description || course.course?.description || ''}
+                      progress={course.progress_percentage || 0}
+                      tokens={0}
+                      image={course.thumbnail_url || course.course?.thumbnail_url || '/placeholder.svg'}
+                    />
+                  ))
                 ) : (
                   <p className="text-muted-foreground">No courses in progress.</p>
                 )}
@@ -260,7 +279,17 @@ export default function DashboardPage() {
               <TabsContent value="completed" className="mt-4 space-y-4">
                 {completedCourses.length > 0 ? (
                   completedCourses.map((course) => (
-                    <CourseCard key={course.id} {...course} completed />
+                    <CourseCard 
+                      key={course.id} 
+                      id={course.id}
+                      course_slug={course.course_slug}
+                      title={course.title || course.course?.title || 'Untitled Course'}
+                      description={course.description || course.course?.description || ''}
+                      progress={course.progress_percentage || 100}
+                      tokens={0}
+                      image={course.thumbnail_url || course.course?.thumbnail_url || '/placeholder.svg'}
+                      completed
+                    />
                   ))
                 ) : (
                   <p className="text-muted-foreground">No completed courses.</p>
