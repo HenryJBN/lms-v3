@@ -29,7 +29,6 @@ import {
 import { 
   systemAdminService, 
   GlobalStats, 
-  ActivityItem, 
   GrowthData,
   SiteResponse
 } from "@/lib/services/system-admin"
@@ -63,42 +62,43 @@ import {
 
 const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899']
 
+interface AnalyticsData {
+  stats: GlobalStats | null
+  growthData: GrowthData[]
+  sites: SiteResponse[]
+}
+
 export default function SystemAdminAnalytics() {
-  const [stats, setStats] = useState<GlobalStats | null>(null)
-  const [growthData, setGrowthData] = useState<GrowthData[]>([])
-  const [sites, setSites] = useState<SiteResponse[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [rangeMonths, setRangeMonths] = useState("12")
 
-  const fetchData = async (isRefresh = false, months = parseInt(rangeMonths)) => {
-    if (isRefresh) setRefreshing(true)
-    setError(null)
-    try {
+  const { data, isLoading, isFetching, refetch, error } = useQuery<AnalyticsData>({
+    queryKey: ["sysadmin", "analytics", rangeMonths],
+    queryFn: async () => {
       const [statsRes, growthRes, sitesRes] = await Promise.allSettled([
         systemAdminService.getGlobalStats(),
-        systemAdminService.getGrowthStats(months),
+        systemAdminService.getGrowthStats(parseInt(rangeMonths)),
         systemAdminService.getAllSites({ size: 10, page: 1 })
       ])
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value)
-      if (growthRes.status === 'fulfilled') setGrowthData(growthRes.value)
-      if (sitesRes.status === 'fulfilled') setSites(sitesRes.value.items)
-      return { stats: statsRes, growth: growthRes, sites: sitesRes }
-    } catch (err: any) {
-      console.error("Failed to fetch analytics data:", err)
-      setError("Failed to load platform intelligence.")
-      throw err
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
-  const { isLoading } = useQuery({
-    queryKey: ["sysadmin", "analytics", rangeMonths],
-    queryFn: () => fetchData(false, parseInt(rangeMonths)),
+      
+      return {
+        stats: statsRes.status === 'fulfilled' ? statsRes.value : null,
+        growthData: growthRes.status === 'fulfilled' ? growthRes.value : [],
+        sites: sitesRes.status === 'fulfilled' ? (sitesRes.value?.items || []) : []
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is considered fresh
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache
   })
 
-  if (isLoading && !stats) {
+  const stats = data?.stats ?? null
+  const growthData = data?.growthData ?? []
+  const sites = data?.sites ?? []
+
+  const handleRefresh = () => {
+    refetch()
+  }
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px]">
         <div className="relative h-16 w-16 mb-6">
@@ -190,11 +190,11 @@ export default function SystemAdminAnalytics() {
           <Button 
             variant="ghost" 
             size="icon" 
-            onClick={() => fetchData(true)} 
-            disabled={refreshing}
+            onClick={handleRefresh} 
+            disabled={isFetching}
             className="rounded-full hover:bg-primary/10 transition-colors"
           >
-            <RefreshCcw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`h-5 w-5 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function SystemAdminAnalytics() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3 text-red-500">
               <Activity className="h-5 w-5" />
-              <p className="font-medium">{error}</p>
+              <p className="font-medium">Failed to load platform intelligence.</p>
             </div>
           </CardContent>
         </Card>

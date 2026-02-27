@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { 
@@ -36,41 +35,43 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import Link from "next/link"
 
-export default function SystemAdminDashboard() {
-  const [stats, setStats] = useState<GlobalStats | null>(null)
-  const [activity, setActivity] = useState<ActivityItem[]>([])
-  const [growthData, setGrowthData] = useState<GrowthData[]>([])
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+interface DashboardData {
+  stats: GlobalStats | null
+  activity: ActivityItem[]
+  growthData: GrowthData[]
+}
 
-  const fetchData = async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true)
-    setError(null)
-    try {
+export default function SystemAdminDashboard() {
+  const { data, isLoading, isFetching, refetch, error } = useQuery<DashboardData>({
+    queryKey: ["sysadmin", "dashboard"],
+    queryFn: async () => {
       const [statsRes, activityRes, growthRes] = await Promise.allSettled([
         systemAdminService.getGlobalStats(),
         systemAdminService.getGlobalActivity(5),
         systemAdminService.getGrowthStats(6)
       ])
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value)
-      if (activityRes.status === 'fulfilled') setActivity(activityRes.value?.items || activityRes.value || [])
-      if (growthRes.status === 'fulfilled') setGrowthData(growthRes.value)
-      return { stats: statsRes, activity: activityRes, growth: growthRes }
-    } catch (err: any) {
-      console.error("Failed to fetch dashboard data:", err)
-      setError("Failed to load platform analytics.")
-      throw err
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
-  const { isLoading } = useQuery({
-    queryKey: ["sysadmin", "dashboard"],
-    queryFn: () => fetchData(),
+      
+      return {
+        stats: statsRes.status === 'fulfilled' ? statsRes.value : null,
+        activity: activityRes.status === 'fulfilled' 
+          ? (activityRes.value?.items || activityRes.value || []) 
+          : [],
+        growthData: growthRes.status === 'fulfilled' ? growthRes.value : []
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes - data is considered fresh
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache
   })
 
-  if (isLoading && !stats) {
+  const stats = data?.stats ?? null
+  const activity = data?.activity ?? []
+  const growthData = data?.growthData ?? []
+
+  const handleRefresh = () => {
+    refetch()
+  }
+
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
@@ -137,11 +138,11 @@ export default function SystemAdminDashboard() {
           <Button 
              variant="outline" 
              size="sm" 
-             onClick={() => fetchData(true)} 
-             disabled={refreshing}
+             onClick={handleRefresh} 
+             disabled={isFetching}
              className="relative"
           >
-            {refreshing ? (
+            {isFetching ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <RefreshCcw className="mr-2 h-4 w-4" />
@@ -160,7 +161,7 @@ export default function SystemAdminDashboard() {
       {error && (
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg flex items-center gap-2">
           <Activity className="h-4 w-4" />
-          <span className="text-sm font-medium">{error}</span>
+          <span className="text-sm font-medium">Failed to load platform analytics.</span>
         </div>
       )}
 

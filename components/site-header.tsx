@@ -64,9 +64,11 @@ export default function SiteHeader() {
 
   const handleLogout = () => {
     logout()
-    // Redirect tenant users to login page, global users to home
+    // Redirect based on user role and domain
     if (isGlobal) {
       router.push("/")
+    } else if (user?.role === "admin") {
+      router.push("/admin/login")
     } else {
       router.push("/login")
     }

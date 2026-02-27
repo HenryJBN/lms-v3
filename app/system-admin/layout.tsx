@@ -117,7 +117,7 @@ export default function SystemAdminLayout({ children }: { children: React.ReactN
 
   const handleLogout = async () => {
     await logout()
-    router.push("/login")
+    router.push("/admin/login")
   }
 
   return (
