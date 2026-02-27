@@ -6,7 +6,7 @@ from sqlmodel import select, text, func, cast, String
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.user import User
 from models.course import Course
@@ -35,7 +35,7 @@ async def enroll_in_course(
     enrollment_in: EnrollmentCreate,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Verify Course exists and is published in this site
     query = select(Course).where(
@@ -198,7 +198,7 @@ async def get_my_enrollments(
     status: Optional[str] = Query(None),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Join Enrollment -> Course -> Instructor
     query = select(Enrollment, Course, User).join(Course, Enrollment.course_id == Course.id).join(User, Course.instructor_id == User.id)
@@ -260,7 +260,7 @@ async def get_all_completions(
     end_date: Optional[datetime] = Query(None),
     current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """
     Get all enrollments with completion data for admin dashboard.
@@ -451,7 +451,7 @@ async def get_completions_stats(
     end_date: Optional[datetime] = Query(None),
     current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """
     Get completion statistics for admin dashboard.
@@ -588,7 +588,7 @@ async def get_enrollment(
     enrollment_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Enrollment, Course).join(Course).where(
         Enrollment.id == enrollment_id,
@@ -613,7 +613,7 @@ async def drop_course(
     enrollment_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Enrollment).where(
         Enrollment.id == enrollment_id,
@@ -654,7 +654,7 @@ async def get_enrollment_progress(
     cohort_id: Optional[uuid.UUID] = Query(None),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Enrollment).where(
         Enrollment.user_id == current_user.id,
@@ -680,7 +680,7 @@ async def get_enrollment_progress_by_slug(
     cohort_id: Optional[uuid.UUID] = Query(None),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Find course by slug in current site
     course_query = select(Course).where(Course.slug == course_slug, Course.site_id == current_site.id)
@@ -714,7 +714,7 @@ async def get_course_students(
     pagination: PaginationParams = Depends(),
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     course = await session.get(Course, course_id)
     if not course or course.site_id != current_site.id:

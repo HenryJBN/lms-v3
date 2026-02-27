@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.enrollment import Certificate, Enrollment
@@ -23,7 +23,7 @@ router = APIRouter()
 async def get_my_certificates(
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get certificates for current user"""
     query = select(
@@ -49,7 +49,7 @@ async def get_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(
         Certificate, 
@@ -139,7 +139,7 @@ async def mint_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Mint certificate as NFT on blockchain"""
     query = select(
@@ -238,7 +238,7 @@ async def get_all_certificates(
     status: Optional[str] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to get all certificates"""
     # Base query for certificates
@@ -292,7 +292,7 @@ async def create_certificate(
     certificate_in: CertificateCreate,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to manually create certificate"""
     # Check if user completed the course
@@ -369,7 +369,7 @@ async def update_certificate(
     certificate_update: CertificateUpdate,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to update certificate"""
     query = select(Certificate).where(
@@ -399,7 +399,7 @@ async def revoke_certificate(
     certificate_id: uuid.UUID,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to revoke certificate"""
     query = select(

@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.user import User
 from middleware.auth import require_admin
@@ -41,7 +41,7 @@ class EmailTestResponse(BaseModel):
 async def test_email_configuration(
     request: EmailTestRequest,
     current_user: User = Depends(require_admin),
-    current_site: Site = Depends(get_current_site),
+    current_site: SiteData = Depends(get_current_site),
     session: AsyncSession = Depends(get_session)
 ):
     """

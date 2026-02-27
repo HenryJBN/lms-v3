@@ -11,8 +11,7 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
-from models.site import Site
+from dependencies import get_current_site, SiteData
 from models.user import User
 from models.enums import UserRole, UserStatus
 
@@ -33,6 +32,7 @@ async def init_admin_site_cache():
     """Resolve the admin site ID once and cache it. Called during app lifespan startup."""
     global _admin_site_id
     from database.session import async_session_factory
+    from models.site import Site
     async with async_session_factory() as session:
         result = await session.exec(select(Site).where(Site.subdomain == "admin"))
         admin_site = result.first()
@@ -99,7 +99,7 @@ async def authenticate_user(email: str, password: str, session: AsyncSession, si
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get the current authenticated user ensuring they belong to the current site"""
     credentials_exception = HTTPException(

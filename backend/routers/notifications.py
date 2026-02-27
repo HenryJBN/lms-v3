@@ -8,7 +8,7 @@ from sqlmodel import select, func, and_, or_, desc, col
 from models.communication import Notification, NotificationSettings
 from schemas.communication import NotificationCreate, NotificationUpdate, NotificationResponse
 from schemas.common import PaginationParams, PaginatedResponse
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.communication import Notification, NotificationSettings
 from schemas.communication import NotificationCreate, NotificationUpdate, NotificationResponse
@@ -26,7 +26,7 @@ async def get_notifications(
     type: Optional[NotificationType] = Query(None),
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get notifications for current user"""
     query = select(Notification).where(
@@ -60,7 +60,7 @@ async def get_notifications(
 async def get_unread_count(
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get unread notifications count"""
     query = select(func.count(Notification.id)).where(
@@ -76,7 +76,7 @@ async def mark_notification_read(
     notification_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Mark a notification as read"""
     query = select(Notification).where(
@@ -106,7 +106,7 @@ async def mark_notification_read(
 async def mark_all_notifications_read(
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Mark all unread notifications as read"""
     query = select(Notification).where(
@@ -131,7 +131,7 @@ async def delete_notification(
     notification_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Delete a notification"""
     query = select(Notification).where(
@@ -157,7 +157,7 @@ async def create_notification(
     notification_in: NotificationCreate,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to create notifications"""
     new_notification = Notification(
@@ -190,7 +190,7 @@ async def broadcast_notification(
     role: Optional[str] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Admin endpoint to broadcast notifications to multiple users"""
     from models.user import User
@@ -250,7 +250,7 @@ async def broadcast_notification(
 async def get_notification_settings(
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get or create notification settings for current user"""
     query = select(NotificationSettings).where(
@@ -283,7 +283,7 @@ async def update_notification_settings(
     settings_update: dict,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update notification settings"""
     query = select(NotificationSettings).where(

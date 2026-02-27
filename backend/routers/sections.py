@@ -6,7 +6,7 @@ from sqlmodel import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.course import Section, Course
 from models.lesson import Lesson
@@ -25,7 +25,7 @@ async def get_sections(
     course_id: Optional[uuid.UUID] = Query(None),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all sections for admin management"""
     offset = (page - 1) * size
@@ -71,7 +71,7 @@ async def get_course_sections(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get sections for a specific course"""
     # Check if course exists and user has access
@@ -117,7 +117,7 @@ async def get_section(
     section_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get a specific section"""
     query = select(Section, func.count(Lesson.id).label("lesson_count")).outerjoin(
@@ -158,7 +158,7 @@ async def create_section(
     section_data: SectionCreate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Create a new section"""
     # Check if course exists and user has permission
@@ -194,7 +194,7 @@ async def update_section(
     section_update: SectionUpdate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update a section"""
     # Check if section exists and user has permission
@@ -229,7 +229,7 @@ async def delete_section(
     section_id: uuid.UUID,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Delete a section"""
     # Check if section exists and user has permission

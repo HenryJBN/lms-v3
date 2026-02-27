@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.user import User
 from models.course import Course
@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.get("/theme")
 async def get_site_theme(
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """
     Public endpoint to get tenant theme configuration.
@@ -34,7 +34,7 @@ async def get_site_theme(
 
 @router.get("/info")
 async def get_site_info(
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """
     Public endpoint to get basic site information.

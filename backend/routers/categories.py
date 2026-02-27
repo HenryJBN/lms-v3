@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.course import Category, Course
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @router.get("", response_model=List[CategoryResponse])
 async def get_categories(
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all categories"""
     try:
@@ -38,7 +38,7 @@ async def get_categories(
 @router.get("/top-level", response_model=List[CategoryResponse])
 async def get_top_level_categories(
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all top-level categories (no parent)"""
     try:
@@ -68,7 +68,7 @@ async def get_top_level_categories(
 @router.get("/tree")
 async def get_category_tree(
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get category tree (hierarchical structure)"""
     try:
@@ -109,7 +109,7 @@ async def get_category_tree(
 @router.get("/popular")
 async def get_popular_categories(
     session: AsyncSession = Depends(get_session), 
-    current_site: Site = Depends(get_current_site),
+    current_site: SiteData = Depends(get_current_site),
     limit: int = Query(10, ge=1, le=50)
 ):
     """Get popular categories by enrollment count"""
@@ -144,7 +144,7 @@ async def get_popular_categories(
 @router.get("/search")
 async def search_categories(
     session: AsyncSession = Depends(get_session), 
-    current_site: Site = Depends(get_current_site),
+    current_site: SiteData = Depends(get_current_site),
     q: str = Query(..., min_length=1)
 ):
     """Search categories by name or description"""
@@ -174,7 +174,7 @@ async def search_categories(
 async def get_category(
     category_id: uuid.UUID, 
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get a single category by ID"""
     try:
@@ -210,7 +210,7 @@ async def get_category(
 async def get_category_by_slug(
     slug: str, 
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get category by slug"""
     try:
@@ -246,7 +246,7 @@ async def get_category_by_slug(
 async def get_subcategories(
     category_id: uuid.UUID, 
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get subcategories of a category"""
     try:
@@ -277,7 +277,7 @@ async def get_category_courses(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get courses in a category"""
     try:
@@ -344,7 +344,7 @@ async def get_category_courses(
 async def get_category_stats(
     category_id: uuid.UUID, 
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get category statistics"""
     try:
@@ -382,7 +382,7 @@ async def get_category_stats(
 async def get_category_breadcrumbs(
     category_id: uuid.UUID, 
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get category breadcrumb trail"""
     try:
@@ -412,7 +412,7 @@ async def create_category(
     category_data: CategoryCreate,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Create a new category (admin only)"""
     try:
@@ -440,7 +440,7 @@ async def update_category(
     category_data: CategoryUpdate,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update a category (admin only)"""
     try:
@@ -479,7 +479,7 @@ async def delete_category(
     category_id: uuid.UUID,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Delete a category (admin only)"""
     try:
@@ -533,7 +533,7 @@ async def reorder_categories(
     category_ids: List[uuid.UUID],
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Reorder categories (admin only)"""
     try:
@@ -563,7 +563,7 @@ async def toggle_category_status(
     category_id: uuid.UUID,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Toggle category active status (admin only)"""
     try:

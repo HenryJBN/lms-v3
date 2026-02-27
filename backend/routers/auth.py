@@ -9,8 +9,7 @@ from sqlmodel import select, text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
-from models.site import Site
+from dependencies import get_current_site, SiteData
 from models.user import User
 from models.enums import UserRole, UserStatus
 from schemas.user import UserCreate, UserResponse
@@ -37,7 +36,7 @@ router = APIRouter()
 async def register(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if registration is enabled
     if not is_registration_enabled(current_site):
@@ -134,7 +133,7 @@ async def login(
     request: Request,
     response: Response,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     print(f"[LOGIN] Received login request for email: {login_data.email}")
     print(f"[LOGIN] Current site: {current_site.subdomain} (ID: {current_site.id})")
@@ -226,7 +225,7 @@ async def logout(request: Request, response: Response):
 async def forgot_password(
     request: PasswordResetRequest,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     user = await get_user_by_email(request.email, session, str(current_site.id))
     if not user:
@@ -249,7 +248,7 @@ async def forgot_password(
 async def reset_password(
     reset_data: PasswordReset,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Verify reset token
     query = select(PasswordResetToken, User).join(User, PasswordResetToken.user_id == User.id).where(
@@ -282,7 +281,7 @@ async def verify_email_code(
     request: Request,
     response: Response,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     code = verification_data.get("code")
     email = verification_data.get("email")
@@ -338,6 +337,12 @@ async def verify_email_code(
             reference_type="signup_bonus"
         )
 
+    # Send welcome email via Celery queue
+    try:
+        send_welcome_email_async(user_email, user_first_name, site_id=str(current_site.id))
+    except Exception as e:
+        print(f"Failed to queue welcome email: {e}")
+
     # Issue tokens
     access_token = create_access_token(data={"sub": str(user_id)})
     refresh_token = create_refresh_token(data={"sub": str(user_id)})
@@ -369,7 +374,7 @@ async def verify_email_code(
 async def resend_verification_code(
     request_data: dict,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     email = request_data.get("email")
 

@@ -13,7 +13,7 @@ from models.enrollment import Enrollment, Certificate
 from models.finance import RevenueRecord
 from models.system import AdminAuditLog
 from models.site import Site
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from schemas.system import AdminDashboardStats
 from schemas.user import BasicUser, UserResponse, AdminUserResponse
 from schemas.course import AdminCourseResponse
@@ -40,7 +40,7 @@ async def update_user_by_admin(
     payload: Dict[str, Any],
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update user fields by admin. Allows updating first_name, last_name, email, and role."""
     # Fetch existing user
@@ -91,7 +91,7 @@ async def get_admin_dashboard(
     period: str = Query("30d", description="Time period for stats: today, yesterday, 7d, 30d, 3m, 6m, 1y"),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get admin dashboard statistics"""
     from sqlalchemy import case
@@ -195,7 +195,7 @@ async def create_user(
     user_data: BasicUser,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Create a new user by admin."""
     # Check if user already exists
@@ -261,7 +261,7 @@ async def get_admin_users(
     search: Optional[str] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all users with admin details"""
     offset = (pagination.page - 1) * pagination.size
@@ -339,7 +339,7 @@ async def get_admin_courses(
     search: Optional[str] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all courses with admin details"""
     offset = (pagination.page - 1) * pagination.size
@@ -408,7 +408,7 @@ async def deactivate_user(
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Deactivate a user account (sets status to 'inactive')."""
     query = select(User).where(User.id == user_id, User.site_id == current_site.id)
@@ -451,7 +451,7 @@ async def soft_delete_user(
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Soft delete a user account (sets status to 'deleted')."""
     query = select(User).where(User.id == user_id, User.site_id == current_site.id)
@@ -495,7 +495,7 @@ async def reactivate_user(
     payload: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Reactivate a user account (sets status to 'active')."""
     query = select(User).where(User.id == user_id, User.site_id == current_site.id)
@@ -537,7 +537,7 @@ async def update_user_status(
     reason: Optional[str] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update user status"""
     if status not in ["active", "inactive", "suspended"]:
@@ -577,7 +577,7 @@ async def update_course_status(
     reason: Optional[str] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update course status"""
     if status not in ["draft", "published", "archived", "suspended"]:
@@ -618,7 +618,7 @@ async def get_audit_log(
     target_type: Optional[str] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get admin audit log"""
     offset = (pagination.page - 1) * pagination.size
@@ -673,7 +673,7 @@ async def generate_admin_report(
     filters: Optional[Dict[str, Any]] = None,
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Generate admin reports"""
     if not end_date:
@@ -740,7 +740,7 @@ async def export_admin_data(
     filters: Optional[Dict[str, Any]] = Body(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Export admin data"""
     if format not in ["json", "csv"]:
@@ -869,7 +869,7 @@ async def import_admin_data_endpoint(
     file: UploadFile = File(...),
     import_type: str = Form(...),
     current_user = Depends(require_admin),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Import admin data from CSV file"""
     return await import_admin_data(file, import_type, current_user, site_id=current_site.id)
@@ -916,7 +916,7 @@ async def get_system_health(
 @router.get("/settings/site", response_model=SiteSettings)
 async def get_site_settings(
     current_user = Depends(require_admin),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get current site settings with masked email credentials"""
 
@@ -950,7 +950,7 @@ async def update_site_settings(
     settings: SiteSettingsUpdate,
     session: AsyncSession = Depends(get_session),
     current_user = Depends(require_admin),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Update current site settings with encrypted email credentials"""
 
@@ -1031,7 +1031,7 @@ async def upload_site_logo(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     current_user = Depends(require_admin),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Upload site logo"""
     try:

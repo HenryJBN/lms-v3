@@ -6,7 +6,7 @@ from sqlmodel import select, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.user import User
 from models.course import Course
@@ -23,7 +23,7 @@ router = APIRouter()
 async def list_all_cohorts(
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """List all cohorts across all courses for the current site."""
     # Base query for all cohorts in the site
@@ -64,7 +64,7 @@ async def create_cohort(
     cohort_in: CohortCreate,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Verify Course exists and belongs to this site
     query = select(Course).where(Course.id == cohort_in.course_id, Course.site_id == current_site.id)
@@ -98,7 +98,7 @@ async def create_cohort(
 async def get_course_cohorts(
     course_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Base query for cohorts
     query = select(Cohort).where(
@@ -132,7 +132,7 @@ async def get_course_cohorts(
 async def get_cohort(
     cohort_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Cohort).where(Cohort.id == cohort_id, Cohort.site_id == current_site.id)
     result = await session.exec(query)
@@ -157,7 +157,7 @@ async def update_cohort(
     cohort_update: CohortUpdate,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Cohort).where(Cohort.id == cohort_id, Cohort.site_id == current_site.id)
     result = await session.exec(query)
@@ -201,7 +201,7 @@ async def delete_cohort(
     cohort_id: uuid.UUID,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Cohort).where(Cohort.id == cohort_id, Cohort.site_id == current_site.id)
     result = await session.exec(query)

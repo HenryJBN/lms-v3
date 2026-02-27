@@ -7,10 +7,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 import json
 
 from database.session import get_session
-from dependencies import get_current_site
-from models.site import Site
+from dependencies import get_current_site, SiteData
 from models.course import Course, Category
 from models.user import User
+from models.site import Site  # Keep for global queries that join Site table
 # Categories are not migrated to SQLModel in my list yet, assuming they exist as table.
 # Actually I haven't checked Category model. If not migrated, I can treat it as raw or assume it will be migrated.
 # To be safe, I will use strict joins if I had models, but for now I'll use simple selects or assume models exist?
@@ -52,7 +52,7 @@ async def get_courses(
     instructor_id: Optional[uuid.UUID] = Query(None),
     status: Optional[CourseStatus] = Query(None),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Base query: Course + Instructor (User)
     # We select Course and User. We also need Category info potentially.
@@ -274,7 +274,7 @@ async def get_global_courses(
 @router.get("/featured", response_model=List[CourseResponse])
 async def get_featured_courses(
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.site_id == current_site.id,
@@ -298,7 +298,7 @@ async def get_featured_courses(
 async def get_course(
     slug: str,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.slug == slug,
@@ -322,7 +322,7 @@ async def get_course(
 async def get_course_cohorts(
     course_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Cohort).where(
         Cohort.course_id == course_id,
@@ -341,7 +341,7 @@ async def get_course_cohorts(
 async def get_course_by_id(
     course_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course, User).outerjoin(User).where(
         Course.id == course_id,
@@ -366,7 +366,7 @@ async def create_course(
     course_in: CourseCreate,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Create object
     # Set initial status based on site settings
@@ -401,7 +401,7 @@ async def update_course(
     course_update: CourseUpdate,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)
@@ -440,7 +440,7 @@ async def delete_course(
     course_id: uuid.UUID,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)
@@ -464,7 +464,7 @@ async def publish_course(
     course_id: uuid.UUID,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)
@@ -495,7 +495,7 @@ async def unpublish_course(
     course_id: uuid.UUID,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)
@@ -547,7 +547,7 @@ async def upload_course_trailer(
 @router.get("/categories", response_model=List[CategoryResponse])
 async def get_categories(
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Category).where(
         Category.site_id == current_site.id,
@@ -563,7 +563,7 @@ async def get_course_stats(
     course_id: uuid.UUID,
     current_user: User = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
     result = await session.exec(query)

@@ -7,7 +7,7 @@ from sqlalchemy import case
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.user import User, UserProfile
 from models.enrollment import Enrollment
@@ -59,7 +59,7 @@ async def update_current_user(
 async def get_user_profile(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(UserProfile).where(
         UserProfile.user_id == current_user.id,
@@ -81,7 +81,7 @@ async def update_user_profile(
     profile_update: UserProfileSchema,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(UserProfile).where(
         UserProfile.user_id == current_user.id,
@@ -108,7 +108,7 @@ async def update_user_profile(
 async def get_token_balance(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(TokenBalance).where(
         TokenBalance.user_id == current_user.id,
@@ -135,7 +135,7 @@ async def get_token_transactions(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     query = select(TokenTransaction).where(
         TokenTransaction.user_id == current_user.id,
@@ -167,7 +167,7 @@ async def get_user_by_id(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     if current_user.role != UserRole.admin and str(current_user.id) != str(user_id):
         raise HTTPException(
@@ -189,7 +189,7 @@ async def get_users(
     search: Optional[str] = Query(None),
     current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Admin User Listing Scoped to Site
     count_query = select(func.count(User.id)).where(User.site_id == current_site.id)
@@ -268,7 +268,7 @@ async def update_user_status(
     status_in: str,
     current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     if status_in not in ["active", "inactive", "suspended"]:
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -301,7 +301,7 @@ async def delete_user(
     user_id: uuid.UUID,
     current_user: User = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     user = await session.get(User, user_id)
     if not user or user.site_id != current_site.id:

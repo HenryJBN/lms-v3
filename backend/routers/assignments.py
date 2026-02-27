@@ -4,7 +4,7 @@ import uuid
 import os
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from sqlmodel import select, func, and_, or_, desc, col
 from models.course import Course
@@ -32,7 +32,7 @@ async def get_all_assignments(
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all assignments for admin management with filtering and pagination"""
     offset = (page - 1) * size
@@ -111,7 +111,7 @@ async def get_course_assignments(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check course and enrollment/instructor/admin access
     from models.enrollment import Enrollment
@@ -177,7 +177,7 @@ async def get_assignment(
     assignment_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Get assignment and check access
     from models.enrollment import Enrollment
@@ -221,7 +221,7 @@ async def create_assignment(
     assignment_in: AssignmentCreate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if user owns the course or is admin
     query = select(Course).where(Course.id == assignment_in.course_id, Course.site_id == current_site.id)
@@ -277,7 +277,7 @@ async def update_assignment(
     assignment_update: AssignmentUpdate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Get assignment and check permission
     query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
@@ -313,7 +313,7 @@ async def delete_assignment(
     assignment_id: uuid.UUID,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Get assignment and check permission
     query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
@@ -345,7 +345,7 @@ async def submit_assignment(
     submission_in: AssignmentSubmissionCreate,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if assignment exists and user has access
     from models.enrollment import Enrollment
@@ -414,7 +414,7 @@ async def get_assignment_submissions(
     assignment_id: uuid.UUID,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Get assignment and check permission
     query = select(Assignment, Course).join(Course, Assignment.course_id == Course.id).where(Assignment.id == assignment_id, Assignment.site_id == current_site.id)
@@ -469,7 +469,7 @@ async def grade_assignment_submission(
     feedback: Optional[str] = None,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Get submission and check permission
     query = select(AssignmentSubmission, Assignment, Course).join(
@@ -519,7 +519,7 @@ async def get_assignment_submission(
     submission_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get individual submission details for the current user"""
     query = select(

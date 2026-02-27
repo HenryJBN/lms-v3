@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlmodel import select, func, and_, or_, desc
 
 from database.session import get_session, AsyncSession
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.enrollment import Enrollment, LessonProgress, Certificate
 from models.course import Course, CourseReview
@@ -23,7 +23,7 @@ router = APIRouter()
 async def get_student_analytics(
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Return consolidated analytics for the current student dashboard"""
     user_id = current_user.id
@@ -164,7 +164,7 @@ async def get_student_analytics(
 async def get_user_analytics(
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Return aggregated user analytics for admin dashboards"""
     from models.user import User
@@ -206,7 +206,7 @@ async def get_analytics_overview(
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get overall platform analytics"""
     from models.user import User
@@ -309,7 +309,7 @@ async def get_course_analytics(
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get analytics for a specific course"""
     from sqlalchemy import case
@@ -416,7 +416,7 @@ async def get_instructor_analytics(
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get analytics for an instructor"""
     from models.user import User
@@ -529,7 +529,7 @@ async def get_engagement_analytics(
     end_date: Optional[datetime] = Query(None),
     current_user = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get user engagement analytics (Partial SQLModel)"""
     from models.user import User

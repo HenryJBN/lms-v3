@@ -8,7 +8,7 @@ from sqlmodel import select, and_, func
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.course import Course
 from models.enrollment import Enrollment, LessonProgress, Certificate
@@ -36,7 +36,7 @@ async def get_course_progress_by_slug(
     cohort_id: Optional[uuid.UUID] = None,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # First get the course ID from slug
     query = select(Course).where(Course.slug == course_slug, Course.site_id == current_site.id)
@@ -95,7 +95,7 @@ async def get_course_progress(
     cohort_id: Optional[uuid.UUID] = None,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if user is enrolled in the course
     enrollment_query = select(Enrollment).where(
@@ -144,7 +144,7 @@ async def update_lesson_progress(
     cohort_id: Optional[uuid.UUID] = Query(None),
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site),
+    current_site: SiteData = Depends(get_current_site),
     background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     # Get lesson info and check enrollment (allow both active and completed enrollments
@@ -312,7 +312,7 @@ async def submit_quiz_attempt(
     attempt: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site),
+    current_site: SiteData = Depends(get_current_site),
     background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     from models.lesson import Quiz, QuizQuestion, QuizAttempt
@@ -412,7 +412,7 @@ async def get_quiz_attempts(
     quiz_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
     # Check if user has access to this quiz

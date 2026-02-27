@@ -8,7 +8,7 @@ from sqlmodel import select, func, or_, and_, desc, asc
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
-from dependencies import get_current_site
+from dependencies import get_current_site, SiteData, SiteData
 from models.site import Site
 from models.lesson import Lesson, Quiz, Assignment
 from models.course import Course, Section
@@ -120,7 +120,7 @@ async def get_all_lessons(
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get all lessons for admin management with filtering and pagination"""
     offset = (page - 1) * size
@@ -228,7 +228,7 @@ async def get_course_lessons_by_slug(
     course_slug: str,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # First get the course and check enrollment
     query = select(Course, Enrollment.id.label("enrollment_id")).outerjoin(
@@ -283,7 +283,7 @@ async def get_course_lessons(
     course_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if user has access to course
     query = select(Course, Enrollment.id.label("enrollment_id")).outerjoin(
@@ -338,7 +338,7 @@ async def get_lesson(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Base query for lesson with course and section info
     query = select(Lesson, Course.instructor_id, Enrollment.id.label("enrollment_id"), LessonProgress.status.label("progress_status"), LessonProgress.progress_percentage).outerjoin(
@@ -383,7 +383,7 @@ async def create_lesson(
     lesson_in: LessonCreate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if user owns the course or is admin
     query = select(Course).where(Course.id == lesson_in.course_id, Course.site_id == current_site.id)
@@ -458,7 +458,7 @@ async def update_lesson(
     lesson_update: LessonUpdate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -588,7 +588,7 @@ async def upload_lesson_video(
     file: UploadFile = File(...),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -676,7 +676,7 @@ async def upload_lesson_audio(
     file: UploadFile = File(...),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -756,7 +756,7 @@ async def upload_lesson_images(
     files: List[UploadFile] = File(...),
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -808,7 +808,7 @@ async def create_lesson_quiz(
     quiz_data: QuizCreate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -850,7 +850,7 @@ async def create_lesson_assignment(
     assignment_data: AssignmentCreate,
     current_user = Depends(require_instructor_or_admin),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     # Check if lesson exists and user has permission
     query = select(Lesson, Course.instructor_id).join(
@@ -897,7 +897,7 @@ async def get_lesson_assignments(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import Assignment, AssignmentSubmission
 
@@ -956,7 +956,7 @@ async def get_lesson_quizzes(
     lesson_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
 
@@ -1049,7 +1049,7 @@ async def get_quiz_questions(
     quiz_id: uuid.UUID,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import QuizQuestion
 
@@ -1085,7 +1085,7 @@ async def create_quiz_attempt(
     attempt_data: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt
     
@@ -1133,7 +1133,7 @@ async def submit_quiz_attempt(
     attempt_update: QuizAttemptCreate,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
-    current_site: Site = Depends(get_current_site)
+    current_site: SiteData = Depends(get_current_site)
 ):
     from models.lesson import Quiz, QuizAttempt, QuizQuestion, QuizAttemptAnswer
     
