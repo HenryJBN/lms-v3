@@ -236,6 +236,24 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       (prereqId: string) => userProgress.completedLessons?.includes(prereqId) || false
     )
 
+  const handleVideoTimeUpdate = async (currentTime: number, progress: number, timeSpent: number) => {
+    // Send time spent to backend periodically (only if time was actually spent)
+    if (timeSpent > 0) {
+      try {
+        await progressService.updateLessonProgress(
+          currentLesson.id, 
+          { 
+            progress_percentage: Math.round(progress),
+            time_spent: timeSpent 
+          }, 
+          cohortId || undefined
+        )
+      } catch (error) {
+        console.error("Failed to update lesson progress:", error)
+      }
+    }
+  }
+
   const handleVideoComplete = async () => {
     setVideoCompleted(true)
     
@@ -426,6 +444,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                       videoUrl={currentLesson.videoUrl}
                       hlsUrl={currentLesson.hlsUrl}
                       onComplete={handleVideoComplete}
+                      onTimeUpdate={handleVideoTimeUpdate}
                       isCompleted={isLessonCompleted}
                       initialPlaybackRate={savedPlaybackRate}
                       autoPlay={autoPlayNext}

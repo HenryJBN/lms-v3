@@ -143,4 +143,8 @@ export const API_ENDPOINTS = {
   inProgressCourses: "/api/enrollments/my-courses?status=active",
   completedCourses: "/api/enrollments/my-courses?status=completed",
   cohorts: "/api/cohorts",
+  
+  // Admin Completions endpoints
+  adminCompletions: "/api/enrollments/admin/completions",
+  adminCompletionsStats: "/api/enrollments/admin/completions/stats",
 }

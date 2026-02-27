@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlmodel import select, text, func, cast, String
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -17,7 +17,10 @@ from models.enums import EnrollmentStatus, CourseStatus
 from schemas.enrollment import EnrollmentCreate, EnrollmentResponse
 from schemas.course import CourseResponse
 from schemas.common import PaginationParams, PaginatedResponse
-from middleware.auth import get_current_active_user, get_current_user
+from models.gamification import TokenTransaction
+from models.enrollment import LessonProgress, Certificate
+from models.lesson import Lesson
+from middleware.auth import get_current_active_user, get_current_user, require_admin
 from utils.tokens import award_tokens
 from utils.notifications import send_enrollment_notification
 from utils.site_settings import are_token_rewards_enabled, get_signup_token_reward
@@ -245,6 +248,340 @@ async def get_my_enrollments(
         size=pagination.size,
         pages=(total + pagination.size - 1) // pagination.size
     )
+
+
+@router.get("/admin/completions")
+async def get_all_completions(
+    pagination: PaginationParams = Depends(),
+    course_id: Optional[uuid.UUID] = Query(None),
+    status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    current_user: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
+    """
+    Get all enrollments with completion data for admin dashboard.
+    Supports filtering by course, status, search, and date range.
+    """
+    from sqlalchemy import or_, and_
+    
+    # Convert timezone-aware datetimes to timezone-naive for PostgreSQL compatibility
+    if start_date and start_date.tzinfo is not None:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo is not None:
+        end_date = end_date.replace(tzinfo=None)
+    
+    # Build the main query joining Enrollment, User, Course, and Cohort (left join)
+    query = select(
+        Enrollment,
+        User,
+        Course,
+        Cohort
+    ).join(
+        User, Enrollment.user_id == User.id
+    ).join(
+        Course, Enrollment.course_id == Course.id
+    ).outerjoin(
+        Cohort, Enrollment.cohort_id == Cohort.id
+    ).where(
+        Enrollment.site_id == current_site.id
+    )
+    
+    # Apply filters
+    if course_id:
+        query = query.where(Enrollment.course_id == course_id)
+    
+    if status:
+        query = query.where(Enrollment.status == status)
+    
+    if search:
+        search_term = f"%{search.lower()}%"
+        query = query.where(
+            or_(
+                func.lower(User.first_name).ilike(search_term),
+                func.lower(User.last_name).ilike(search_term),
+                func.lower(User.email).ilike(search_term),
+                func.lower(Course.title).ilike(search_term)
+            )
+        )
+    
+    if start_date:
+        query = query.where(Enrollment.enrolled_at >= start_date)
+    
+    if end_date:
+        query = query.where(Enrollment.enrolled_at <= end_date)
+    
+    # Count total
+    count_query = select(func.count(Enrollment.id)).where(
+        Enrollment.site_id == current_site.id
+    )
+    if course_id:
+        count_query = count_query.where(Enrollment.course_id == course_id)
+    if status:
+        count_query = count_query.where(Enrollment.status == status)
+    
+    total_result = await session.exec(count_query)
+    total = total_result.one()
+    
+    # Order and paginate
+    query = query.order_by(Enrollment.enrolled_at.desc())
+    query = query.offset((pagination.page - 1) * pagination.size).limit(pagination.size)
+    
+    results = await session.exec(query)
+    rows = results.all()
+    
+    items = []
+    for enrollment, user, course, cohort in rows:
+        # Get lessons count for this course
+        lessons_query = select(func.count(Lesson.id)).where(
+            Lesson.course_id == course.id,
+            Lesson.is_published == True
+        )
+        lessons_result = await session.exec(lessons_query)
+        total_lessons = lessons_result.one() or 0
+        
+        # Get completed lessons count
+        completed_lessons_query = select(func.count(LessonProgress.id)).where(
+            LessonProgress.user_id == user.id,
+            LessonProgress.course_id == course.id,
+            LessonProgress.status == 'completed'
+        )
+        completed_lessons_result = await session.exec(completed_lessons_query)
+        lessons_completed = completed_lessons_result.one() or 0
+        
+        # Get quizzes data (lessons with quizzes)
+        from models.lesson import Quiz, QuizAttempt
+        quizzes_query = select(func.count(Quiz.id)).where(
+            Quiz.course_id == course.id,
+            Quiz.is_published == True
+        )
+        quizzes_result = await session.exec(quizzes_query)
+        total_quizzes = quizzes_result.one() or 0
+        
+        # Get passed quizzes
+        passed_quizzes_query = select(func.count(func.distinct(QuizAttempt.quiz_id))).where(
+            QuizAttempt.user_id == user.id,
+            QuizAttempt.passed == True
+        ).join(Quiz, QuizAttempt.quiz_id == Quiz.id).where(
+            Quiz.course_id == course.id
+        )
+        passed_quizzes_result = await session.exec(passed_quizzes_query)
+        quizzes_passed = passed_quizzes_result.one() or 0
+        
+        # Get certificate info
+        cert_query = select(Certificate).where(
+            Certificate.user_id == user.id,
+            Certificate.course_id == course.id
+        )
+        cert_result = await session.exec(cert_query)
+        certificate = cert_result.first()
+        
+        # Get tokens earned for this course
+        tokens_query = select(func.sum(TokenTransaction.amount)).where(
+            TokenTransaction.user_id == user.id,
+            TokenTransaction.reference_id == course.id,
+            TokenTransaction.site_id == current_site.id
+        )
+        tokens_result = await session.exec(tokens_query)
+        tokens_earned = tokens_result.first() or 0
+        
+        # Calculate time spent
+        time_query = select(func.sum(LessonProgress.time_spent)).where(
+            LessonProgress.user_id == user.id,
+            LessonProgress.course_id == course.id
+        )
+        time_result = await session.exec(time_query)
+        total_seconds = time_result.first() or 0
+        
+        # Format time spent
+        if total_seconds:
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            time_spent = f"{hours}h {minutes}m"
+        else:
+            time_spent = "0h 0m"
+        
+        # Determine status string
+        if enrollment.status == EnrollmentStatus.completed:
+            status_str = "completed"
+        elif enrollment.status == EnrollmentStatus.active:
+            status_str = "in_progress" if enrollment.progress_percentage < 100 else "completed"
+        else:
+            status_str = str(enrollment.status.value)
+        
+        items.append({
+            "id": str(enrollment.id),
+            "userId": str(user.id),
+            "userName": f"{user.first_name} {user.last_name}",
+            "userEmail": user.email,
+            "courseId": str(course.id),
+            "courseTitle": course.title,
+            "cohortId": str(cohort.id) if cohort else None,
+            "cohortName": cohort.name if cohort else None,
+            "enrollmentDate": enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else None,
+            "completionDate": enrollment.completed_at.isoformat() if enrollment.completed_at else None,
+            "progress": enrollment.progress_percentage,
+            "timeSpent": time_spent,
+            "lessonsCompleted": lessons_completed,
+            "totalLessons": total_lessons,
+            "quizzesPassed": quizzes_passed,
+            "totalQuizzes": total_quizzes,
+            "finalScore": enrollment.final_score if hasattr(enrollment, 'final_score') else None,
+            "certificateIssued": certificate is not None,
+            "certificateId": certificate.id if certificate else None,
+            "tokensEarned": int(tokens_earned) if tokens_earned else 0,
+            "status": status_str
+        })
+    
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=pagination.page,
+        size=pagination.size,
+        pages=(total + pagination.size - 1) // pagination.size
+    )
+
+
+@router.get("/admin/completions/stats")
+async def get_completions_stats(
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    current_user: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: Site = Depends(get_current_site)
+):
+    """
+    Get completion statistics for admin dashboard.
+    """
+    from sqlalchemy import case
+    
+    # Convert timezone-aware datetimes to timezone-naive for PostgreSQL compatibility
+    if start_date and start_date.tzinfo is not None:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo is not None:
+        end_date = end_date.replace(tzinfo=None)
+    
+    # Set default date range
+    if not start_date:
+        start_date = datetime.utcnow() - timedelta(days=30)
+    if not end_date:
+        end_date = datetime.utcnow()
+    
+    # Total enrollments
+    total_query = select(func.count(Enrollment.id)).where(
+        Enrollment.site_id == current_site.id,
+        Enrollment.enrolled_at.between(start_date, end_date)
+    )
+    total_result = await session.exec(total_query)
+    total_enrollments = total_result.one()
+    
+    # Completed enrollments
+    completed_query = select(func.count(Enrollment.id)).where(
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.completed,
+        Enrollment.completed_at.between(start_date, end_date)
+    )
+    completed_result = await session.exec(completed_query)
+    total_completions = completed_result.one()
+    
+    # Average completion rate
+    avg_query = select(func.avg(Enrollment.progress_percentage)).where(
+        Enrollment.site_id == current_site.id,
+        Enrollment.enrolled_at.between(start_date, end_date)
+    )
+    avg_result = await session.exec(avg_query)
+    avg_completion_rate = avg_result.first() or 0
+    
+    # Certificates issued
+    cert_query = select(func.count(Certificate.id)).where(
+        Certificate.site_id == current_site.id,
+        Certificate.issued_at.between(start_date, end_date)
+    )
+    cert_result = await session.exec(cert_query)
+    certificates_issued = cert_result.one()
+    
+    # Total tokens earned
+    tokens_query = select(func.sum(TokenTransaction.amount)).where(
+        TokenTransaction.site_id == current_site.id,
+        TokenTransaction.created_at.between(start_date, end_date)
+    )
+    tokens_result = await session.exec(tokens_query)
+    total_tokens = tokens_result.first() or 0
+    
+    # Average time to complete (for completed enrollments)
+    # This is a simplified calculation - would need more complex logic for accurate time
+    avg_time_query = select(
+        func.avg(
+            func.extract('day', Enrollment.completed_at - Enrollment.enrolled_at)
+        )
+    ).where(
+        Enrollment.site_id == current_site.id,
+        Enrollment.status == EnrollmentStatus.completed,
+        Enrollment.completed_at.between(start_date, end_date)
+    )
+    avg_time_result = await session.exec(avg_time_query)
+    avg_days = avg_time_result.first() or 0
+    
+    # Completion trends (last 6 months)
+    # Use raw SQL for reliable grouping by month - use execute for raw SQL
+    from sqlalchemy.ext.asyncio import AsyncConnection
+    from sqlalchemy import text as raw_text
+    
+    trends_sql = raw_text("""
+        SELECT to_char(completed_at, 'Mon') as month, COUNT(id) as completions
+        FROM enrollment
+        WHERE site_id = :site_id 
+        AND status = 'completed' 
+        AND completed_at >= :start_date
+        GROUP BY to_char(completed_at, 'Mon'), EXTRACT(MONTH FROM completed_at)
+        ORDER BY EXTRACT(MONTH FROM completed_at)
+    """)
+    
+    trends_result = await session.execute(trends_sql, {
+        "site_id": str(current_site.id),
+        "start_date": datetime.utcnow() - timedelta(days=180)
+    })
+    completion_trends = []
+    for row in trends_result:
+        completion_trends.append({
+            "month": row.month,
+            "completions": row.completions
+        })
+    
+    # Course completion rates
+    course_rates_query = select(
+        Course.id,
+        Course.title,
+        func.count(Enrollment.id).label('total'),
+        func.sum(case((Enrollment.status == EnrollmentStatus.completed, 1), else_=0)).label('completed')
+    ).join(
+        Enrollment, Course.id == Enrollment.course_id
+    ).where(
+        Course.site_id == current_site.id
+    ).group_by(Course.id).limit(5)
+    
+    course_rates_result = await session.exec(course_rates_query)
+    course_completion_rates = []
+    for cid, title, total, completed in course_rates_result.all():
+        rate = round((completed / total) * 100) if total > 0 else 0
+        course_completion_rates.append({
+            "course": title,
+            "rate": rate
+        })
+    
+    return {
+        "totalCompletions": total_completions,
+        "totalEnrollments": total_enrollments,
+        "averageCompletionRate": round(float(avg_completion_rate), 1) if avg_completion_rate else 0,
+        "averageTimeToComplete": f"{round(float(avg_days), 1)} weeks" if avg_days else "N/A",
+        "certificatesIssued": certificates_issued,
+        "totalTokensEarned": int(total_tokens) if total_tokens else 0,
+        "completionTrends": completion_trends,
+        "courseCompletionRates": course_completion_rates
+    }
 
 @router.get("/{enrollment_id}", response_model=EnrollmentResponse)
 async def get_enrollment(

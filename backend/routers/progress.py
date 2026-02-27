@@ -222,10 +222,17 @@ async def update_lesson_progress(
         existing_progress.status = status_enum
         existing_progress.progress_percentage = int(final_progress_percentage)
         
-        # Optional fields from payload
-        for field, value in progress_update.model_dump(exclude_unset=True).items():
-            if field and value is not None and field not in ("progress_percentage",):
-                setattr(existing_progress, field, value)
+        # Accumulate time_spent instead of overwriting
+        if progress_update.time_spent is not None:
+            existing_progress.time_spent = (existing_progress.time_spent or 0) + progress_update.time_spent
+        
+        # Update last_position if provided
+        if progress_update.last_position is not None:
+            existing_progress.last_position = progress_update.last_position
+        
+        # Update notes if provided
+        if progress_update.notes is not None:
+            existing_progress.notes = progress_update.notes
 
         # Set timestamps based on status transitions
         if status_enum == CompletionStatus.completed and prev_status != CompletionStatus.completed:

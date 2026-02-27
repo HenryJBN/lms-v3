@@ -21,7 +21,7 @@ interface VideoPlayerProps {
   videoUrl: string
   hlsUrl?: string
   onComplete: () => void
-  onTimeUpdate?: (currentTime: number, progress: number) => void
+  onTimeUpdate?: (currentTime: number, progress: number, timeSpent: number) => void
   isCompleted?: boolean
   initialTime?: number
   initialPlaybackRate?: number
@@ -60,6 +60,8 @@ export default function VideoPlayer({
   const onCompleteRef = useRef(onComplete)
   const intendedTimeRef = useRef(0)
   const isSeekingRef = useRef(false)
+  const sessionStartTimeRef = useRef<number | null>(null)
+  const lastUpdateTimeRef = useRef<number>(0)
   
   useEffect(() => {
     onCompleteRef.current = onComplete
@@ -220,14 +222,36 @@ export default function VideoPlayer({
     }
   }, [initialPlaybackRate, initialTime])
 
-  // Periodic progress tracking
+  // Track time spent and update progress periodically
+  useEffect(() => {
+    if (isPlaying && sessionStartTimeRef.current === null) {
+      sessionStartTimeRef.current = Date.now()
+    }
+    
+    if (!isPlaying && sessionStartTimeRef.current !== null) {
+      // Session paused - time spent will be reported on next update
+    }
+  }, [isPlaying])
+
+  // Periodic progress tracking with time spent
   useEffect(() => {
     if (!isPlaying || !onTimeUpdate) return
 
     const interval = setInterval(() => {
       const video = videoRef.current
       if (video && video.duration > 0) {
-        onTimeUpdate(video.currentTime, (video.currentTime / video.duration) * 100)
+        // Calculate time spent since last update (in seconds)
+        const now = Date.now()
+        const timeSinceLastUpdate = lastUpdateTimeRef.current > 0 
+          ? Math.floor((now - lastUpdateTimeRef.current) / 1000) 
+          : 5 // Default to 5 seconds for first update
+        
+        lastUpdateTimeRef.current = now
+        
+        // Only count time if video was actually playing (max 10 seconds to avoid counting pauses)
+        const actualTimeSpent = Math.min(timeSinceLastUpdate, 10)
+        
+        onTimeUpdate(video.currentTime, (video.currentTime / video.duration) * 100, actualTimeSpent)
       }
     }, 5000)
 
@@ -305,7 +329,8 @@ export default function VideoPlayer({
     setProgress((clampedTime / video.duration) * 100)
     video.currentTime = clampedTime
     if (onTimeUpdate) {
-      onTimeUpdate(clampedTime, (clampedTime / video.duration) * 100)
+      // Skip doesn't count as time spent, pass 0
+      onTimeUpdate(clampedTime, (clampedTime / video.duration) * 100, 0)
     }
   }
 

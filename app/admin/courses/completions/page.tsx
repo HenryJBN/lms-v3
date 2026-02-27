@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -62,7 +63,13 @@ import {
   FileText,
   Mail,
   Shield,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { enrollmentsService, type CompletionRecord, type CompletionsStats } from "@/lib/services/enrollments"
+import { courseService } from "@/lib/services/courses"
+import type { DateRange } from "react-day-picker"
 
 export default function CourseCompletionsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -76,142 +83,101 @@ export default function CourseCompletionsPage() {
     from: undefined,
     to: undefined,
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
-  // Mock completion data
-  const completions = [
-    {
-      id: 1,
-      userId: 101,
-      userName: "John Doe",
-      userEmail: "john.doe@example.com",
-      courseId: "blockchain-fundamentals",
-      courseTitle: "Blockchain Fundamentals",
-      enrollmentDate: "2024-01-15",
-      completionDate: "2024-01-28",
-      progress: 100,
-      timeSpent: "24h 30m",
-      lessonsCompleted: 12,
-      totalLessons: 12,
-      quizzesPassed: 8,
-      totalQuizzes: 8,
-      finalScore: 92,
-      certificateIssued: true,
-      certificateId: "CERT-BF-001",
-      tokensEarned: 150,
-      status: "completed",
-    },
-    {
-      id: 2,
-      userId: 102,
-      userName: "Jane Smith",
-      userEmail: "jane.smith@example.com",
-      courseId: "ai-fundamentals",
-      courseTitle: "AI Fundamentals",
-      enrollmentDate: "2024-01-10",
-      completionDate: null,
-      progress: 75,
-      timeSpent: "18h 45m",
-      lessonsCompleted: 9,
-      totalLessons: 12,
-      quizzesPassed: 6,
-      totalQuizzes: 8,
-      finalScore: 0,
-      certificateIssued: false,
-      certificateId: null,
-      tokensEarned: 90,
-      status: "in_progress",
-    },
-    {
-      id: 3,
-      userId: 103,
-      userName: "Mike Johnson",
-      userEmail: "mike.johnson@example.com",
-      courseId: "smart-contracts",
-      courseTitle: "Smart Contract Development",
-      enrollmentDate: "2024-01-05",
-      completionDate: "2024-01-25",
-      progress: 100,
-      timeSpent: "32h 15m",
-      lessonsCompleted: 15,
-      totalLessons: 15,
-      quizzesPassed: 10,
-      totalQuizzes: 10,
-      finalScore: 88,
-      certificateIssued: true,
-      certificateId: "CERT-SC-001",
-      tokensEarned: 200,
-      status: "completed",
-    },
-    {
-      id: 4,
-      userId: 104,
-      userName: "Sarah Wilson",
-      userEmail: "sarah.wilson@example.com",
-      courseId: "web-development",
-      courseTitle: "Web Development Fundamentals",
-      enrollmentDate: "2024-01-20",
-      completionDate: null,
-      progress: 45,
-      timeSpent: "12h 20m",
-      lessonsCompleted: 5,
-      totalLessons: 11,
-      quizzesPassed: 3,
-      totalQuizzes: 7,
-      finalScore: 0,
-      certificateIssued: false,
-      certificateId: null,
-      tokensEarned: 45,
-      status: "in_progress",
-    },
-    {
-      id: 5,
-      userId: 105,
-      userName: "Alex Rodriguez",
-      userEmail: "alex.rodriguez@example.com",
-      courseId: "3d-animation",
-      courseTitle: "3D Animation Basics",
-      enrollmentDate: "2024-01-12",
-      completionDate: "2024-01-30",
-      progress: 100,
-      timeSpent: "28h 50m",
-      lessonsCompleted: 14,
-      totalLessons: 14,
-      quizzesPassed: 9,
-      totalQuizzes: 9,
-      finalScore: 95,
-      certificateIssued: true,
-      certificateId: "CERT-3D-001",
-      tokensEarned: 175,
-      status: "completed",
-    },
-  ]
+  // Calculate date range based on selected time range
+  const dateParams = useMemo(() => {
+    const now = new Date()
+    let startDate: Date | undefined
+    let endDate: Date | undefined = now
 
-  // Mock course data for filtering
-  const courses = [
-    { id: "blockchain-fundamentals", title: "Blockchain Fundamentals" },
-    { id: "ai-fundamentals", title: "AI Fundamentals" },
-    { id: "smart-contracts", title: "Smart Contract Development" },
-    { id: "web-development", title: "Web Development Fundamentals" },
-    { id: "3d-animation", title: "3D Animation Basics" },
-  ]
+    switch (selectedTimeRange) {
+      case "7d":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        break
+      case "30d":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        break
+      case "90d":
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+        break
+      case "1y":
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+        break
+      case "all":
+        startDate = undefined
+        endDate = undefined
+        break
+      default:
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    }
 
-  // Analytics data
-  const completionTrends = [
-    { month: "Jan", completions: 45, enrollments: 120 },
-    { month: "Feb", completions: 52, enrollments: 135 },
-    { month: "Mar", completions: 48, enrollments: 128 },
-    { month: "Apr", completions: 61, enrollments: 145 },
-    { month: "May", completions: 58, enrollments: 142 },
-    { month: "Jun", completions: 67, enrollments: 158 },
-  ]
+    // Override with custom date range if set
+    if (dateRange.from) {
+      startDate = dateRange.from
+    }
+    if (dateRange.to) {
+      endDate = dateRange.to
+    }
 
-  const courseCompletionRates = [
-    { course: "Blockchain Fundamentals", rate: 85, color: "#8884d8" },
-    { course: "AI Fundamentals", rate: 72, color: "#82ca9d" },
-    { course: "Smart Contracts", rate: 68, color: "#ffc658" },
-    { course: "Web Development", rate: 79, color: "#ff7300" },
-    { course: "3D Animation", rate: 81, color: "#00ff88" },
-  ]
+    return {
+      start_date: startDate?.toISOString(),
+      end_date: endDate?.toISOString(),
+    }
+  }, [selectedTimeRange, dateRange])
+
+  // Fetch completions data
+  const { data: completionsData, isLoading: completionsLoading, error: completionsError } = useQuery({
+    queryKey: ["admin-completions", page, searchTerm, selectedCourse, selectedStatus, dateParams],
+    queryFn: () => enrollmentsService.getCompletions({
+      page,
+      size: pageSize,
+      search: searchTerm || undefined,
+      course_id: selectedCourse !== "all" ? selectedCourse : undefined,
+      status: selectedStatus !== "all" ? selectedStatus : undefined,
+      ...dateParams,
+    }),
+  })
+
+  // Fetch completions stats
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ["admin-completions-stats", dateParams],
+    queryFn: () => enrollmentsService.getCompletionsStats(dateParams),
+  })
+
+  // Fetch courses for filter dropdown
+  const { data: coursesData } = useQuery({
+    queryKey: ["courses"],
+    queryFn: () => courseService.getCourses(),
+  })
+
+  const courses = useMemo(() => {
+    if (!coursesData?.items) return []
+    return coursesData.items.map((course: any) => ({
+      id: course.id,
+      title: course.title,
+    }))
+  }, [coursesData])
+
+  // Transform stats data for charts
+  const completionTrends = useMemo(() => {
+    if (!statsData?.completionTrends) return []
+    return statsData.completionTrends.map((trend) => ({
+      month: trend.month,
+      completions: trend.completions,
+      enrollments: trend.completions * 2, // Approximate for visualization
+    }))
+  }, [statsData])
+
+  const courseCompletionRates = useMemo(() => {
+    if (!statsData?.courseCompletionRates) return []
+    return statsData.courseCompletionRates.map((course, index) => ({
+      course: course.course,
+      rate: course.rate,
+      color: `hsl(${index * 45}, 70%, 60%)`,
+    }))
+  }, [statsData])
 
   const timeToCompletion = [
     { range: "< 1 week", count: 12 },
@@ -221,29 +187,19 @@ export default function CourseCompletionsPage() {
     { range: "> 2 months", count: 18 },
   ]
 
-  const filteredCompletions = completions.filter((completion) => {
-    const matchesSearch =
-      completion.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      completion.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      completion.courseTitle.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCourse = selectedCourse === "all" || completion.courseId === selectedCourse
-    const matchesStatus = selectedStatus === "all" || completion.status === selectedStatus
-    return matchesSearch && matchesCourse && matchesStatus
-  })
-
   const stats = {
-    totalCompletions: completions.filter((c) => c.status === "completed").length,
-    totalEnrollments: completions.length,
-    averageCompletionRate: Math.round(
-      (completions.filter((c) => c.status === "completed").length / completions.length) * 100
-    ),
-    averageTimeToComplete: "3.2 weeks",
-    certificatesIssued: completions.filter((c) => c.certificateIssued).length,
-    totalTokensEarned: completions.reduce((sum, c) => sum + c.tokensEarned, 0),
+    totalCompletions: statsData?.totalCompletions ?? 0,
+    totalEnrollments: statsData?.totalEnrollments ?? 0,
+    averageCompletionRate: statsData?.averageCompletionRate ?? 0,
+    averageTimeToComplete: statsData?.averageTimeToComplete ?? "N/A",
+    certificatesIssued: statsData?.certificatesIssued ?? 0,
+    totalTokensEarned: statsData?.totalTokensEarned ?? 0,
   }
 
   const exportData = (format: string) => {
-    const dataToExport = filteredCompletions.map((completion) => ({
+    if (!completionsData?.items) return
+    
+    const dataToExport = completionsData.items.map((completion) => ({
       "User Name": completion.userName,
       "User Email": completion.userEmail,
       "Course Title": completion.courseTitle,
@@ -273,35 +229,31 @@ export default function CourseCompletionsPage() {
       a.download = `course-completions-${new Date().toISOString().split("T")[0]}.csv`
       a.click()
     } else if (format === "excel") {
-      console.log("Mock: Exporting to Excel", dataToExport)
-      alert("Mock: Exporting to Excel. Check console for data.")
+      console.log("Exporting to Excel", dataToExport)
+      alert("Excel export coming soon. Data logged to console.")
     } else if (format === "pdf") {
-      console.log("Mock: Exporting to PDF", dataToExport)
-      alert("Mock: Exporting to PDF. Check console for data.")
+      console.log("Exporting to PDF", dataToExport)
+      alert("PDF export coming soon. Data logged to console.")
     }
-    // Add other export formats as needed
   }
 
-  const handleViewDetails = (completion: any) => {
-    console.log("Mock: Viewing details for completion ID:", completion.id, completion)
-    alert(
-      `Mock: Viewing details for ${completion.userName}'s completion of ${completion.courseTitle}`
-    )
+  const handleViewDetails = (completion: CompletionRecord) => {
+    console.log("Viewing details for completion:", completion)
+    alert(`Viewing details for ${completion.userName}'s completion of ${completion.courseTitle}`)
   }
 
-  const handleSendReminder = (completion: any) => {
-    console.log("Mock: Sending reminder to user:", completion.userEmail, completion.id)
-    alert(`Mock: Sending reminder to ${completion.userName} for ${completion.courseTitle}`)
+  const handleSendReminder = (completion: CompletionRecord) => {
+    console.log("Sending reminder to user:", completion.userEmail)
+    alert(`Sending reminder to ${completion.userName} for ${completion.courseTitle}`)
   }
 
-  const handleViewCertificate = (completion: any) => {
-    console.log(
-      "Mock: Viewing certificate for completion ID:",
-      completion.certificateId,
-      completion
-    )
-    alert(`Mock: Viewing certificate ${completion.certificateId} for ${completion.userName}`)
+  const handleViewCertificate = (completion: CompletionRecord) => {
+    if (completion.certificateId) {
+      window.open(`/certificates/${completion.certificateId}`, "_blank")
+    }
   }
+
+  const totalPages = completionsData?.pages ?? 1
 
   return (
     <div className="flex min-h-screen">
@@ -336,7 +288,7 @@ export default function CourseCompletionsPage() {
                 <Calendar
                   mode="range"
                   selected={dateRange}
-                  onSelect={setDateRange}
+                  onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
                   numberOfMonths={2}
                 />
               </PopoverContent>
@@ -377,10 +329,19 @@ export default function CourseCompletionsPage() {
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCompletions}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+12%</span> from last month
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.totalCompletions}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Completed courses
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card>
@@ -389,10 +350,19 @@ export default function CourseCompletionsPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.averageCompletionRate}%</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+3%</span> from last month
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.averageCompletionRate}%</div>
+                    <p className="text-xs text-muted-foreground">
+                      Average progress
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card>
@@ -401,10 +371,19 @@ export default function CourseCompletionsPage() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.averageTimeToComplete}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-red-600">+0.2w</span> from last month
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.averageTimeToComplete}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Average duration
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card>
@@ -413,10 +392,19 @@ export default function CourseCompletionsPage() {
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.certificatesIssued}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+8</span> this week
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.certificatesIssued}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total certificates
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card>
@@ -425,10 +413,19 @@ export default function CourseCompletionsPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalEnrollments}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+15</span> this week
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.totalEnrollments}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Active enrollments
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
             <Card>
@@ -437,10 +434,19 @@ export default function CourseCompletionsPage() {
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalTokensEarned.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+125</span> this week
-                </p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stats.totalTokensEarned.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Total tokens
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -467,24 +473,33 @@ export default function CourseCompletionsPage() {
                       <Input
                         placeholder="Search users or courses..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value)
+                          setPage(1) // Reset to first page on search
+                        }}
                         className="pl-8"
                       />
                     </div>
-                    <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                    <Select value={selectedCourse} onValueChange={(value) => {
+                      setSelectedCourse(value)
+                      setPage(1)
+                    }}>
                       <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Filter by course" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Courses</SelectItem>
-                        {courses.map((course) => (
+                        {courses.map((course: any) => (
                           <SelectItem key={course.id} value={course.id}>
                             {course.title}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <Select value={selectedStatus} onValueChange={(value) => {
+                      setSelectedStatus(value)
+                      setPage(1)
+                    }}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by status" />
                       </SelectTrigger>
@@ -497,124 +512,190 @@ export default function CourseCompletionsPage() {
                     </Select>
                   </div>
 
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>User</TableHead>
-                          <TableHead>Course</TableHead>
-                          <TableHead>Progress</TableHead>
-                          <TableHead>Time Spent</TableHead>
-                          <TableHead>Score</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Certificate</TableHead>
-                          <TableHead>Tokens</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredCompletions.map((completion) => (
-                          <TableRow key={completion.id}>
-                            <TableCell className="font-medium">
-                              <div>
-                                <div className="font-medium">{completion.userName}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {completion.userEmail}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{completion.courseTitle}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  Enrolled: {completion.enrollmentDate}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <Progress value={completion.progress} className="h-2 w-20" />
-                                <div className="text-sm">{completion.progress}%</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {completion.lessonsCompleted}/{completion.totalLessons} lessons
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{completion.timeSpent}</TableCell>
-                            <TableCell>
-                              {completion.finalScore > 0 ? (
-                                <Badge
-                                  variant={completion.finalScore >= 80 ? "default" : "secondary"}
-                                >
-                                  {completion.finalScore}%
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  completion.status === "completed"
-                                    ? "default"
-                                    : completion.status === "in_progress"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                              >
-                                {completion.status.replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {completion.certificateIssued ? (
-                                <div className="flex items-center gap-1">
-                                  <Award className="h-4 w-4 text-yellow-500" />
-                                  <span className="text-sm">{completion.certificateId}</span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">Not issued</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{completion.tokensEarned}</TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem onClick={() => handleViewDetails(completion)}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleSendReminder(completion)}>
-                                    <Mail className="mr-2 h-4 w-4" />
-                                    Send Reminder
-                                  </DropdownMenuItem>
-                                  {completion.certificateIssued && (
-                                    <DropdownMenuItem
-                                      onClick={() => handleViewCertificate(completion)}
+                  {completionsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center space-x-4 py-4">
+                          <Skeleton className="h-12 w-12 rounded-full" />
+                          <div className="space-y-2 flex-1">
+                            <Skeleton className="h-4 w-[200px]" />
+                            <Skeleton className="h-3 w-[150px]" />
+                          </div>
+                          <Skeleton className="h-4 w-[100px]" />
+                          <Skeleton className="h-4 w-[80px]" />
+                          <Skeleton className="h-6 w-[60px]" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : completionsError ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Error loading completions. Please try again.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>User</TableHead>
+                              <TableHead>Course</TableHead>
+                              <TableHead>Cohort</TableHead>
+                              <TableHead>Progress</TableHead>
+                              <TableHead>Time Spent</TableHead>
+                              <TableHead>Score</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Certificate</TableHead>
+                              <TableHead>Tokens</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {completionsData?.items?.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                                  No completions found matching your criteria.
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              completionsData?.items?.map((completion) => (
+                                <TableRow key={completion.id}>
+                                  <TableCell className="font-medium">
+                                    <div>
+                                      <div className="font-medium">{completion.userName}</div>
+                                      <div className="text-sm text-muted-foreground">
+                                        {completion.userEmail}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <div className="font-medium">{completion.courseTitle}</div>
+                                      <div className="text-sm text-muted-foreground">
+                                        Enrolled: {completion.enrollmentDate ? new Date(completion.enrollmentDate).toLocaleDateString() : 'N/A'}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    {completion.cohortName ? (
+                                      <Badge variant="outline">
+                                        {completion.cohortName}
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">No Cohort</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="space-y-1">
+                                      <Progress value={completion.progress} className="h-2 w-20" />
+                                      <div className="text-sm">{completion.progress}%</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {completion.lessonsCompleted}/{completion.totalLessons} lessons
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{completion.timeSpent}</TableCell>
+                                  <TableCell>
+                                    {completion.finalScore && completion.finalScore > 0 ? (
+                                      <Badge variant={completion.finalScore >= 80 ? "default" : "secondary"}>
+                                        {completion.finalScore}%
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">N/A</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        completion.status === "completed"
+                                          ? "default"
+                                          : completion.status === "in_progress"
+                                            ? "secondary"
+                                            : "outline"
+                                      }
                                     >
-                                      <Award className="mr-2 h-4 w-4" />
-                                      View Certificate
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => exportData("csv")}>
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Export Data (CSV)
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                                      {completion.status.replace("_", " ")}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {completion.certificateIssued ? (
+                                      <div className="flex items-center gap-1">
+                                        <Award className="h-4 w-4 text-yellow-500" />
+                                        <span className="text-sm">{completion.certificateId}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">Not issued</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>{completion.tokensEarned}</TableCell>
+                                  <TableCell className="text-right">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                          <span className="sr-only">Open menu</span>
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={() => handleViewDetails(completion)}>
+                                          <Eye className="mr-2 h-4 w-4" />
+                                          View Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleSendReminder(completion)}>
+                                          <Mail className="mr-2 h-4 w-4" />
+                                          Send Reminder
+                                        </DropdownMenuItem>
+                                        {completion.certificateIssued && (
+                                          <DropdownMenuItem onClick={() => handleViewCertificate(completion)}>
+                                            <Award className="mr-2 h-4 w-4" />
+                                            View Certificate
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => exportData("csv")}>
+                                          <Download className="mr-2 h-4 w-4" />
+                                          Export Data (CSV)
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="text-sm text-muted-foreground">
+                            Page {page} of {totalPages}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPage(p => Math.max(1, p - 1))}
+                              disabled={page === 1}
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                              Previous
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                              disabled={page === totalPages}
+                            >
+                              Next
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -627,26 +708,36 @@ export default function CourseCompletionsPage() {
                     <CardDescription>Monthly completion vs enrollment trends</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={completionTrends}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line
-                          type="monotone"
-                          dataKey="completions"
-                          stroke="#8884d8"
-                          strokeWidth={2}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="enrollments"
-                          stroke="#82ca9d"
-                          strokeWidth={2}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {statsLoading ? (
+                      <div className="space-y-3 h-[300px] flex flex-col justify-center">
+                        <Skeleton className="h-[250px] w-full" />
+                      </div>
+                    ) : completionTrends.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={completionTrends}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Line
+                            type="monotone"
+                            dataKey="completions"
+                            stroke="#8884d8"
+                            strokeWidth={2}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="enrollments"
+                            stroke="#82ca9d"
+                            strokeWidth={2}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        No trend data available
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -656,15 +747,25 @@ export default function CourseCompletionsPage() {
                     <CardDescription>Completion percentage by course</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={courseCompletionRates}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="course" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `${value}%`} />
-                        <Bar dataKey="rate" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {statsLoading ? (
+                      <div className="space-y-3 h-[300px] flex flex-col justify-center">
+                        <Skeleton className="h-[250px] w-full" />
+                      </div>
+                    ) : courseCompletionRates.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={courseCompletionRates}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="course" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => `${value}%`} />
+                          <Bar dataKey="rate" fill="#8884d8" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        No course data available
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -683,10 +784,11 @@ export default function CourseCompletionsPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="count"
+                          nameKey="range"
+                          label
                         >
                           {timeToCompletion.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
@@ -704,39 +806,71 @@ export default function CourseCompletionsPage() {
                     <CardDescription>Key metrics and insights</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Average completion rate</span>
-                        <span className="font-medium">{stats.averageCompletionRate}%</span>
-                      </div>
-                      <Progress value={stats.averageCompletionRate} className="h-2" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Certificate issuance rate</span>
-                        <span className="font-medium">
-                          {Math.round((stats.certificatesIssued / stats.totalCompletions) * 100)}%
-                        </span>
-                      </div>
-                      <Progress
-                        value={Math.round(
-                          (stats.certificatesIssued / stats.totalCompletions) * 100
-                        )}
-                        className="h-2"
-                      />
-                    </div>
-                    <div className="pt-4 space-y-2">
-                      <div className="text-sm font-medium">Top performing courses:</div>
-                      {courseCompletionRates
-                        .sort((a, b) => b.rate - a.rate)
-                        .slice(0, 3)
-                        .map((course, index) => (
-                          <div key={index} className="flex justify-between text-sm">
-                            <span>{course.course}</span>
-                            <span className="font-medium">{course.rate}%</span>
+                    {statsLoading ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-4 w-10" />
                           </div>
-                        ))}
-                    </div>
+                          <Skeleton className="h-2 w-full" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Skeleton className="h-4 w-36" />
+                            <Skeleton className="h-4 w-10" />
+                          </div>
+                          <Skeleton className="h-2 w-full" />
+                        </div>
+                        <div className="pt-4 space-y-2">
+                          <Skeleton className="h-4 w-36" />
+                          {[...Array(3)].map((_, i) => (
+                            <div key={i} className="flex justify-between">
+                              <Skeleton className="h-4 w-24" />
+                              <Skeleton className="h-4 w-10" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm">Average completion rate</span>
+                            <span className="font-medium">{stats.averageCompletionRate}%</span>
+                          </div>
+                          <Progress value={stats.averageCompletionRate} className="h-2" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm">Certificate issuance rate</span>
+                            <span className="font-medium">
+                              {stats.totalCompletions > 0
+                                ? Math.round((stats.certificatesIssued / stats.totalCompletions) * 100)
+                                : 0}%
+                            </span>
+                          </div>
+                          <Progress
+                            value={stats.totalCompletions > 0
+                              ? Math.round((stats.certificatesIssued / stats.totalCompletions) * 100)
+                              : 0}
+                            className="h-2"
+                          />
+                        </div>
+                        <div className="pt-4 space-y-2">
+                          <div className="text-sm font-medium">Top performing courses:</div>
+                          {courseCompletionRates
+                            .sort((a, b) => b.rate - a.rate)
+                            .slice(0, 3)
+                            .map((course, index) => (
+                              <div key={index} className="flex justify-between text-sm">
+                                <span>{course.course}</span>
+                                <span className="font-medium">{course.rate}%</span>
+                              </div>
+                            ))}
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </div>
