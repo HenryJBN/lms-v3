@@ -224,7 +224,7 @@ export default function DashboardPage() {
                   />
                 </div>
               </CardContent>
-              <CardFooter>
+              {analytics?.last_accessed?.lesson_id && <CardFooter>
                 <Button variant="ghost" className="w-full" asChild>
                   <Link
                     href={
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-              </CardFooter>
+              </CardFooter>}
             </Card>
 
             {/* Recent Activity */}
