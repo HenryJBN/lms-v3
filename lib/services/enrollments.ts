@@ -50,6 +50,7 @@ export interface CompletionsStats {
   totalTokensEarned: number
   completionTrends: Array<{ month: string; completions: number }>
   courseCompletionRates: Array<{ course: string; rate: number }>
+  timeToCompletionDistribution: Array<{ range: string; count: number }>
 }
 
 export interface CompletionsFilters {

@@ -572,6 +572,58 @@ async def get_completions_stats(
             "rate": rate
         })
     
+    # Time to completion distribution
+    # Calculate days between enrollment and completion for completed enrollments
+    time_distribution_sql = raw_text("""
+        SELECT time_range, COUNT(id) as count
+        FROM (
+            SELECT 
+                id,
+                CASE 
+                    WHEN EXTRACT(day FROM (completed_at - enrolled_at)) < 7 THEN '< 1 week'
+                    WHEN EXTRACT(day FROM (completed_at - enrolled_at)) < 14 THEN '1-2 weeks'
+                    WHEN EXTRACT(day FROM (completed_at - enrolled_at)) < 30 THEN '2-4 weeks'
+                    WHEN EXTRACT(day FROM (completed_at - enrolled_at)) < 60 THEN '1-2 months'
+                    ELSE '> 2 months'
+                END as time_range
+            FROM enrollment
+            WHERE site_id = :site_id 
+            AND status = 'completed' 
+            AND completed_at IS NOT NULL
+            AND enrolled_at IS NOT NULL
+            AND completed_at >= :start_date
+        ) sub
+        GROUP BY time_range
+        ORDER BY 
+            CASE time_range
+                WHEN '< 1 week' THEN 1
+                WHEN '1-2 weeks' THEN 2
+                WHEN '2-4 weeks' THEN 3
+                WHEN '1-2 months' THEN 4
+                ELSE 5
+            END
+    """)
+    
+    time_dist_result = await session.execute(time_distribution_sql, {
+        "site_id": str(current_site.id),
+        "start_date": start_date
+    })
+    
+    # Build the distribution with all ranges (including zeros)
+    time_to_completion_distribution = [
+        {"range": "< 1 week", "count": 0},
+        {"range": "1-2 weeks", "count": 0},
+        {"range": "2-4 weeks", "count": 0},
+        {"range": "1-2 months", "count": 0},
+        {"range": "> 2 months", "count": 0}
+    ]
+    
+    for row in time_dist_result:
+        for item in time_to_completion_distribution:
+            if item["range"] == row.time_range:
+                item["count"] = row.count
+                break
+    
     return {
         "totalCompletions": total_completions,
         "totalEnrollments": total_enrollments,
@@ -580,7 +632,8 @@ async def get_completions_stats(
         "certificatesIssued": certificates_issued,
         "totalTokensEarned": int(total_tokens) if total_tokens else 0,
         "completionTrends": completion_trends,
-        "courseCompletionRates": course_completion_rates
+        "courseCompletionRates": course_completion_rates,
+        "timeToCompletionDistribution": time_to_completion_distribution
     }
 
 @router.get("/{enrollment_id}", response_model=EnrollmentResponse)

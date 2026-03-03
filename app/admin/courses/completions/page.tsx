@@ -179,13 +179,15 @@ export default function CourseCompletionsPage() {
     }))
   }, [statsData])
 
-  const timeToCompletion = [
-    { range: "< 1 week", count: 12 },
-    { range: "1-2 weeks", count: 28 },
-    { range: "2-4 weeks", count: 45 },
-    { range: "1-2 months", count: 32 },
-    { range: "> 2 months", count: 18 },
-  ]
+  const timeToCompletion = useMemo(() => {
+    if (!statsData?.timeToCompletionDistribution) return []
+    return statsData.timeToCompletionDistribution.map((item, index) => ({
+      range: item.range,
+      count: item.count,
+      color: `hsl(${index * 45}, 70%, 60%)`,
+    }))
+  }, [statsData])
+
 
   const stats = {
     totalCompletions: statsData?.totalCompletions ?? 0,
@@ -279,17 +281,45 @@ export default function CourseCompletionsPage() {
             </Select>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant={dateRange.from ? "default" : "outline"} 
+                  size="sm"
+                >
                   <CalendarIcon className="h-4 w-4 mr-2" />
-                  Custom Range
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {dateRange.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dateRange.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </>
+                    ) : (
+                      dateRange.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    )
+                  ) : (
+                    "Custom Range"
+                  )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
+                <div className="px-10 py-3 border-b flex items-center justify-between relative z-20">
+                  <span className="text-sm font-medium">Select Date Range</span>
+                  {dateRange.from && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setDateRange({ from: undefined, to: undefined })}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
                 <Calendar
                   mode="range"
                   selected={dateRange}
                   onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
-                  numberOfMonths={2}
+                  numberOfMonths={1}
+                  className="rounded-md border-0 mt-2"
                 />
               </PopoverContent>
             </Popover>
@@ -777,26 +807,36 @@ export default function CourseCompletionsPage() {
                     <CardDescription>Distribution of completion timeframes</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={timeToCompletion}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="count"
-                          nameKey="range"
-                          label
-                        >
-                          {timeToCompletion.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {statsLoading ? (
+                      <div className="space-y-3 h-[300px] flex flex-col justify-center">
+                        <Skeleton className="h-[250px] w-full" />
+                      </div>
+                    ) : timeToCompletion.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={timeToCompletion}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                            nameKey="range"
+                            label
+                          >
+                            {timeToCompletion.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`hsl(${index * 45}, 70%, 60%)`} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        No time to completion data available
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
