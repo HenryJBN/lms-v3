@@ -147,4 +147,13 @@ export const API_ENDPOINTS = {
   // Admin Completions endpoints
   adminCompletions: "/api/enrollments/admin/completions",
   adminCompletionsStats: "/api/enrollments/admin/completions/stats",
+
+  // Milestone endpoints
+  milestones: "/api/milestones",
+  milestoneCourse: (courseId: string) => `/api/milestones/course/${courseId}`,
+  milestoneItem: (milestoneId: string) => `/api/milestones/${milestoneId}`,
+  milestoneClaim: (milestoneId: string) => `/api/milestones/${milestoneId}/claim`,
+  myMilestones: "/api/milestones/user/my-milestones",
+  milestoneCourseProgress: (courseId: string) => `/api/milestones/user/course-progress/${courseId}`,
+  autoGenerateMilestones: "/api/milestones/auto-generate",
 }

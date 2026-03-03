@@ -17,7 +17,9 @@ import { Calendar, MapPin, Briefcase, Award, BookOpen, Trophy, Loader2 } from "l
 import { useAuth } from "@/lib/contexts/auth-context"
 import { usersService } from "@/lib/services/users"
 import { enrollmentsService, type Enrollment } from "@/lib/services/enrollments"
+import { milestonesService, type UserMilestone } from "@/lib/services/milestones"
 import { format, isValid } from "date-fns"
+import { MilestoneBadgeDisplay } from "@/components/milestone-celebration-modal"
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading, refreshUser, tokenBalance } = useAuth()
@@ -55,6 +57,15 @@ export default function ProfilePage() {
     queryFn: () => enrollmentsService.getUserEnrollments(),
     enabled: !!user,
   })
+
+  // Fetch user milestones
+  const { data: milestonesData, isLoading: milestonesLoading } = useQuery({
+    queryKey: ["myMilestones"],
+    queryFn: () => milestonesService.getMyMilestones(undefined, 1, 20),
+    enabled: !!user,
+  })
+
+  const userMilestones = milestonesData?.items || []
 
   // Profile update mutation
   const updateProfileMutation = useMutation({
@@ -224,11 +235,46 @@ export default function ProfilePage() {
           </Card>
         </div>
 
+        {/* Milestones Achievement Section */}
+        {userMilestones.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Achievements
+              </CardTitle>
+              <CardDescription>
+                Milestones you've reached during your learning journey
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-6">
+                {userMilestones.slice(0, 8).map((userMilestone) => (
+                  userMilestone.milestone && (
+                    <MilestoneBadgeDisplay
+                      key={userMilestone.id}
+                      milestone={userMilestone.milestone}
+                      achievedAt={userMilestone.achieved_at}
+                      size="large"
+                    />
+                  )
+                ))}
+              </div>
+              {userMilestones.length > 8 && (
+                <p className="text-sm text-muted-foreground mt-4">
+                  +{userMilestones.length - 8} more achievements
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Tabs Section */}
         <Tabs defaultValue="profile" className="space-y-4">
           <TabsList>
             <TabsTrigger value="profile">Edit Profile</TabsTrigger>
             <TabsTrigger value="courses">My Courses</TabsTrigger>
+            <TabsTrigger value="milestones">Milestones</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4">
@@ -374,6 +420,84 @@ export default function ProfilePage() {
                           <Button size="sm" asChild>
                             <a href={`/learn/${enrollment.course_id}`}>Continue</a>
                           </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="milestones" className="space-y-4">
+            {userMilestones.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <Award className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">No milestones achieved yet</h3>
+                    <p className="text-muted-foreground mt-2">
+                      Complete courses to earn milestone badges
+                    </p>
+                    <Button className="mt-4" asChild>
+                      <a href="/courses">Start Learning</a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {userMilestones.map((userMilestone) => (
+                  <Card key={userMilestone.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-4">
+                        {userMilestone.milestone && (
+                          <MilestoneBadgeDisplay
+                            milestone={userMilestone.milestone}
+                            achievedAt={userMilestone.achieved_at}
+                            showDate={false}
+                            size="large"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-semibold">
+                            {userMilestone.milestone?.name || "Milestone"}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {userMilestone.milestone?.description}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <Badge variant="secondary">
+                              {milestonesService.getRewardDescription(userMilestone.milestone!)}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              Achieved on {formatDate(userMilestone.achieved_at, "MMM dd, yyyy")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          {userMilestone.reward_claimed ? (
+                            <Badge variant="outline" className="bg-green-100 text-green-800">
+                              Reward Claimed
+                            </Badge>
+                          ) : (
+                            <Button 
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await milestonesService.claimMilestoneReward(userMilestone.milestone_id)
+                                  // Refetch milestones
+                                } catch (error) {
+                                  console.error("Failed to claim reward:", error)
+                                }
+                              }}
+                            >
+                              Claim Reward
+                            </Button>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            Progress: {userMilestone.progress_at_achievement}%
+                          </span>
                         </div>
                       </div>
                     </CardContent>

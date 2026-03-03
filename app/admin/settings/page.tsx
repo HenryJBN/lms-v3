@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings, Shield, Users, BookOpen, Save, Loader2, Palette, Mail, Send, AlertCircle } from "lucide-react"
+import { GlobalMilestonesTab } from "@/components/admin/global-milestones-tab"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ImageUpload } from "@/components/admin/image-upload"
 import { useToast } from "@/hooks/use-toast"
@@ -243,48 +244,6 @@ export default function AdminSettings() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <div className="hidden w-64 flex-col border-r bg-muted/40 lg:flex">
-        <div className="flex h-14 items-center border-b px-4">
-          <Link href="/admin" className="flex items-center gap-2 font-bold">
-            <Shield className="h-6 w-6" />
-            <span>Admin Panel</span>
-          </Link>
-        </div>
-        <div className="flex-1 overflow-auto py-2">
-          <nav className="grid items-start px-2 text-sm font-medium">
-            <Link
-              href="/admin"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <Shield className="h-4 w-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <Users className="h-4 w-4" />
-              Users
-            </Link>
-            <Link
-              href="/admin/courses"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <BookOpen className="h-4 w-4" />
-              Courses
-            </Link>
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-3 rounded-lg bg-red/10 px-3 py-2 text-red transition-all"
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Link>
-          </nav>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1">
         {/* Header */}
@@ -311,7 +270,8 @@ export default function AdminSettings() {
               <TabsTrigger value="email">Email</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
+              <TabsTrigger value="milestones">Milestones</TabsTrigger>
+              <TabsTrigger value="blockchain">Token Rewards</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
@@ -672,6 +632,11 @@ export default function AdminSettings() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+
+            <TabsContent value="milestones" className="space-y-4">
+              <GlobalMilestonesTab />
             </TabsContent>
 
             <TabsContent value="blockchain" className="space-y-4">

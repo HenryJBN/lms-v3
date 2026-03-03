@@ -79,3 +79,23 @@ class TokenTransactionType(str, Enum):
     reward = "reward"
     purchase = "purchase"
     refund = "refund"
+
+class MilestoneType(str, Enum):
+    progress = "progress"        # Auto: % completion threshold
+    section = "section"          # Auto: section completion
+    lesson = "lesson"            # Custom: specific lesson completion
+    time = "time"                # Custom: time-based milestone
+    streak = "streak"            # Future: learning streak days
+
+class RewardType(str, Enum):
+    tokens = "tokens"
+    gift_card = "gift_card"
+    airtime_voucher = "airtime_voucher"
+    certificate_bonus = "certificate_bonus"
+    custom = "custom"
+
+class MilestoneStatus(str, Enum):
+    active = "active"
+    inactive = "inactive"
+    achieved = "achieved"
+    claimed = "claimed"

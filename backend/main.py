@@ -14,7 +14,7 @@ import models  # Register SQLModel tables
 from routers import (
     auth, users, courses, lessons, categories, enrollments,
     progress, certificates, notifications, admin, analytics, sections, assignments,
-    system_admin, onboarding, cohorts, admin_email, site, videos
+    system_admin, onboarding, cohorts, admin_email, site, videos, milestones
 )
 from middleware.auth import get_current_user, init_admin_site_cache
 from middleware.logging import setup_logging
@@ -81,6 +81,7 @@ app.include_router(system_admin.router, prefix="/api/system-admin", tags=["Syste
 app.include_router(onboarding.router, prefix="/api/onboarding", tags=["Onboarding"])
 app.include_router(cohorts.router, prefix="/api/cohorts", tags=["Cohorts"])
 app.include_router(site.router, prefix="/api/site", tags=["Site"])
+app.include_router(milestones.router, prefix="/api/milestones", tags=["Milestones"])
 
 # TODO: Remove Video streaming endpoint (for development only - production uses S3/CDN directly)
 APP_ENV = os.getenv("APP_ENV", "development")

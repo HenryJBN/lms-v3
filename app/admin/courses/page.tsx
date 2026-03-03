@@ -20,6 +20,7 @@ import {
   Upload,
   Download,
   Calendar,
+  Trophy,
 } from "lucide-react"
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { StatsGrid } from "@/components/admin/stats-grid"
@@ -274,6 +275,13 @@ export default function CoursesManagement() {
       icon: Calendar,
       onClick: (course: any) => {
         router.push(`/admin/courses/${course.id}/cohorts`)
+      },
+    },
+    {
+      label: "Milestones",
+      icon: Trophy,
+      onClick: (course: any) => {
+        router.push(`/admin/courses/${course.id}/milestones`)
       },
     },
     {

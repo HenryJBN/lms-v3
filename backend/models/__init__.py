@@ -9,6 +9,7 @@ from .finance import RevenueRecord
 from .system import AdminAuditLog
 from .user import User, UserProfile
 from .auth_tokens import PasswordResetToken, EmailVerificationToken
+from .milestone import Milestone, UserMilestone
 
 from .enums import (
     UserRole, UserStatus, 
@@ -16,7 +17,8 @@ from .enums import (
     EnrollmentStatus, LessonType, 
     CompletionStatus, CertificateStatus,
     NotificationType, NotificationPriority,
-    QuizQuestionType
+    QuizQuestionType,
+    MilestoneType, RewardType, MilestoneStatus
 )
 
 
@@ -31,10 +33,12 @@ __all__ = [
     "Notification", "NotificationSettings",
     "RevenueRecord", "AdminAuditLog",
     "PasswordResetToken", "EmailVerificationToken",
+    "Milestone", "UserMilestone",
     "UserRole", "UserStatus",
     "CourseStatus", "CourseLevel",
     "EnrollmentStatus", "LessonType",
     "CompletionStatus", "CertificateStatus",
     "NotificationType", "NotificationPriority",
-    "QuizQuestionType"
+    "QuizQuestionType",
+    "MilestoneType", "RewardType", "MilestoneStatus"
 ]
