@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import uuid
 from schemas.common import BaseSchema
 from pydantic import Field
 from models.enums import EnrollmentStatus, CompletionStatus, CertificateStatus
+from schemas.milestone import MilestoneCelebrationResponse
 
 class EnrollmentCreate(BaseSchema):
     course_id: uuid.UUID
@@ -49,6 +50,7 @@ class LessonProgressResponse(BaseSchema):
     lesson_title: Optional[str] = None
     lesson_type: Optional[str] = None
     course_progress_percentage: Optional[int] = 0
+    milestones: Optional[List[MilestoneCelebrationResponse]] = []
 
 # Certificate schemas
 class CertificateBase(BaseSchema):

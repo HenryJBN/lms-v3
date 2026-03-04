@@ -34,6 +34,11 @@ from middleware.auth import get_current_active_user, get_current_user, require_a
 from utils.tokens import award_tokens
 from utils.notifications import create_notification
 from utils.file_upload import upload_image
+from utils.milestones import (
+    get_badge_color,
+    calculate_progress_towards,
+    check_and_award_milestones
+)
 from schemas.system import FileUploadResponse
 import logging
 
@@ -156,7 +161,7 @@ async def auto_generate_milestones(
             reward_type=RewardType.tokens,
             reward_value=float(token_reward),
             celebration_message=config["message"],
-            badge_color=_get_badge_color(threshold),
+            badge_color=get_badge_color(threshold),
             site_id=current_site.id,
             sort_order=threshold
         )
@@ -214,16 +219,50 @@ async def auto_generate_milestones(
     )
 
 
-def _get_badge_color(threshold: int) -> str:
-    """Get badge color based on progress threshold."""
-    colors = {
-        10: "#6366f1",   # Indigo
-        25: "#8b5cf6",   # Purple
-        50: "#ec4899",   # Pink
-        75: "#f59e0b",   # Amber
-        100: "#10b981"   # Green
-    }
-    return colors.get(threshold, "#6366f1")
+@router.get("/", response_model=MilestoneListResponse)
+async def get_milestones(
+    course_id: Optional[uuid.UUID] = Query(None),
+    is_global: Optional[bool] = Query(None),
+    is_active: Optional[bool] = Query(None),
+    pagination: PaginationParams = Depends(),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+    current_site: SiteData = Depends(get_current_site)
+):
+    """List milestones with optional filtering (admin/staff)."""
+    query = select(Milestone).where(Milestone.site_id == current_site.id)
+    
+    if course_id:
+        query = query.where(Milestone.course_id == course_id)
+    elif is_global:
+        query = query.where(Milestone.course_id == None)
+        
+    if is_active is not None:
+        query = query.where(Milestone.is_active == is_active)
+        
+    # Count total
+    count_query = select(func.count(Milestone.id)).where(Milestone.site_id == current_site.id)
+    if course_id:
+        count_query = count_query.where(Milestone.course_id == course_id)
+    elif is_global:
+        count_query = count_query.where(Milestone.course_id == None)
+    if is_active is not None:
+        count_query = count_query.where(Milestone.is_active == is_active)
+        
+    total_result = await session.exec(count_query)
+    total = total_result.one()
+    
+    # Paginate and order
+    query = query.order_by(Milestone.sort_order)
+    query = query.offset((pagination.page - 1) * pagination.size).limit(pagination.size)
+    
+    result = await session.exec(query)
+    milestones = result.all()
+    
+    return MilestoneListResponse(
+        items=[MilestoneResponse.from_orm(m) for m in milestones],
+        total=total
+    )
 
 
 @router.get("/course/{course_id}", response_model=MilestoneListResponse)
@@ -432,7 +471,7 @@ async def get_course_milestones_progress(
         user_milestone = user_milestones.get(milestone.id)
         
         # Calculate progress towards milestone
-        progress_towards = _calculate_progress_towards(
+        progress_towards = await calculate_progress_towards(
             milestone, enrollment, current_user.id, session
         )
         
@@ -455,270 +494,4 @@ async def get_course_milestones_progress(
     )
 
 
-async def _calculate_progress_towards(
-    milestone: Milestone,
-    enrollment: Enrollment,
-    user_id: uuid.UUID,
-    session: AsyncSession
-) -> int:
-    """Calculate user's progress towards a specific milestone."""
-    if milestone.type == MilestoneType.progress:
-        # For progress milestones, use enrollment progress
-        return min(100, int((enrollment.progress_percentage / milestone.threshold_value) * 100))
-    
-    elif milestone.type == MilestoneType.section and milestone.section_id:
-        # For section milestones, calculate section completion
-        lessons_query = select(func.count(Lesson.id)).where(
-            Lesson.section_id == milestone.section_id,
-            Lesson.is_published == True
-        )
-        total_lessons = (await session.exec(lessons_query)).one() or 0
-        
-        if total_lessons == 0:
-            return 0
-        
-        completed_query = select(func.count(LessonProgress.id)).join(Lesson).where(
-            LessonProgress.user_id == user_id,
-            Lesson.section_id == milestone.section_id,
-            LessonProgress.status == 'completed'
-        )
-        completed_lessons = (await session.exec(completed_query)).one() or 0
-        
-        return int((completed_lessons / total_lessons) * 100)
-    
-    elif milestone.type == MilestoneType.lesson and milestone.lesson_ids:
-        # For lesson-specific milestones
-        total_lessons = len(milestone.lesson_ids)
-        completed_query = select(func.count(LessonProgress.id)).where(
-            LessonProgress.user_id == user_id,
-            LessonProgress.lesson_id.in_(milestone.lesson_ids),
-            LessonProgress.status == 'completed'
-        )
-        completed_lessons = (await session.exec(completed_query)).one() or 0
-        
-        return int((completed_lessons / total_lessons) * 100)
-    
-    return 0
-
-
-@router.post("/{milestone_id}/claim", response_model=RewardClaimResponse)
-async def claim_milestone_reward(
-    milestone_id: uuid.UUID,
-    current_user: User = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_session),
-    current_site: SiteData = Depends(get_current_site)
-):
-    """Claim the reward for an achieved milestone."""
-    # Get user milestone
-    query = select(UserMilestone).where(
-        UserMilestone.milestone_id == milestone_id,
-        UserMilestone.user_id == current_user.id,
-        UserMilestone.site_id == current_site.id
-    )
-    result = await session.exec(query)
-    user_milestone = result.first()
-    
-    if not user_milestone:
-        raise HTTPException(status_code=404, detail="Milestone not achieved yet")
-    
-    if user_milestone.reward_claimed:
-        raise HTTPException(status_code=400, detail="Reward already claimed")
-    
-    # Get milestone details
-    milestone = await session.get(Milestone, milestone_id)
-    if not milestone:
-        raise HTTPException(status_code=404, detail="Milestone not found")
-    
-    # Process reward based on type
-    reward_description = ""
-    try:
-        if milestone.reward_type == RewardType.tokens:
-            await award_tokens(
-                user_id=current_user.id,
-                amount=milestone.reward_value,
-                description=f"Milestone reward: {milestone.name}",
-                session=session,
-                site_id=current_site.id,
-                reference_type="milestone_reward",
-                reference_id=milestone.id
-            )
-            reward_description = f"{int(milestone.reward_value)} tokens added to your balance!"
-        elif milestone.reward_type == RewardType.gift_card:
-            # Store gift card claim in metadata
-            reward_description = f"Gift card worth ${milestone.reward_value} will be sent to your email!"
-            # TODO: Integrate with gift card provider
-        elif milestone.reward_type == RewardType.airtime_voucher:
-            reward_description = f"Airtime voucher worth ${milestone.reward_value} will be sent to your phone!"
-            # TODO: Integrate with airtime provider
-        else:
-            reward_description = f"Custom reward: {milestone.reward_metadata}"
-    except Exception as e:
-        logger.error(f"Failed to process milestone reward: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process reward")
-    
-    # Mark as claimed
-    user_milestone.reward_claimed = True
-    user_milestone.reward_claimed_at = datetime.utcnow()
-    user_milestone.updated_at = datetime.utcnow()
-    session.add(user_milestone)
-    await session.commit()
-    
-    return RewardClaimResponse(
-        success=True,
-        user_milestone_id=user_milestone.id,
-        reward_type=milestone.reward_type,
-        reward_value=milestone.reward_value,
-        claimed_at=user_milestone.reward_claimed_at,
-        message=reward_description
-    )
-
-
-# ============ Internal Helper Functions ============
-
-async def check_and_award_milestones(
-    user_id: uuid.UUID,
-    course_id: uuid.UUID,
-    enrollment_id: uuid.UUID,
-    session: AsyncSession,
-    site_id: uuid.UUID
-) -> List[MilestoneCelebrationResponse]:
-    """
-    Check if user has achieved any new milestones and award them.
-    Called internally when progress is updated.
-    """
-    celebrations = []
-    
-    # Get enrollment
-    enrollment = await session.get(Enrollment, enrollment_id)
-    if not enrollment:
-        return celebrations
-    
-    # Get all active milestones for the course
-    milestones_query = select(Milestone).where(
-        or_(Milestone.course_id == course_id, Milestone.course_id == None),  # Course-specific or global
-        Milestone.is_active == True,
-        Milestone.site_id == site_id
-    ).order_by(Milestone.sort_order)
-    
-    milestones_result = await session.exec(milestones_query)
-    milestones = milestones_result.all()
-    
-    # Get already achieved milestones
-    achieved_query = select(UserMilestone.milestone_id).where(
-        UserMilestone.user_id == user_id,
-        UserMilestone.course_id == course_id,
-        UserMilestone.site_id == site_id
-    )
-    achieved_result = await session.exec(achieved_query)
-    achieved_ids = set(achieved_result.all())
-    
-    for milestone in milestones:
-        if milestone.id in achieved_ids:
-            continue  # Already achieved
-        
-        is_achieved = await _check_milestone_achievement(
-            milestone, enrollment, user_id, session
-        )
-        
-        if is_achieved:
-            # Create user milestone
-            user_milestone = UserMilestone(
-                user_id=user_id,
-                milestone_id=milestone.id,
-                enrollment_id=enrollment_id,
-                course_id=course_id,
-                progress_at_achievement=enrollment.progress_percentage,
-                site_id=site_id
-            )
-            session.add(user_milestone)
-            
-            # Send notification
-            try:
-                await create_notification(
-                    user_id=user_id,
-                    notification_type="milestone",
-                    title=f"Milestone Achieved: {milestone.name}",
-                    message=milestone.celebration_message or f"Congratulations! You've achieved the {milestone.name} milestone!",
-                    session=session,
-                    site_id=site_id
-                )
-            except Exception as e:
-                logger.error(f"Failed to send milestone notification: {e}")
-            
-            # Get next milestone
-            next_milestone = None
-            for m in milestones:
-                if m.id not in achieved_ids and m.id != milestone.id:
-                    if m.sort_order > milestone.sort_order:
-                        next_milestone = m
-                        break
-            
-            # Build celebration response
-            celebrations.append(MilestoneCelebrationResponse(
-                milestone=MilestoneResponse.from_orm(milestone),
-                user_milestone=UserMilestoneResponse.from_orm(user_milestone),
-                celebration_title=f"🎉 {milestone.name}!",
-                celebration_message=milestone.celebration_message or "Congratulations on your achievement!",
-                reward_description=f"You've earned {int(milestone.reward_value)} {milestone.reward_type.value}!",
-                next_milestone=MilestoneResponse.from_orm(next_milestone) if next_milestone else None
-            ))
-    
-    if celebrations:
-        await session.commit()
-    
-    return celebrations
-
-
-async def _check_milestone_achievement(
-    milestone: Milestone,
-    enrollment: Enrollment,
-    user_id: uuid.UUID,
-    session: AsyncSession
-) -> bool:
-    """Check if a specific milestone has been achieved."""
-    if milestone.type == MilestoneType.progress:
-        return enrollment.progress_percentage >= milestone.threshold_value
-    
-    elif milestone.type == MilestoneType.section and milestone.section_id:
-        # Check if all lessons in section are completed
-        lessons_query = select(Lesson.id).where(
-            Lesson.section_id == milestone.section_id,
-            Lesson.is_published == True
-        )
-        lessons_result = await session.exec(lessons_query)
-        lesson_ids = [l for l in lessons_result.all()]
-        
-        if not lesson_ids:
-            return False
-        
-        completed_query = select(func.count(LessonProgress.id)).where(
-            LessonProgress.user_id == user_id,
-            LessonProgress.lesson_id.in_(lesson_ids),
-            LessonProgress.status == 'completed'
-        )
-        completed_count = (await session.exec(completed_query)).one() or 0
-        
-        return completed_count >= len(lesson_ids)
-    
-    elif milestone.type == MilestoneType.lesson and milestone.lesson_ids:
-        # Check if specified lessons are completed
-        completed_query = select(func.count(LessonProgress.id)).where(
-            LessonProgress.user_id == user_id,
-            LessonProgress.lesson_id.in_(milestone.lesson_ids),
-            LessonProgress.status == 'completed'
-        )
-        completed_count = (await session.exec(completed_query)).one() or 0
-        
-        return completed_count >= len(milestone.lesson_ids)
-    
-    elif milestone.type == MilestoneType.time:
-        # Check total time spent
-        time_query = select(func.sum(LessonProgress.time_spent)).where(
-            LessonProgress.user_id == user_id,
-            LessonProgress.course_id == enrollment.course_id
-        )
-        total_time = (await session.exec(time_query)).one() or 0
-        # threshold_value is in minutes
-        return (total_time / 60) >= milestone.threshold_value
-    
     return False

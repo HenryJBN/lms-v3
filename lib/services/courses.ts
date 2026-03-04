@@ -10,6 +10,7 @@ import {
   type CourseCreateForm,
   type CourseUpdateForm,
 } from "@/lib/schemas/course"
+import { type MilestoneCelebration } from "./milestones"
 
 export interface Course {
   title: string
@@ -547,6 +548,18 @@ export interface LessonProgressUpdate {
   notes?: string
 }
 
+export interface LessonProgressResponse {
+  id: string
+  user_id: string
+  lesson_id: string
+  course_id: string
+  status: string
+  progress_percentage: number
+  time_spent: number
+  course_progress_percentage: number
+  milestones: MilestoneCelebration[]
+}
+
 class ProgressService {
   /**
    * Get user progress for a course
@@ -601,12 +614,12 @@ class ProgressService {
   /**
    * Update lesson progress
    */
-  async updateLessonProgress(lessonId: string, progress: LessonProgressUpdate, cohortId?: string): Promise<any> {
+  async updateLessonProgress(lessonId: string, progress: LessonProgressUpdate, cohortId?: string): Promise<LessonProgressResponse> {
     try {
       const params = new URLSearchParams()
       if (cohortId) params.append("cohort_id", cohortId)
       
-      return await apiClient.put(`${API_ENDPOINTS.progress}/lesson/${lessonId}?${params.toString()}`, progress)
+      return await apiClient.put<LessonProgressResponse>(`${API_ENDPOINTS.progress}/lesson/${lessonId}?${params.toString()}`, progress)
     } catch (error) {
       console.error("❌ Failed to update lesson progress:", error)
       throw error

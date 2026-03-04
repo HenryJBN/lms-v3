@@ -197,6 +197,32 @@ class MilestonesService {
     }
   }
 
+  // Get all milestones for a site with filtering
+  async getMilestones(params?: { 
+    course_id?: string, 
+    is_global?: boolean, 
+    is_active?: boolean,
+    page?: number,
+    size?: number
+  }): Promise<MilestonesListResponse> {
+    try {
+      const queryParams = new URLSearchParams()
+      if (params) {
+        if (params.course_id) queryParams.append("course_id", params.course_id)
+        if (params.is_global !== undefined) queryParams.append("is_global", String(params.is_global))
+        if (params.is_active !== undefined) queryParams.append("is_active", String(params.is_active))
+        if (params.page) queryParams.append("page", String(params.page))
+        if (params.size) queryParams.append("size", String(params.size))
+      }
+      
+      const url = `${API_ENDPOINTS.milestones}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`
+      return await apiClient.get<MilestonesListResponse>(url)
+    } catch (error) {
+      console.error("Failed to get milestones:", error)
+      throw error
+    }
+  }
+
   // Get milestones for a course
   async getCourseMilestones(courseId: string, isActive?: boolean): Promise<MilestonesListResponse> {
     try {

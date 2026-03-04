@@ -21,6 +21,8 @@ import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
 import Link from "next/link"
 import { courseService, progressService } from "@/lib/services/courses"
+import { milestonesService, type MilestoneCelebration } from "@/lib/services/milestones"
+import { MilestoneCelebrationModal } from "@/components/milestone-celebration-modal"
 import { formatDuration } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 
@@ -45,6 +47,9 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const [savedPlaybackRate, setSavedPlaybackRate] = useState(1)
   const prevLessonCompletedRef = useRef(false)
   const [justEarnedTokens, setJustEarnedTokens] = useState<{ amount: number; type: string } | null>(null)
+  const [activeCelebration, setActiveCelebration] = useState<MilestoneCelebration | null>(null)
+  const [celebrationModalOpen, setCelebrationModalOpen] = useState(false)
+  const [celebrationQueue, setCelebrationQueue] = useState<MilestoneCelebration[]>([])
 
   // 1. Fetch Course Lessons
   const { data: rawLessons = [], isLoading: lessonsLoading } = useQuery({
@@ -119,6 +124,16 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       setJustEarnedTokens(null)
     }
   }, [justEarnedTokens])
+
+  // Handle celebration queue
+  useEffect(() => {
+    if (!celebrationModalOpen && celebrationQueue.length > 0) {
+      const nextCelebration = celebrationQueue[0]
+      setActiveCelebration(nextCelebration)
+      setCelebrationModalOpen(true)
+      setCelebrationQueue(prev => prev.slice(1))
+    }
+  }, [celebrationModalOpen, celebrationQueue])
 
   // Track when previous lesson was completed to trigger autoplay
   useEffect(() => {
@@ -240,7 +255,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     // Send time spent to backend periodically (only if time was actually spent)
     if (timeSpent > 0) {
       try {
-        await progressService.updateLessonProgress(
+        const response = await progressService.updateLessonProgress(
           currentLesson.id, 
           { 
             progress_percentage: Math.round(progress),
@@ -248,6 +263,11 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           }, 
           cohortId || undefined
         )
+        
+        // Handle milestone celebrations
+        if (response.milestones && response.milestones.length > 0) {
+          setCelebrationQueue(prev => [...prev, ...response.milestones])
+        }
       } catch (error) {
         console.error("Failed to update lesson progress:", error)
       }
@@ -263,8 +283,13 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     // Always check if we need to mark the lesson as completed
     if (!isLessonCompleted) {
       try {
-        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
         
+        // Handle milestone celebrations
+        if (response.milestones && response.milestones.length > 0) {
+          setCelebrationQueue(prev => [...prev, ...response.milestones])
+        }
+
         // Show reward notification for NEW completions
         if (isNewCompletion) {
           setJustEarnedTokens({ amount: LESSON_TOKEN_REWARD, type: 'lesson' })
@@ -538,6 +563,29 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
           </div>
         </div>
       </main>
+
+      {/* Milestone Celebration */}
+      <MilestoneCelebrationModal
+        celebration={activeCelebration}
+        open={celebrationModalOpen}
+        onOpenChange={setCelebrationModalOpen}
+        onClaimReward={async (id) => {
+          try {
+            await milestonesService.claimMilestoneReward(id)
+            toast({
+              title: "Reward Claimed!",
+              description: "Your reward has been added to your account.",
+            })
+          } catch (error) {
+            toast({
+              title: "Claim Failed",
+              description: "Please try again later.",
+              variant: "destructive",
+            })
+            throw error
+          }
+        }}
+      />
     </div>
   )
 }

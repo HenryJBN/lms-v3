@@ -27,6 +27,8 @@ from utils.site_settings import (
 )
 from utils.certificate_generator import generate_pdf_certificate
 from utils.file_upload import file_upload_service
+from utils.milestones import check_and_award_milestones
+from schemas.milestone import MilestoneCelebrationResponse
 
 router = APIRouter()
 
@@ -294,7 +296,7 @@ async def update_lesson_progress(
         # await update_course_progress(user_id, course_id, session, current_site, cohort_id=cohort_id)
 
     # Always update overall course progress to reflect granular changes
-    course_progress = await update_course_progress(user_id, course_id, session, site_id, background_tasks=background_tasks, cohort_id=cohort_id)
+    course_progress, milestones = await update_course_progress(user_id, course_id, session, site_id, background_tasks=background_tasks, cohort_id=cohort_id)
 
     # Refresh the progress object because update_course_progress might have committed and expired it
     await session.refresh(updated_progress)
@@ -304,6 +306,7 @@ async def update_lesson_progress(
     res_schema.lesson_title = lesson_title
     res_schema.lesson_type = lesson_type
     res_schema.course_progress_percentage = course_progress
+    res_schema.milestones = milestones
     
     return res_schema
 
@@ -575,8 +578,17 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                 else:
                     await issue_certificate(user_id, course_id, session, site_id)
             
-        return progress_percentage
-    return 0
+        # Check for milestone achievements
+        milestone_celebrations = await check_and_award_milestones(
+            user_id=user_id,
+            course_id=course_id,
+            enrollment_id=enrollment.id,
+            session=session,
+            site_id=site_id
+        )
+        
+        return progress_percentage, milestone_celebrations
+    return 0, []
 
 async def recalculate_course_progress_all_users(course_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """Recalculate course progress for ALL enrolled users.
@@ -595,7 +607,7 @@ async def recalculate_course_progress_all_users(course_id: uuid.UUID, session: A
     enrollments = enrollments_result.all()
     
     for enrollment in enrollments:
-        new_progress = await update_course_progress(
+        new_progress, _ = await update_course_progress(
             user_id=enrollment.user_id,
             course_id=course_id,
             session=session,

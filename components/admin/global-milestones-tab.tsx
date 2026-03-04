@@ -75,10 +75,7 @@ export function GlobalMilestonesTab() {
   // Fetch global milestones
   const { data: milestonesData, isLoading } = useQuery({
     queryKey: ["global-milestones"],
-    queryFn: async () => {
-      const result = await milestonesService.getMyMilestones(undefined, 1, 100)
-      return { items: [], total: 0 }
-    },
+    queryFn: () => milestonesService.getMilestones({ is_global: true }),
   })
 
   // Create mutation
