@@ -156,4 +156,5 @@ export const API_ENDPOINTS = {
   myMilestones: "/api/milestones/user/my-milestones",
   milestoneCourseProgress: (courseId: string) => `/api/milestones/user/course-progress/${courseId}`,
   autoGenerateMilestones: "/api/milestones/auto-generate",
+  uploadBadgeImage: "/api/milestones/upload-badge-image",
 }

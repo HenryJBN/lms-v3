@@ -9,7 +9,7 @@ import Image from "next/image"
 interface ImageUploadProps {
   value: string | null
   onChange: (url: string) => void
-  onUpload: (file: File) => Promise<any>
+  onUpload?: (file: File) => Promise<{ url: string } | null>
   label?: string
   className?: string
 }
@@ -37,6 +37,10 @@ export function ImageUpload({ value, onChange, onUpload, label = "Upload Image",
     setIsUploading(true)
 
     try {
+      if (!onUpload) {
+        setError("Upload handler not provided")
+        return
+      }
       const result = await onUpload(file)
       // Assuming result returns { url: "..." }
       if (result && result.url) {

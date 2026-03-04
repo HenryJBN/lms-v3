@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from typing import List, Optional
 import uuid
 from datetime import datetime
@@ -33,6 +33,8 @@ from schemas.common import PaginationParams, PaginatedResponse
 from middleware.auth import get_current_active_user, get_current_user, require_admin
 from utils.tokens import award_tokens
 from utils.notifications import create_notification
+from utils.file_upload import upload_image
+from schemas.system import FileUploadResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -313,6 +315,19 @@ async def delete_milestone(
     await session.commit()
     
     return {"message": "Milestone deleted successfully"}
+
+
+@router.post("/upload-badge-image", response_model=FileUploadResponse)
+async def upload_badge_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_admin)
+):
+    """Upload badge image for milestones (admin only)."""
+    try:
+        result = await upload_image(file, "milestones/badges")
+        return FileUploadResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============ User Milestone Endpoints ============

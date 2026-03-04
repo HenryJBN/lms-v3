@@ -22,6 +22,7 @@ export interface Milestone {
   reward_value: number
   reward_metadata: Record<string, unknown> | null
   badge_icon: string | null
+  badge_image_url: string | null
   badge_color: string
   celebration_message: string | null
   sort_order: number
@@ -102,6 +103,7 @@ export interface CreateMilestoneRequest {
   reward_value?: number
   reward_metadata?: Record<string, unknown>
   badge_icon?: string
+  badge_image_url?: string
   badge_color?: string
   celebration_message?: string
   sort_order?: number
@@ -119,6 +121,7 @@ export interface UpdateMilestoneRequest {
   reward_value?: number
   reward_metadata?: Record<string, unknown>
   badge_icon?: string
+  badge_image_url?: string
   badge_color?: string
   celebration_message?: string
   sort_order?: number
@@ -138,6 +141,19 @@ export interface UserMilestonesListResponse {
 // ============ Service ============
 
 class MilestonesService {
+  // Upload badge image
+  async uploadBadgeImage(file: File): Promise<{ url: string }> {
+    try {
+      return await apiClient.uploadFile<{ url: string }>(
+        API_ENDPOINTS.uploadBadgeImage,
+        file
+      )
+    } catch (error) {
+      console.error("Failed to upload badge image:", error)
+      throw error
+    }
+  }
+
   // Admin endpoints
   async createMilestone(data: CreateMilestoneRequest): Promise<Milestone> {
     try {
