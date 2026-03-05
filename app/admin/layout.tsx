@@ -91,7 +91,7 @@ function Sidebar({ className }: SidebarProps) {
       icon: Users,
       children: [
         { title: "All Users", href: "/admin/users" },
-        { title: "Instructors", href: "/admin/users/instructors" },
+        // { title: "Instructors", href: "/admin/users/instructors" },
       ],
     },
     {
@@ -111,15 +111,15 @@ function Sidebar({ className }: SidebarProps) {
       href: "/admin/assignments",
       icon: FileText,
     },
-    {
-      title: "Content",
-      icon: FileText,
-      children: [
-        { title: "Content Library", href: "/admin/content" },
-        { title: "Media Files", href: "/admin/content/media" },
-        { title: "Pages", href: "/admin/content/pages" },
-      ],
-    },
+    // {
+    //   title: "Content",
+    //   icon: FileText,
+    //   children: [
+    //     { title: "Content Library", href: "/admin/content" },
+    //     { title: "Media Files", href: "/admin/content/media" },
+    //     { title: "Pages", href: "/admin/content/pages" },
+    //   ],
+    // },
     {
       title: "Analytics",
       href: "/admin/analytics",
@@ -130,16 +130,16 @@ function Sidebar({ className }: SidebarProps) {
       href: "/admin/notifications",
       icon: Bell,
     },
-    {
-      title: "Blockchain",
-      href: "/admin/blockchain",
-      icon: Blocks,
-    },
-    {
-      title: "Security",
-      href: "/admin/security",
-      icon: Shield,
-    },
+    // {
+    //   title: "Blockchain",
+    //   href: "/admin/blockchain",
+    //   icon: Blocks,
+    // },
+    // {
+    //   title: "Security",
+    //   href: "/admin/security",
+    //   icon: Shield,
+    // },
     {
       title: "Support",
       href: "/admin/support",
