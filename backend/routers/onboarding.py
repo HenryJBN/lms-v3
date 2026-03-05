@@ -122,7 +122,7 @@ async def register_new_tenant(
                 "subdomain": new_site.subdomain,
                 "domain": site_domain
             },
-            "login_url": f"{protocol}://{site_domain}{port_suffix}/login"
+            "login_url": f"{protocol}://{site_domain}{port_suffix}/admin/login"
         }
         
     except Exception as e:
