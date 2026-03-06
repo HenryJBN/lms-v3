@@ -13,7 +13,7 @@ from models.enrollment import Enrollment, Certificate
 from models.finance import RevenueRecord
 from models.system import AdminAuditLog
 from models.site import Site
-from dependencies import get_current_site, SiteData, SiteData
+from dependencies import get_current_site, SiteData, invalidate_site_cache
 from schemas.system import AdminDashboardStats
 from schemas.user import BasicUser, UserResponse, AdminUserResponse
 from schemas.course import AdminCourseResponse
@@ -31,6 +31,7 @@ from schemas.site import SiteSettings, SiteSettingsUpdate
 from schemas.system import FileUploadResponse
 from utils.file_upload import upload_image
 from utils.encryption import encrypt_credential, mask_credential
+from utils.redis_client import cache_manager
 
 router = APIRouter()
 
@@ -1008,6 +1009,10 @@ async def update_site_settings(
     await session.commit()
     await session.refresh(site)
 
+    # Invalidate caches so changes take effect immediately
+    invalidate_site_cache()  # Clear in-memory site cache
+    await cache_manager.delete("global_theme")  # Clear Redis theme cache
+
     # Return masked credentials
     config = site.theme_config or {}
     smtp_username = config.get("smtp_username")
@@ -1049,6 +1054,10 @@ async def upload_site_logo(
             site.logo_url = result["url"]
             session.add(site)
             await session.commit()
+
+            # Invalidate caches so new logo takes effect immediately
+            invalidate_site_cache()
+            await cache_manager.delete("global_theme")
             
         return FileUploadResponse(**result)
     except Exception as e:
