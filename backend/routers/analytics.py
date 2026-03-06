@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timedelta
-from sqlmodel import select, func, and_, or_, desc
+from sqlmodel import select, func, and_, or_, desc, asc
 
 from database.session import get_session, AsyncSession
 from dependencies import get_current_site, SiteData, SiteData
@@ -212,6 +212,11 @@ async def get_analytics_overview(
     from models.user import User
     from sqlalchemy import case
 
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
+
     # Set default date range (last 30 days)
     if not start_date:
         start_date = datetime.utcnow() - timedelta(days=30)
@@ -235,8 +240,8 @@ async def get_analytics_overview(
         func.count(Course.id).label("total_courses"),
         func.sum(case((Course.created_at >= start_date, 1), else_=0)).label("new_courses"),
         func.sum(case((Course.status == 'published', 1), else_=0)).label("published_courses"),
-        func.coalesce(func.sum(Course.enrollment_count), 0).label("total_enrollments"),
-        func.coalesce(func.avg(Course.enrollment_count), 0).label("avg_enrollments_per_course")
+        func.coalesce(func.sum(Course.total_students), 0).label("total_enrollments"),
+        func.coalesce(func.avg(Course.total_students), 0).label("avg_enrollments_per_course")
     ).where(Course.created_at <= end_date, Course.site_id == current_site.id)
     
     course_res = await session.exec(course_query)
@@ -254,13 +259,65 @@ async def get_analytics_overview(
     enroll_stats = enroll_res.first()
     
     # Revenue analytics (placeholder for now, need Revenue model)
-    # revenue_query = ...
+    # Revenue analytics
+    from models.finance import RevenueRecord
+    revenue_query = select(
+        func.coalesce(func.sum(RevenueRecord.amount), 0).label("total_revenue"),
+        func.count(RevenueRecord.id).label("completed_transactions"),
+        func.coalesce(func.avg(RevenueRecord.amount), 0).label("avg_transaction_value")
+    ).where(RevenueRecord.created_at.between(start_date, end_date), RevenueRecord.status == 'completed', RevenueRecord.site_id == current_site.id)
+    
+    rev_res = await session.exec(revenue_query)
+    rev_stats = rev_res.first()
+    
     revenue_stats = {
-        "total_revenue": 0,
-        "period_revenue": 0,
-        "completed_transactions": 0,
-        "avg_transaction_value": 0
+        "total_revenue": float(rev_stats.total_revenue) if rev_stats else 0,
+        "period_revenue": float(rev_stats.total_revenue) if rev_stats else 0,
+        "completed_transactions": int(rev_stats.completed_transactions) if rev_stats else 0,
+        "avg_transaction_value": float(rev_stats.avg_transaction_value) if rev_stats else 0
     }
+
+    # Device & Country analytics
+    from models.user import UserSession
+    device_query = select(
+        UserSession.device_type,
+        func.count(UserSession.id).label("count")
+    ).where(UserSession.login_time.between(start_date, end_date), UserSession.site_id == current_site.id, UserSession.device_type != None).group_by(UserSession.device_type)
+    
+    device_res = await session.exec(device_query)
+    device_data = []
+    colors = {"Desktop": "#8884d8", "Mobile": "#82ca9d", "Tablet": "#ffc658"}
+    for dtype, count in device_res.all():
+        device_data.append({"name": dtype, "value": count, "color": colors.get(dtype, "#8884d8")})
+        
+    country_query = select(
+        UserSession.country,
+        func.count(func.distinct(UserSession.user_id)).label("users")
+    ).where(UserSession.login_time.between(start_date, end_date), UserSession.site_id == current_site.id, UserSession.country != None).group_by(UserSession.country).order_by(desc("users")).limit(5)
+    
+    country_res = await session.exec(country_query)
+    countries_list = country_res.all()
+    total_session_users = sum(c.users for c in countries_list) if countries_list else 1
+    top_countries = [{"country": str(c.country), "users": c.users, "percentage": round((c.users / total_session_users) * 100, 1)} for c in countries_list]
+
+    # Top Courses
+    from utils.analytics import get_top_performing_content
+    top_courses = await get_top_performing_content(
+        session=session,
+        content_type="courses",
+        metric="enrollments",
+        limit=5,
+        start_date=start_date,
+        end_date=end_date
+    )
+    course_performance_data = []
+    for c in top_courses:
+        course_performance_data.append({
+            "course": c["title"],
+            "enrollments": c["metric_value"],
+            "completions": 0, # Calculated directly if needed
+            "revenue": 0 # Aggregated if needed
+        })
     
     # Certificate analytics
     cert_query = select(
@@ -299,7 +356,10 @@ async def get_analytics_overview(
             "total_certificates": int(cert_stats.total_certificates or 0),
             "new_certificates": int(cert_stats.new_certificates or 0),
             "minted_certificates": int(cert_stats.minted_certificates or 0)
-        }
+        },
+        "device_data": device_data,
+        "top_countries": top_countries,
+        "course_performance": course_performance_data
     }
 
 @router.get("/courses/{course_id}")
@@ -313,6 +373,11 @@ async def get_course_analytics(
 ):
     """Get analytics for a specific course"""
     from sqlalchemy import case
+    
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
     
     # Check if user has access to course
     query = select(Course).where(Course.id == course_id, Course.site_id == current_site.id)
@@ -422,6 +487,11 @@ async def get_instructor_analytics(
     from models.user import User
     from sqlalchemy import case
     
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
+    
     # Check permissions
     if current_user.role != UserRole.admin and str(current_user.id) != str(instructor_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
@@ -445,8 +515,8 @@ async def get_instructor_analytics(
         func.count(Course.id).label("total_courses"),
         func.sum(case((Course.status == 'published', 1), else_=0)).label("published_courses"),
         func.sum(case((Course.created_at >= start_date, 1), else_=0)).label("new_courses"),
-        func.coalesce(func.sum(Course.enrollment_count), 0).label("total_enrollments"),
-        func.coalesce(func.avg(Course.enrollment_count), 0).label("avg_enrollments_per_course")
+        func.coalesce(func.sum(Course.total_students), 0).label("total_enrollments"),
+        func.coalesce(func.avg(Course.total_students), 0).label("avg_enrollments_per_course")
     ).where(Course.instructor_id == instructor_id, Course.created_at <= end_date)
     
     course_res = await session.exec(course_query)
@@ -469,20 +539,20 @@ async def get_instructor_analytics(
     
     # Top performing courses
     top_courses_query = select(
-        Course.id, Course.title, Course.enrollment_count, Course.thumbnail_url,
+        Course.id, Course.title, Course.total_students, Course.thumbnail_url,
         func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating"),
         func.count(CourseReview.id).label("review_count")
     ).outerjoin(
         CourseReview, and_(Course.id == CourseReview.course_id, CourseReview.is_published == True)
     ).where(
         Course.instructor_id == instructor_id, Course.status == 'published', Course.site_id == current_site.id
-    ).group_by(Course.id).order_by(desc(Course.enrollment_count)).limit(5)
+    ).group_by(Course.id).order_by(desc(Course.total_students)).limit(5)
     
     top_courses_res = await session.exec(top_courses_query)
     top_courses = []
     for cid, title, count, thumb, rating, reviews in top_courses_res.all():
         top_courses.append({
-            "id": cid, "title": title, "enrollment_count": count,
+            "id": cid, "title": title, "total_students": count,
             "thumbnail_url": thumb, "avg_rating": float(rating), "review_count": reviews
         })
     
@@ -515,6 +585,11 @@ async def get_revenue_analytics(
     session: AsyncSession = Depends(get_session)
 ):
     """Get revenue analytics (Placeholder)"""
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
+        
     return RevenueAnalytics(
         period={"start_date": start_date or datetime.utcnow(), "end_date": end_date or datetime.utcnow()},
         summary={"total_revenue": 0, "total_transactions": 0, "avg_transaction_value": 0, "courses_with_revenue": 0},
@@ -533,6 +608,11 @@ async def get_engagement_analytics(
 ):
     """Get user engagement analytics (Partial SQLModel)"""
     from models.user import User
+    
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
     
     if not start_date:
         start_date = datetime.utcnow() - timedelta(days=30)

@@ -16,6 +16,9 @@ export interface OverviewAnalyticsResponse {
   enrollments: Record<string, any>
   revenue: Record<string, any>
   certificates: Record<string, any>
+  device_data?: Array<{ name: string; value: number; color: string }>
+  top_countries?: Array<{ country: string; users: number; percentage: number }>
+  course_performance?: Array<{ course: string; enrollments: number; completions: number; revenue: number }>
 }
 
 export interface RevenueAnalyticsResponse {

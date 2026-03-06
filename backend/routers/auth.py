@@ -5,12 +5,13 @@ import uuid
 import random
 import string
 from typing import Optional, Dict
+from user_agents import parse as parse_user_agent
 from sqlmodel import select, text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from database.session import get_session
 from dependencies import get_current_site, SiteData
-from models.user import User
+from models.user import User, UserSession
 from models.enums import UserRole, UserStatus
 from schemas.user import UserCreate, UserResponse
 from schemas.auth import (
@@ -150,6 +151,33 @@ async def login(
     # Update last login
     user.last_login_at = datetime.utcnow()
     session.add(user)
+    
+    # Track user session
+    user_agent_str = request.headers.get("user-agent", "")
+    ip_address = request.headers.get("x-forwarded-for", request.client.host if request.client else "")
+    if ip_address and "," in ip_address:
+        ip_address = ip_address.split(",")[0].strip()
+        
+    device_type = "Desktop"
+    if user_agent_str:
+        ua = parse_user_agent(user_agent_str)
+        if ua.is_mobile:
+            device_type = "Mobile"
+        elif ua.is_tablet:
+            device_type = "Tablet"
+            
+    country = "Unknown" # Placeholder for country mapping
+    
+    user_session = UserSession(
+        user_id=user.id,
+        site_id=current_site.id,
+        device_type=device_type,
+        country=country,
+        ip_address=ip_address,
+        user_agent=user_agent_str
+    )
+    session.add(user_session)
+    
     await session.commit()
 
     # Create tokens

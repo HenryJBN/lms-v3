@@ -55,3 +55,18 @@ class UserProfile(MultiTenantMixin, table=True):
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserSession(MultiTenantMixin, table=True):
+    __tablename__ = "user_sessions"
+    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
+    
+    device_type: Optional[str] = None # e.g. Desktop, Mobile, Tablet
+    country: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    
+    login_time: datetime = Field(default_factory=datetime.utcnow)
+    last_activity: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = Field(default=True)

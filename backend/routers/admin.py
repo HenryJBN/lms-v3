@@ -676,6 +676,11 @@ async def generate_admin_report(
     current_site: SiteData = Depends(get_current_site)
 ):
     """Generate admin reports"""
+    if start_date and start_date.tzinfo:
+        start_date = start_date.replace(tzinfo=None)
+    if end_date and end_date.tzinfo:
+        end_date = end_date.replace(tzinfo=None)
+
     if not end_date:
         end_date = datetime.utcnow()
     if not start_date:

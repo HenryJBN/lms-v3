@@ -37,104 +37,66 @@ import {
   Clock,
 } from "lucide-react"
 
+import { useQuery } from "@tanstack/react-query"
+import { analyticsService } from "@/lib/services/analytics"
+import { subDays, subYears, formatISO } from "date-fns"
+
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d")
 
-  // Mock analytics data
-  const userEngagementData = [
-    { date: "2024-01-01", activeUsers: 1200, newUsers: 45, sessions: 2800 },
-    { date: "2024-01-02", activeUsers: 1350, newUsers: 52, sessions: 3100 },
-    { date: "2024-01-03", activeUsers: 1180, newUsers: 38, sessions: 2650 },
-    { date: "2024-01-04", activeUsers: 1420, newUsers: 67, sessions: 3350 },
-    { date: "2024-01-05", activeUsers: 1580, newUsers: 73, sessions: 3800 },
-    { date: "2024-01-06", activeUsers: 1650, newUsers: 81, sessions: 4100 },
-    { date: "2024-01-07", activeUsers: 1720, newUsers: 89, sessions: 4250 },
-  ]
+  const getDates = () => {
+    const end = new Date()
+    let start = new Date()
+    if (timeRange === "7d") start = subDays(end, 7)
+    else if (timeRange === "30d") start = subDays(end, 30)
+    else if (timeRange === "90d") start = subDays(end, 90)
+    else if (timeRange === "1y") start = subYears(end, 1)
+    
+    return {
+      start_date: formatISO(start),
+      end_date: formatISO(end)
+    }
+  }
 
-  const coursePerformanceData = [
-    { course: "Blockchain Fundamentals", enrollments: 1250, completions: 890, revenue: 0 },
-    { course: "Smart Contracts", enrollments: 890, completions: 650, revenue: 44550 },
-    { course: "AI Fundamentals", enrollments: 2100, completions: 1580, revenue: 0 },
-    { course: "Machine Learning", enrollments: 750, completions: 520, revenue: 44250 },
-    { course: "3D Animation", enrollments: 650, completions: 420, revenue: 0 },
-  ]
+  const { start_date, end_date } = getDates()
 
+  const { data: overview, isLoading: isOverviewLoading } = useQuery({
+    queryKey: ["admin", "analytics", "overview", start_date, end_date],
+    queryFn: () => analyticsService.getOverview({ start_date, end_date })
+  })
+
+  const { data: engagement, isLoading: isEngagementLoading } = useQuery({
+    queryKey: ["admin", "analytics", "engagement", start_date, end_date],
+    queryFn: () => analyticsService.getEngagement({ start_date, end_date })
+  })
+
+  const userEngagementData = engagement?.daily_active_users?.map((d: any) => ({
+    date: d.date,
+    activeUsers: d.active_users,
+    newUsers: overview?.users?.new_users || 0,
+    sessions: d.active_users * 2 
+  })) || []
+
+  const coursePerformanceData = overview?.course_performance || []
+  
+  // Use a fallback for revenue since it is stubbed / incomplete in group_by
   const revenueData = [
-    { month: "Jan", revenue: 45000, subscriptions: 32000, courses: 13000 },
-    { month: "Feb", revenue: 52000, subscriptions: 35000, courses: 17000 },
-    { month: "Mar", revenue: 48000, subscriptions: 33000, courses: 15000 },
-    { month: "Apr", revenue: 61000, subscriptions: 38000, courses: 23000 },
-    { month: "May", revenue: 58000, subscriptions: 36000, courses: 22000 },
-    { month: "Jun", revenue: 67000, subscriptions: 41000, courses: 26000 },
+    { month: "Jan", subscriptions: 0, courses: 0 },
   ]
+  
+  const deviceData = overview?.device_data || []
+  const topCountries = overview?.top_countries || []
 
-  const deviceData = [
-    { name: "Desktop", value: 65, color: "#8884d8" },
-    { name: "Mobile", value: 28, color: "#82ca9d" },
-    { name: "Tablet", value: 7, color: "#ffc658" },
-  ]
-
-  const topCountries = [
-    { country: "United States", users: 2850, percentage: 35.2 },
-    { country: "United Kingdom", users: 1420, percentage: 17.5 },
-    { country: "Canada", users: 980, percentage: 12.1 },
-    { country: "Germany", users: 750, percentage: 9.3 },
-    { country: "Australia", users: 620, percentage: 7.7 },
-  ]
+  const overviewUsers = overview?.users || {}
+  const overviewRevenue = overview?.revenue || {}
+  const overviewEnrollments = overview?.enrollments || {}
 
   const learningMetrics = {
-    averageSessionTime: "24m 35s",
-    courseCompletionRate: "68.5%",
-    averageProgress: "72%",
-    certificatesIssued: 890,
-    tokensDistributed: 125000,
-    activeInstructors: 24,
+    averageSessionTime: "0m 0s", // Placeholder
   }
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <div className="hidden w-64 flex-col border-r bg-muted/40 lg:flex">
-        <div className="flex h-14 items-center border-b px-4">
-          <Link href="/admin" className="flex items-center gap-2 font-bold">
-            <Shield className="h-6 w-6" />
-            <span>Admin Panel</span>
-          </Link>
-        </div>
-        <div className="flex-1 overflow-auto py-2">
-          <nav className="grid items-start px-2 text-sm font-medium">
-            <Link
-              href="/admin"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <Shield className="h-4 w-4" />
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/users"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <Users className="h-4 w-4" />
-              Users
-            </Link>
-            <Link
-              href="/admin/courses"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:text-foreground transition-all hover:bg-muted"
-            >
-              <BookOpen className="h-4 w-4" />
-              Courses
-            </Link>
-            <Link
-              href="/admin/analytics"
-              className="flex items-center gap-3 rounded-lg bg-red/10 px-3 py-2 text-red transition-all"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Analytics
-            </Link>
-          </nav>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1">
         {/* Header */}
@@ -181,9 +143,9 @@ export default function AnalyticsPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$67,000</div>
+                    <div className="text-2xl font-bold">${overviewRevenue.total_revenue?.toLocaleString() || 0}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">+15.2%</span> from last month
+                      <span className="text-muted-foreground">In selected period</span>
                     </p>
                   </CardContent>
                 </Card>
@@ -193,9 +155,9 @@ export default function AnalyticsPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">1,720</div>
+                    <div className="text-2xl font-bold">{overviewUsers.active_users?.toLocaleString() || 0}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">+8.1%</span> from last month
+                      <span className="text-muted-foreground">In selected period</span>
                     </p>
                   </CardContent>
                 </Card>
@@ -205,9 +167,9 @@ export default function AnalyticsPage() {
                     <Target className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">4,060</div>
+                    <div className="text-2xl font-bold">{overviewEnrollments.completed_enrollments?.toLocaleString() || 0}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">+12.5%</span> from last month
+                      <span className="text-muted-foreground">In selected period</span>
                     </p>
                   </CardContent>
                 </Card>
@@ -219,7 +181,7 @@ export default function AnalyticsPage() {
                   <CardContent>
                     <div className="text-2xl font-bold">{learningMetrics.averageSessionTime}</div>
                     <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">+3.2%</span> from last month
+                      <span className="text-muted-foreground">In selected period</span>
                     </p>
                   </CardContent>
                 </Card>
