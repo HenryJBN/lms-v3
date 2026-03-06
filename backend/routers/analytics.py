@@ -583,7 +583,8 @@ async def get_revenue_analytics(
     end_date: Optional[datetime] = Query(None),
     group_by: Optional[str] = Query("day"),
     current_user = Depends(require_admin),
-    session: AsyncSession = Depends(get_session)
+    session: AsyncSession = Depends(get_session),
+    current_site: SiteData = Depends(get_current_site)
 ):
     """Get revenue analytics (Placeholder)"""
     if start_date and start_date.tzinfo:

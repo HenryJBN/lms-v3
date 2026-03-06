@@ -35,7 +35,13 @@ import {
   Shield,
   Target,
   Clock,
+  GraduationCap,
+  Award,
+  UserPlus,
+  Activity,
+  LineChart as LineChartIcon,
 } from "lucide-react"
+import { LineChart, Line } from "recharts"
 
 import { useQuery } from "@tanstack/react-query"
 import { analyticsService } from "@/lib/services/analytics"
@@ -90,6 +96,15 @@ export default function AnalyticsPage() {
   const overviewUsers = overview?.users || {}
   const overviewRevenue = overview?.revenue || {}
   const overviewEnrollments = overview?.enrollments || {}
+  const overviewCourses = overview?.courses || {}
+  const overviewCertificates = overview?.certificates || {}
+
+  const courseEngagementData = engagement?.course_engagement?.map((d: any) => ({
+    date: d.date,
+    engagedUsers: d.engaged_users,
+    lessonInteractions: d.lesson_interactions,
+    avgTimeSpent: d.avg_time_spent,
+  })) || []
 
   const learningMetrics = {
     averageSessionTime: "0m 0s", // Placeholder
@@ -278,6 +293,150 @@ export default function AnalyticsPage() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="users" className="space-y-4">
+              {/* User Stat Cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewUsers.total_users?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">New Users</CardTitle>
+                    <UserPlus className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewUsers.new_users?.toLocaleString() || 0}</div>
+                    <p className="text-xs text-muted-foreground">In selected period</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewUsers.active_users?.toLocaleString() || 0}</div>
+                    <p className="text-xs text-muted-foreground">In selected period</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Students</CardTitle>
+                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewUsers.total_students?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Instructors</CardTitle>
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewUsers.total_instructors?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* User Engagement Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Engagement Over Time</CardTitle>
+                  <CardDescription>Daily active users and new registrations</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <AreaChart data={userEngagementData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="activeUsers"
+                        stackId="1"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        name="Active Users"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="newUsers"
+                        stackId="1"
+                        stroke="#82ca9d"
+                        fill="#82ca9d"
+                        name="New Users"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Device & Country Summary */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Device Distribution</CardTitle>
+                    <CardDescription>How users access the platform</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={deviceData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {deviceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Countries</CardTitle>
+                    <CardDescription>User distribution by country</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {topCountries.map((country, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 text-sm font-medium">{index + 1}</div>
+                            <div>{country.country}</div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-sm text-muted-foreground">
+                              {country.users.toLocaleString()} users
+                            </div>
+                            <div className="w-16 text-right text-sm font-medium">
+                              {country.percentage}%
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
             <TabsContent value="revenue" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -318,6 +477,119 @@ export default function AnalyticsPage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="learning" className="space-y-4">
+              {/* Learning Stat Cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Enrollments</CardTitle>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewEnrollments.total_enrollments?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewEnrollments.active_enrollments?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Completions</CardTitle>
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewEnrollments.completed_enrollments?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Certificates Issued</CardTitle>
+                    <Award className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewCertificates.total_certificates?.toLocaleString() || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {overviewCertificates.new_certificates?.toLocaleString() || 0} new in period
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Course Engagement Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Learning Engagement</CardTitle>
+                  <CardDescription>Daily engaged users and lesson interactions</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                  <ResponsiveContainer width="100%" height={400}>
+                    <LineChart data={courseEngagementData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" />
+                      <Tooltip />
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="engagedUsers"
+                        stroke="#8884d8"
+                        strokeWidth={2}
+                        name="Engaged Users"
+                        dot={false}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="lessonInteractions"
+                        stroke="#82ca9d"
+                        strokeWidth={2}
+                        name="Lesson Interactions"
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Course Stats */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewCourses.total_courses?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Published Courses</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewCourses.published_courses?.toLocaleString() || 0}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Enrollments / Course</CardTitle>
+                    <LineChartIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewCourses.avg_enrollments_per_course?.toFixed(1) || 0}</div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </main>
