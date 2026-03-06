@@ -308,7 +308,8 @@ async def get_analytics_overview(
         metric="enrollments",
         limit=5,
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        site_id=current_site.id
     )
     course_performance_data = []
     for c in top_courses:

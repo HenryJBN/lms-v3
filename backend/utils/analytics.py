@@ -487,7 +487,8 @@ async def get_top_performing_content(
     metric: str = "enrollments", 
     limit: int = 10,
     start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None,
+    site_id: Optional[uuid.UUID] = None
 ) -> List[Dict[str, Any]]:
     """Get top performing content by various metrics"""
     if not end_date: end_date = datetime.utcnow()
@@ -503,7 +504,11 @@ async def get_top_performing_content(
                 Enrollment, and_(Enrollment.course_id == Course.id, Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date)
             ).outerjoin(
                 CourseReview, and_(CourseReview.course_id == Course.id, CourseReview.is_published == True)
-            ).where(Course.status == 'published').group_by(Course.id).order_by(desc("metric_value")).limit(limit)
+            )
+            conditions = [Course.status == 'published']
+            if site_id:
+                conditions.append(Course.site_id == site_id)
+            query = query.where(*conditions).group_by(Course.id).order_by(desc("metric_value")).limit(limit)
         
         elif metric == "revenue":
             query = select(
@@ -514,7 +519,11 @@ async def get_top_performing_content(
                 RevenueRecord, and_(RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed', RevenueRecord.created_at >= start_date, RevenueRecord.created_at <= end_date)
             ).outerjoin(
                 CourseReview, and_(CourseReview.course_id == Course.id, CourseReview.is_published == True)
-            ).where(Course.status == 'published').group_by(Course.id).order_by(desc("metric_value")).limit(limit)
+            )
+            conditions = [Course.status == 'published']
+            if site_id:
+                conditions.append(Course.site_id == site_id)
+            query = query.where(*conditions).group_by(Course.id).order_by(desc("metric_value")).limit(limit)
         else: # completion_rate
             query = select(
                 Course.id, Course.title, Course.thumbnail_url,
@@ -524,7 +533,11 @@ async def get_top_performing_content(
                 Enrollment, and_(Enrollment.course_id == Course.id, Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date)
             ).outerjoin(
                 CourseReview, and_(CourseReview.course_id == Course.id, CourseReview.is_published == True)
-            ).where(Course.status == 'published').group_by(Course.id).order_by(desc("metric_value")).limit(limit)
+            )
+            conditions = [Course.status == 'published']
+            if site_id:
+                conditions.append(Course.site_id == site_id)
+            query = query.where(*conditions).group_by(Course.id).order_by(desc("metric_value")).limit(limit)
 
     results = await session.exec(query)
     return [dict(zip(["id", "title", "thumbnail_url", "metric_value", "avg_rating"], [row[0], row[1], row[2], float(row[3]), float(row[4])])) for row in results.all()]
