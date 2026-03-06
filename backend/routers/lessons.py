@@ -205,10 +205,18 @@ async def get_all_lessons(
             "author": f"{author_first_name} {author_last_name}",
             "author_id": str(author_id),
             "createdDate": lesson.created_at.isoformat(),
-            "isPreview": lesson.is_preview,
-            "hasQuiz": False,
+            "is_preview": lesson.is_preview,
+            "has_quiz": lesson.has_quiz,
+            "has_assignment": lesson.has_assignment,
+            "passing_score": lesson.passing_score,
+            "thumbnail_url": lesson.thumbnail_url,
+            "content": lesson.content,
             "sort_order": lesson.sort_order,
             "video_url": lesson.video_url,
+            "video_duration": lesson.video_duration,
+            "estimated_duration": lesson.estimated_duration,
+            "attachments": lesson.attachments,
+            "resources": lesson.resources,
             "slug": lesson.slug
         }
         transformed_lessons.append(transformed_lesson)
@@ -748,6 +756,23 @@ async def upload_image_temp(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload image: {str(e)}"
+        )
+
+@router.post("/upload-attachment-temp")
+async def upload_attachment_temp(
+    file: UploadFile = File(...),
+    current_user = Depends(require_instructor_or_admin)
+):
+    """Upload any file temporarily for lesson creation"""
+    try:
+        # Upload generic file
+        result = await upload_file(file, "temp/attachments")
+        return {"url": result["url"], "name": result.get("filename", file.filename)}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload attachment: {str(e)}"
         )
 
 @router.post("/{lesson_id}/upload-images")

@@ -34,6 +34,7 @@ import {
   Filter,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { courseService } from "@/lib/services/courses"
 import Link from "next/link"
 
 interface Assignment {
@@ -63,7 +64,7 @@ export default function AdminAssignmentsPage() {
     queryFn: async () => {
       const [assignmentsResponse, coursesResponse] = await Promise.all([
         apiClient.get("/api/assignments?page=1&size=1000") as Promise<{ items: Assignment[] }>,
-        apiClient.get("/api/courses?page=1&size=1000") as Promise<{ items: any[] }>,
+        courseService.getAdminCourses({ size: 1000 }),
       ])
       return { assignments: assignmentsResponse.items || [], courses: coursesResponse.items || [] }
     },

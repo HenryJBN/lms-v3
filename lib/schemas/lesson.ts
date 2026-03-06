@@ -232,6 +232,18 @@ export const LessonCreateFormSchema = z
       .transform((val) => parseInt(val))
       .optional()
       .or(z.literal("")),
+
+    thumbnailUrl: z.string().url("Please enter a valid image URL").optional().or(z.literal("")),
+
+    attachments: z
+      .array(
+        z.object({
+          name: z.string(),
+          url: z.string().url(),
+        })
+      )
+      .optional()
+      .default([]),
   })
   .superRefine((data, ctx) => {
     // Validate media content based on lesson type

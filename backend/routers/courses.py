@@ -346,10 +346,12 @@ async def get_course_by_id(
     query = select(Course, User).outerjoin(User).where(
         Course.id == course_id,
         Course.site_id == current_site.id,  # Strict Site Check!
-        Course.status == CourseStatus.published  # Only show published courses
+        # Course.status == CourseStatus.published  # Only show published courses
     )
     result = await session.exec(query)
     row = result.first()
+
+    print(result, 'na here i de call rom')
     
     if not row:
         raise HTTPException(status_code=404, detail="Course not found")

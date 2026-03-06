@@ -75,8 +75,10 @@ import {
   Copy,
   Move,
   Loader2,
+  X,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { courseService } from "@/lib/services/courses"
 import { LessonCreateFormSchema, type LessonCreateForm } from "@/lib/schemas/lesson"
 
 export default function LessonsManagement() {
@@ -97,7 +99,7 @@ export default function LessonsManagement() {
   const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
     queryKey: ["admin", "lessonCourses"],
     queryFn: async () => {
-      const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
+      const response = await courseService.getAdminCourses({ size: 100 })
       return response.items || []
     },
   })
@@ -189,6 +191,8 @@ export default function LessonsManagement() {
       hasQuiz: false,
       hasAssignment: false,
       passingScore: "",
+      thumbnailUrl: "",
+      attachments: [],
     },
   })
 
@@ -213,6 +217,9 @@ export default function LessonsManagement() {
       hasQuiz: false,
       hasAssignment: false,
       passingScore: "",
+      thumbnail: undefined,
+      thumbnailUrl: "",
+      attachments: [],
     },
   })
 
@@ -289,10 +296,15 @@ export default function LessonsManagement() {
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
+        video_duration: values.type === "video" && values.duration
+          ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
+          : null,
         // Assessment fields
         has_quiz: values.hasQuiz,
         has_assignment: values.hasAssignment,
         passing_score: values.passingScore ? parseInt(values.passingScore.toString()) : 70,
+        thumbnail_url: values.thumbnailUrl || null,
+        attachments: values.attachments || [],
       }
 
       // Make API call to create lesson
@@ -323,6 +335,8 @@ export default function LessonsManagement() {
         hasQuiz: false,
         hasAssignment: false,
         passingScore: "",
+        thumbnailUrl: "",
+        attachments: [],
       })
       setVideoProvisionType("url")
       setSelectedVideoFileName("")
@@ -488,12 +502,20 @@ export default function LessonsManagement() {
       order: lesson.sort_order?.toString() || "",
       duration: durationStr,
       isPreview: lesson.is_preview || false,
-      videoProvisionType: lesson.video_url ? "url" : "upload",
-      videoUrl: lesson.video_url || "",
+      videoProvisionType: lesson.type === "video" && lesson.video_url ? "url" : "upload",
+      videoUrl: lesson.type === "video" ? lesson.video_url || "" : "",
       videoFile: undefined,
-      hasQuiz: lesson.hasQuiz || false,
-      hasAssignment: lesson.hasAssignment || false,
-      passingScore: lesson.passingScore || "",
+      audioProvisionType: lesson.type === "audio" && lesson.video_url ? "url" : "upload",
+      audioUrl: lesson.type === "audio" ? lesson.video_url || "" : "",
+      audioFile: undefined,
+      imageProvisionType: lesson.type === "image" && lesson.video_url ? "url" : "upload",
+      imageUrls: lesson.type === "image" && lesson.video_url ? [lesson.video_url] : [],
+      imageFiles: undefined,
+      hasQuiz: lesson.has_quiz || false,
+      hasAssignment: lesson.has_assignment || false,
+      passingScore: lesson.passing_score?.toString() || "",
+      thumbnailUrl: lesson.thumbnail_url || "",
+      attachments: lesson.attachments || [],
     })
 
     setEditSelectedVideoFileName("")
@@ -659,9 +681,7 @@ export default function LessonsManagement() {
         description: values.description?.trim() || "",
         content: values.content?.trim() || "",
         course_id: values.courseId,
-        course_id: values.courseId,
         section_id: values.sectionId === "" || values.sectionId === "none" ? null : values.sectionId,
-        type: values.type,
         type: values.type,
         sort_order: values.order ? parseInt(values.order) : 0,
         is_preview: values.isPreview,
@@ -669,10 +689,17 @@ export default function LessonsManagement() {
         estimated_duration: values.duration
           ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
           : null,
+        video_duration: values.type === "video" && values.duration
+          ? parseInt(values.duration.split(":")[0]) * 60 + parseInt(values.duration.split(":")[1])
+          : null,
         // Assessment fields
         has_quiz: values.hasQuiz,
         has_assignment: values.hasAssignment,
         passing_score: values.passingScore ? parseInt(values.passingScore.toString()) : 70,
+        thumbnail_url: values.thumbnailUrl || null,
+        attachments: values.attachments || [],
+        resources: editingLesson?.resources || null,
+        // NOTE: ignoring files for now unless explicitly modified
       }
 
       // Make API call to update lesson
@@ -1402,7 +1429,54 @@ export default function LessonsManagement() {
                                 <div className="grid gap-4 pt-4 border-t">
                                   <div className="grid gap-2">
                                     <Label htmlFor="thumbnail">Thumbnail Image</Label>
-                                    <Input id="thumbnail" type="file" accept="image/*" />
+                                    <div className="flex items-center gap-4">
+                                      <Input 
+                                        id="thumbnail" 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="flex-1"
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            try {
+                                              const uploadResponse = await apiClient.postFormData<{ image_url: string }>(
+                                                "/api/lessons/upload-image-temp",
+                                                formData
+                                              );
+                                              form.setValue("thumbnailUrl", uploadResponse.image_url);
+                                              toast({
+                                                title: "Thumbnail Uploaded",
+                                                description: "The thumbnail image has been uploaded successfully.",
+                                              });
+                                            } catch (error) {
+                                              toast({
+                                                title: "Upload Failed",
+                                                description: "Failed to upload thumbnail image.",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      {form.watch("thumbnailUrl") && (
+                                        <div className="relative h-10 w-10 border rounded overflow-hidden flex-shrink-0">
+                                          <img 
+                                            src={form.watch("thumbnailUrl")} 
+                                            alt="Thumbnail" 
+                                            className="h-full w-full object-cover"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => form.setValue("thumbnailUrl", "")}
+                                            className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-muted-foreground">
                                       Optional thumbnail image for the lesson
                                     </p>
@@ -1410,7 +1484,64 @@ export default function LessonsManagement() {
 
                                   <div className="grid gap-2">
                                     <Label htmlFor="attachments">Additional Attachments</Label>
-                                    <Input id="attachments" type="file" multiple />
+                                    <Input 
+                                      id="attachments" 
+                                      type="file" 
+                                      multiple 
+                                      onChange={async (e) => {
+                                        const files = Array.from(e.target.files || []);
+                                        if (files.length > 0) {
+                                          const currentAttachments = form.getValues("attachments") || [];
+                                          const newAttachments = [...currentAttachments];
+                                          
+                                          for (const file of files) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            try {
+                                              const uploadResponse = await apiClient.postFormData<{ url: string, name: string }>(
+                                                "/api/lessons/upload-attachment-temp",
+                                                formData
+                                              );
+                                              newAttachments.push({
+                                                name: uploadResponse.name,
+                                                url: uploadResponse.url
+                                              });
+                                            } catch (error) {
+                                              toast({
+                                                title: "Upload Failed",
+                                                description: `Failed to upload ${file.name}`,
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }
+                                          
+                                          form.setValue("attachments", newAttachments);
+                                          toast({
+                                            title: "Attachments Uploaded",
+                                            description: `${files.length} file(s) uploaded successfully.`,
+                                          });
+                                        }
+                                      }}
+                                    />
+                                    {form.watch("attachments") && form.watch("attachments").length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        {form.watch("attachments").map((at: any, index: number) => (
+                                          <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-xs">
+                                            <span className="truncate max-w-[150px]">{at.name}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const current = form.getValues("attachments");
+                                                form.setValue("attachments", current.filter((_: any, i: number) => i !== index));
+                                              }}
+                                              className="text-muted-foreground hover:text-destructive"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                     <p className="text-xs text-muted-foreground">
                                       Supplementary files (PDFs, documents, etc.) that students can
                                       download
@@ -2060,7 +2191,54 @@ export default function LessonsManagement() {
                                 <div className="grid gap-4 pt-4 border-t">
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-thumbnail">Thumbnail Image</Label>
-                                    <Input id="edit-thumbnail" type="file" accept="image/*" />
+                                    <div className="flex items-center gap-4">
+                                      <Input 
+                                        id="edit-thumbnail" 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="flex-1"
+                                        onChange={async (e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            try {
+                                              const uploadResponse = await apiClient.postFormData<{ image_url: string }>(
+                                                "/api/lessons/upload-image-temp",
+                                                formData
+                                              );
+                                              editForm.setValue("thumbnailUrl", uploadResponse.image_url);
+                                              toast({
+                                                title: "Thumbnail Uploaded",
+                                                description: "The thumbnail image has been uploaded successfully.",
+                                              });
+                                            } catch (error) {
+                                              toast({
+                                                title: "Upload Failed",
+                                                description: "Failed to upload thumbnail image.",
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }
+                                        }}
+                                      />
+                                      {editForm.watch("thumbnailUrl") && (
+                                        <div className="relative h-10 w-10 border rounded overflow-hidden flex-shrink-0">
+                                          <img 
+                                            src={editForm.watch("thumbnailUrl")} 
+                                            alt="Thumbnail" 
+                                            className="h-full w-full object-cover"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => editForm.setValue("thumbnailUrl", "")}
+                                            className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 hover:opacity-100 transition-opacity"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-muted-foreground">
                                       Optional thumbnail image for the lesson
                                     </p>
@@ -2068,7 +2246,64 @@ export default function LessonsManagement() {
 
                                   <div className="grid gap-2">
                                     <Label htmlFor="edit-attachments">Additional Attachments</Label>
-                                    <Input id="edit-attachments" type="file" multiple />
+                                    <Input 
+                                      id="edit-attachments" 
+                                      type="file" 
+                                      multiple 
+                                      onChange={async (e) => {
+                                        const files = Array.from(e.target.files || []);
+                                        if (files.length > 0) {
+                                          const currentAttachments = editForm.getValues("attachments") || [];
+                                          const newAttachments = [...currentAttachments];
+                                          
+                                          for (const file of files) {
+                                            const formData = new FormData();
+                                            formData.append("file", file);
+                                            try {
+                                              const uploadResponse = await apiClient.postFormData<{ url: string, name: string }>(
+                                                "/api/lessons/upload-attachment-temp",
+                                                formData
+                                              );
+                                              newAttachments.push({
+                                                name: uploadResponse.name,
+                                                url: uploadResponse.url
+                                              });
+                                            } catch (error) {
+                                              toast({
+                                                title: "Upload Failed",
+                                                description: `Failed to upload ${file.name}`,
+                                                variant: "destructive",
+                                              });
+                                            }
+                                          }
+                                          
+                                          editForm.setValue("attachments", newAttachments);
+                                          toast({
+                                            title: "Attachments Uploaded",
+                                            description: `${files.length} file(s) uploaded successfully.`,
+                                          });
+                                        }
+                                      }}
+                                    />
+                                    {editForm.watch("attachments") && editForm.watch("attachments").length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        {editForm.watch("attachments").map((at: any, index: number) => (
+                                          <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-xs">
+                                            <span className="truncate max-w-[150px]">{at.name}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const current = editForm.getValues("attachments");
+                                                editForm.setValue("attachments", current.filter((_: any, i: number) => i !== index));
+                                              }}
+                                              className="text-muted-foreground hover:text-destructive"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                     <p className="text-xs text-muted-foreground">
                                       Supplementary files (PDFs, documents, etc.) that students can
                                       download
@@ -2327,7 +2562,7 @@ export default function LessonsManagement() {
                                     Preview
                                   </Badge>
                                 )}
-                                {lesson.hasQuiz && (
+                                {lesson.has_quiz && (
                                   <Badge variant="outline" className="text-xs">
                                     Quiz
                                   </Badge>

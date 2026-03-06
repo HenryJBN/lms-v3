@@ -77,6 +77,7 @@ export interface CourseFilters {
   is_published?: boolean
   search?: string
   level?: "beginner" | "intermediate" | "advanced" | string
+  size?: number
 }
 
 class CourseService {

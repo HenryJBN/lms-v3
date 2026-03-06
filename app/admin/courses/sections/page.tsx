@@ -71,6 +71,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
+import { courseService } from "@/lib/services/courses"
 import { SectionCreateFormSchema, type SectionCreateForm } from "@/lib/schemas/section"
 
 export default function SectionsManagement() {
@@ -106,7 +107,7 @@ export default function SectionsManagement() {
   const { data: coursesData, isLoading: isLoadingCourses } = useQuery({
     queryKey: ["admin", "sectionCourses"],
     queryFn: async () => {
-      const response: { items: any[] } = await apiClient.get("/api/courses?page=1&size=100")
+      const response = await courseService.getAdminCourses({ size: 100 })
       return response.items || []
     },
   })
@@ -476,7 +477,7 @@ export default function SectionsManagement() {
                                         </div>
                                       ) : (
                                         courses.map((course) => (
-                                          <SelectItem key={course.id} value={course.id}>
+                                          <SelectItem key={course.id} value={course.id.toString()}>
                                             {course.title}
                                           </SelectItem>
                                         ))

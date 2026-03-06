@@ -19,6 +19,10 @@ class LessonBase(BaseSchema):
     resources: Optional[Dict[str, Any]] = None
     estimated_duration: Optional[int] = None
     attachments: Optional[List[Dict[str, Any]]] = None
+    has_quiz: bool = False
+    has_assignment: bool = False
+    passing_score: Optional[int] = None
+    thumbnail_url: Optional[str] = None
 
 class LessonCreate(LessonBase):
     course_id: uuid.UUID
@@ -40,6 +44,10 @@ class LessonUpdate(BaseSchema):
     resources: Optional[Dict[str, Any]] = None
     estimated_duration: Optional[int] = None
     attachments: Optional[List[Dict[str, Any]]] = None
+    has_quiz: Optional[bool] = None
+    has_assignment: Optional[bool] = None
+    passing_score: Optional[int] = None
+    thumbnail_url: Optional[str] = None
 
 class LessonResponse(LessonBase):
     id: uuid.UUID

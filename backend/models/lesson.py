@@ -31,6 +31,13 @@ class Lesson(MultiTenantMixin, table=True):
     attachments: Optional[List[Dict[str, Any]]] = Field(default=None, sa_column=Column(JSON))
     
     estimated_duration: Optional[int] = None
+
+    # Assessment settings added based on frontend requirements
+    has_quiz: bool = Field(default=False)
+    has_assignment: bool = Field(default=False)
+    passing_score: Optional[int] = Field(default=None)
+    
+    thumbnail_url: Optional[str] = None
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
