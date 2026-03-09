@@ -48,3 +48,9 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Docker
+docker-compose.override.yml
+nginx/ssl/
+nginx/certbot/
+backend/.env.production

@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js build output
+.next
+out
+build
+
+# Backend (has its own Dockerfile)
+backend
+
+# Version control
+.git
+.gitignore
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Environment files (injected via docker-compose)
+.env*
+
+# Documentation & misc
+docs
+*.md
+LICENSE
+
+# Docker files
+docker-compose*.yml
+Dockerfile
+nginx

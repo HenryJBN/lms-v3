@@ -1,0 +1,189 @@
+# ============================================
+# DCA LMS — Docker Compose (Production)
+# ============================================
+# Single VPS deployment with all services
+#
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose logs -f        # View logs
+#   docker compose down           # Stop all services
+#   docker compose up -d --build  # Rebuild and restart
+
+services:
+  # ------------------------------------------
+  # Nginx — Reverse Proxy & SSL Termination
+  # ------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: lms-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # Frontend — Next.js Application
+  # ------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_VERSION: ${NEXT_PUBLIC_API_VERSION:-v1}
+        NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-1}
+    container_name: lms-frontend
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # Backend — FastAPI Application
+  # ------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lms-backend
+    expose:
+      - "8000"
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-4}
+    volumes:
+      - uploads-data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # Celery Worker — Background Task Processing
+  # ------------------------------------------
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lms-celery-worker
+    command: celery -A celery_app worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-4}
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - APP_ENV=production
+    volumes:
+      - uploads-data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # Celery Beat — Periodic Task Scheduler
+  # ------------------------------------------
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lms-celery-beat
+    command: celery -A celery_app beat --loglevel=info
+    env_file:
+      - ./backend/.env.production
+    environment:
+      - APP_ENV=production
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # PostgreSQL — Database
+  # ------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lms_database}
+      POSTGRES_USER: ${POSTGRES_USER:-lms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lms_user} -d ${POSTGRES_DB:-lms_database}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+  # ------------------------------------------
+  # Redis — Cache & Message Broker
+  # ------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: lms-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - lms-network
+
+# ------------------------------------------
+# Volumes
+# ------------------------------------------
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  uploads-data:
+    driver: local
+
+# ------------------------------------------
+# Networks
+# ------------------------------------------
+networks:
+  lms-network:
+    driver: bridge
