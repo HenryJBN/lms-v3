@@ -495,11 +495,28 @@ async def get_top_performing_content(
     if not start_date: start_date = end_date - timedelta(days=30)
     
     if content_type == "courses":
+        # Additional metrics subqueries
+        comp_sub = select(func.count(Enrollment.id)).where(
+            Enrollment.course_id == Course.id,
+            Enrollment.status == 'completed',
+            Enrollment.enrolled_at >= start_date,
+            Enrollment.enrolled_at <= end_date
+        ).scalar_subquery()
+        
+        rev_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
+            RevenueRecord.course_id == Course.id,
+            RevenueRecord.status == 'completed',
+            RevenueRecord.created_at >= start_date,
+            RevenueRecord.created_at <= end_date
+        ).scalar_subquery()
+
         if metric == "enrollments":
             query = select(
                 Course.id, Course.title, Course.thumbnail_url,
                 func.count(Enrollment.id).label("metric_value"),
-                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating")
+                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating"),
+                comp_sub.label("completions"),
+                rev_sub.label("revenue")
             ).outerjoin(
                 Enrollment, and_(Enrollment.course_id == Course.id, Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date)
             ).outerjoin(
@@ -514,7 +531,9 @@ async def get_top_performing_content(
             query = select(
                 Course.id, Course.title, Course.thumbnail_url,
                 func.coalesce(func.sum(RevenueRecord.amount), 0).label("metric_value"),
-                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating")
+                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating"),
+                comp_sub.label("completions"),
+                rev_sub.label("revenue")
             ).outerjoin(
                 RevenueRecord, and_(RevenueRecord.course_id == Course.id, RevenueRecord.status == 'completed', RevenueRecord.created_at >= start_date, RevenueRecord.created_at <= end_date)
             ).outerjoin(
@@ -528,7 +547,9 @@ async def get_top_performing_content(
             query = select(
                 Course.id, Course.title, Course.thumbnail_url,
                 (func.count(col(Enrollment.id)).where(Enrollment.status == 'completed') * 100.0 / func.nullif(func.count(Enrollment.id), 0)).label("metric_value"),
-                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating")
+                func.coalesce(func.avg(CourseReview.rating), 0).label("avg_rating"),
+                comp_sub.label("completions"),
+                rev_sub.label("revenue")
             ).join(
                 Enrollment, and_(Enrollment.course_id == Course.id, Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date)
             ).outerjoin(
@@ -540,7 +561,12 @@ async def get_top_performing_content(
             query = query.where(*conditions).group_by(Course.id).order_by(desc("metric_value")).limit(limit)
 
     results = await session.exec(query)
-    return [dict(zip(["id", "title", "thumbnail_url", "metric_value", "avg_rating"], [row[0], row[1], row[2], float(row[3]), float(row[4])])) for row in results.all()]
+    output = []
+    for row in results.all():
+        keys = ["id", "title", "thumbnail_url", "metric_value", "avg_rating", "completions", "revenue"]
+        item = dict(zip(keys, [row[0], row[1], row[2], float(row[3]), float(row[4]), row[5], float(row[6])]))
+        output.append(item)
+    return output
 
 async def get_platform_kpis(
     session: AsyncSession,

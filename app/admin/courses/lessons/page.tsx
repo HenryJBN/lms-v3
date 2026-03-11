@@ -381,7 +381,7 @@ export default function LessonsManagement() {
     totalLessons: lessons.length,
     publishedLessons: lessons.filter((l) => l.status === "published").length,
     draftLessons: lessons.filter((l) => l.status === "draft").length,
-    totalViews: lessons.reduce((sum, lesson) => sum + lesson.views, 0),
+    totalViews: lessons.reduce((sum, lesson) => sum + (lesson.views || 0), 0),
     averageCompletion:
       lessons.filter((l) => (l.completionRate ?? 0) > 0).length > 0
         ? lessons
@@ -390,8 +390,9 @@ export default function LessonsManagement() {
           lessons.filter((l) => (l.completionRate ?? 0) > 0).length
         : 0,
     totalDuration: lessons.reduce((sum, lesson) => {
+      if (!lesson.duration || !lesson.duration.includes(":")) return sum
       const [minutes, seconds] = lesson.duration.split(":").map(Number)
-      return sum + minutes + seconds / 60
+      return sum + (minutes || 0) + (seconds || 0) / 60
     }, 0),
   }
 

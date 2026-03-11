@@ -142,10 +142,11 @@ async def get_admin_dashboard(
     new_enrollments_period = (await session.exec(select(func.count(Enrollment.id)).where(Enrollment.enrolled_at >= start_date, Enrollment.enrolled_at <= end_date, Enrollment.site_id == current_site.id))).one()
     new_certificates_period = (await session.exec(select(func.count(Certificate.id)).where(Certificate.issued_at >= start_date, Certificate.issued_at <= end_date, Certificate.site_id == current_site.id))).one()
     
-    # Top courses (count enrollments per course)
-    enrollment_count_sub = select(
+    # Top courses (count enrollments and completions per course)
+    stats_count_sub = select(
         Enrollment.course_id, 
-        func.count(Enrollment.id).label("enroll_count")
+        func.count(Enrollment.id).label("enroll_count"),
+        func.sum(case((Enrollment.status == 'completed', 1), else_=0)).label("comp_count")
     ).where(
         Enrollment.site_id == current_site.id
     ).group_by(Enrollment.course_id).subquery()
@@ -153,17 +154,18 @@ async def get_admin_dashboard(
     top_courses_query = select(
         Course.id, 
         Course.title, 
-        func.coalesce(enrollment_count_sub.c.enroll_count, 0).label("enrollment_count"), 
+        func.coalesce(stats_count_sub.c.enroll_count, 0).label("enrollment_count"),
+        func.coalesce(stats_count_sub.c.comp_count, 0).label("completion_count"),
         Course.thumbnail_url
     ).outerjoin(
-        enrollment_count_sub, Course.id == enrollment_count_sub.c.course_id
+        stats_count_sub, Course.id == stats_count_sub.c.course_id
     ).where(
         Course.status == 'published',
         Course.site_id == current_site.id
     ).order_by(desc("enrollment_count")).limit(5)
     
     top_courses_res = await session.exec(top_courses_query)
-    top_courses_list = [dict(zip(["id", "title", "enrollment_count", "thumbnail_url"], row)) for row in top_courses_res.all()]
+    top_courses_list = [dict(zip(["id", "title", "enrollment_count", "completion_count", "thumbnail_url"], row)) for row in top_courses_res.all()]
     
     # Recent registrations
     recent_users_query = select(User.id, User.first_name, User.last_name, User.email, User.role, User.created_at).where(

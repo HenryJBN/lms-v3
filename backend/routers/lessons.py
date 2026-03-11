@@ -131,13 +131,25 @@ async def get_all_lessons(
     # For now, we'll do a slightly simpler join and handle analytics separately if too complex for one select
     # but let's try to get core info
     
+    # Subqueries for completion rate
+    lesson_completions_sub = select(func.count(LessonProgress.id)).where(
+        LessonProgress.lesson_id == Lesson.id,
+        LessonProgress.status == 'completed'
+    ).scalar_subquery()
+    
+    course_enrollments_sub = select(func.count(Enrollment.id)).where(
+        Enrollment.course_id == Lesson.course_id
+    ).scalar_subquery()
+
     query = select(
         Lesson, 
         Course.title.label("course_title"),
         Section.title.label("section_title"),
         User.first_name.label("author_first_name"),
         User.last_name.label("author_last_name"),
-        User.id.label("author_id")
+        User.id.label("author_id"),
+        lesson_completions_sub.label("completions"),
+        course_enrollments_sub.label("enrollments")
     ).join(
         Course, Lesson.course_id == Course.id
     ).join(
@@ -181,7 +193,12 @@ async def get_all_lessons(
     results = await session.exec(query)
     
     transformed_lessons = []
-    for lesson, course_title, section_title, author_first_name, author_last_name, author_id in results.all():
+    for lesson, course_title, section_title, author_first_name, author_last_name, author_id, completions, enrollments in results.all():
+        # Calculate completion rate
+        completion_rate = 0
+        if enrollments and enrollments > 0:
+            completion_rate = round((completions / enrollments) * 100, 1)
+
         # Convert duration to MM:SS
         duration_str = "00:00"
         lesson_duration = lesson.estimated_duration or lesson.video_duration or 0
@@ -198,11 +215,11 @@ async def get_all_lessons(
             "course_id": str(lesson.course_id),
             "section_id": str(lesson.section_id) if lesson.section_id else None,
             "section_title": section_title,
-            "type": lesson.type,
+            "type": str(lesson.type.value if hasattr(lesson.type, 'value') else lesson.type),
             "status": "published" if lesson.is_published else "draft",
             "duration": duration_str,
-            "views": 0,  # Handle analytics separately if needed
-            "completionRate": 0,
+            "views": 0, # Handle analytics separately if needed
+            "completionRate": completion_rate,
             "thumbnail": None,
             "author": f"{author_first_name} {author_last_name}",
             "author_id": str(author_id),

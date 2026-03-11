@@ -315,9 +315,9 @@ async def get_analytics_overview(
     for c in top_courses:
         course_performance_data.append({
             "course": c["title"],
-            "enrollments": c["metric_value"],
-            "completions": 0, # Calculated directly if needed
-            "revenue": 0 # Aggregated if needed
+            "enrollments": int(c["metric_value"]),
+            "completions": int(c.get("completions", 0)),
+            "revenue": float(c.get("revenue", 0))
         })
     
     # Certificate analytics
@@ -634,19 +634,36 @@ async def get_engagement_analytics(
     dau_res = await session.exec(dau_query)
     daily_active_users = [{"date": str(d), "active_users": u} for d, u in dau_res.all()]
     
-    # Course engagement
-    course_query = select(
-        func.date(LessonProgress.updated_at).label("date"),
-        func.count(func.distinct(LessonProgress.user_id)).label("engaged_users"),
-        func.count(LessonProgress.id).label("lesson_interactions"),
-        func.coalesce(func.avg(LessonProgress.time_spent), 0).label("avg_time_spent")
-    ).where(
-        LessonProgress.updated_at.between(start_date, end_date),
-        LessonProgress.site_id == current_site.id
-    ).group_by(func.date(LessonProgress.updated_at)).order_by("date")
+    # Course Engagement (real data from lesson_progress)
+    from models.enrollment import LessonProgress
+    from sqlalchemy import func as sa_func
     
-    course_res = await session.exec(course_query)
-    course_engagement = [{"date": str(d), "engaged_users": u, "lesson_interactions": i, "avg_time_spent": float(t)} for d, u, i, t in course_res.all()]
+    engagement_query = select(
+        sa_func.date(LessonProgress.updated_at).label("day"),
+        sa_func.count(sa_func.distinct(LessonProgress.user_id)).label("users"),
+        sa_func.count(LessonProgress.id).label("hits"),
+        sa_func.avg(LessonProgress.time_spent).label("avg_time")
+    ).where(
+        LessonProgress.updated_at >= start_date,
+        LessonProgress.updated_at <= end_date,
+        LessonProgress.site_id == current_site.id
+    ).group_by(sa_func.date(LessonProgress.updated_at))
+    
+    engagement_results = await session.exec(engagement_query)
+    engagement_map = {str(row.day): row for row in engagement_results.all()}
+
+    course_engagement = []
+    curr = start_date
+    while curr <= end_date:
+        day_str = curr.strftime("%Y-%m-%d")
+        row = engagement_map.get(day_str)
+        course_engagement.append({
+            "date": day_str,
+            "engaged_users": row.users if row else 0,
+            "lesson_interactions": row.hits if row else 0,
+            "avg_time_spent": int(row.avg_time) if row and row.avg_time else 0
+        })
+        curr += timedelta(days=1)
     
     return {
         "period": {"start_date": start_date, "end_date": end_date},
