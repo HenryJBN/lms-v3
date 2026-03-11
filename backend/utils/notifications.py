@@ -5,6 +5,7 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.communication import Notification, NotificationSettings
 from database.session import engine, async_session_factory
+from utils.email_async import send_custom_email_async
 
 async def create_notification(
     user_id: uuid.UUID,
@@ -208,7 +209,7 @@ async def send_push_notification(user_id: uuid.UUID, title: str, message: str, s
     except Exception as e:
         print(f"Failed to send push notification: {e}")
 
-async def send_email_notification(user_id: uuid.UUID, subject: str, template: str, context: Dict[str, Any], session: AsyncSession):
+async def send_email_notification(user_id: uuid.UUID, subject: str, template: str, context: Dict[str, Any], session: AsyncSession, site_id: Optional[uuid.UUID] = None):
     """Send email notification to user"""
     try:
         # Check if user has email notifications enabled
@@ -228,7 +229,20 @@ async def send_email_notification(user_id: uuid.UUID, subject: str, template: st
         if not user:
             return
             
-        print(f"Email notification sent to {user.email}: {subject}")
+        print(f"Queueing email notification for {user.email}: {subject}")
+        
+        # Add common platform context if not present
+        if site_id:
+            context["site_id"] = str(site_id)
+            
+        # Send via Celery
+        send_custom_email_async(
+            to_email=user.email,
+            subject=subject,
+            template_name=template,
+            context=context
+        )
+        
     except Exception as e:
         print(f"Failed to send email notification: {e}")
 
