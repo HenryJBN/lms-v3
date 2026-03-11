@@ -48,7 +48,7 @@ class CourseBase(BaseSchema):
     price: float = 0
     original_price: Optional[float] = None
     currency: str = "USD"
-    duration_hours: Optional[int] = None
+    duration_hours: Optional[float] = None
     language: str = "en"
     requirements: List[str] = []
     learning_outcomes: List[str] = []
@@ -72,7 +72,7 @@ class CourseUpdate(BaseSchema):
     level: Optional[CourseLevel] = None
     price: Optional[float] = None
     original_price: Optional[float] = None
-    duration_hours: Optional[int] = None
+    duration_hours: Optional[float] = None
     requirements: Optional[List[str]] = None
     learning_outcomes: Optional[List[str]] = None
     target_audience: Optional[str] = None

@@ -185,8 +185,8 @@ async def get_all_lessons(
         duration_str = "00:00"
         lesson_duration = lesson.estimated_duration or lesson.video_duration or 0
         if lesson_duration:
-            minutes = lesson_duration // 60
-            seconds = lesson_duration % 60
+            minutes = int(lesson_duration // 60)
+            seconds = int(lesson_duration % 60)
             duration_str = f"{minutes:02d}:{seconds:02d}"
 
         transformed_lesson = {
@@ -468,7 +468,6 @@ async def create_lesson(
     try:
         session.add(new_lesson)
         await session.commit()
-        await session.refresh(new_lesson)
 
         # Update course duration
         await update_course_duration(lesson_in.course_id, session)
@@ -476,6 +475,11 @@ async def create_lesson(
         # Recalculate progress for all enrolled users if lesson is published
         if new_lesson.is_published:
             await recalculate_course_progress_all_users(lesson_in.course_id, session, current_site.id)
+
+        # Fetch with selectinload to avoid lazy loading crash during serialization
+        query = select(Lesson).where(Lesson.id == new_lesson.id).options(selectinload(Lesson.quiz))
+        result = await session.exec(query)
+        new_lesson = result.one()
 
         # Auto-transcode video if lesson has video_url
         await check_and_trigger_video_transcoding(new_lesson.id, new_lesson.video_url, session)
@@ -545,7 +549,6 @@ async def update_lesson(
     lesson.updated_at = datetime.utcnow()
     session.add(lesson)
     await session.commit()
-    await session.refresh(lesson)
     
     # Update course duration
     await update_course_duration(lesson.course_id, session)
@@ -554,6 +557,11 @@ async def update_lesson(
     if publish_changed:
         await recalculate_course_progress_all_users(lesson.course_id, session, current_site.id)
     
+    # Fetch with selectinload to avoid lazy loading crash during serialization
+    query = select(Lesson).where(Lesson.id == lesson_id).options(selectinload(Lesson.quiz))
+    result = await session.exec(query)
+    lesson = result.one()
+
     # Auto-transcode video if video_url was updated or changed
     if 'video_url' in update_data:
         await check_and_trigger_video_transcoding(lesson.id, lesson.video_url, session)

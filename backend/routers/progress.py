@@ -407,6 +407,62 @@ async def submit_quiz_attempt(
             "quiz_passed",
             attempt.quiz_id
         )
+
+    # Update lesson progress and course progress if it's a lesson-linked quiz
+    if quiz.lesson_id:
+        # Check if lesson progress record exists
+        lp_query = select(LessonProgress).where(
+            LessonProgress.user_id == current_user.id,
+            LessonProgress.lesson_id == quiz.lesson_id,
+            LessonProgress.site_id == current_site.id
+        )
+        lp_result = await session.exec(lp_query)
+        lesson_progress = lp_result.first()
+        
+        if passed:
+            if lesson_progress:
+                if lesson_progress.status != CompletionStatus.completed:
+                    lesson_progress.status = CompletionStatus.completed
+                    lesson_progress.progress_percentage = 100
+                    lesson_progress.completed_at = datetime.utcnow()
+                    lesson_progress.updated_at = datetime.utcnow()
+                    session.add(lesson_progress)
+            else:
+                new_lp = LessonProgress(
+                    user_id=current_user.id,
+                    lesson_id=quiz.lesson_id,
+                    course_id=quiz.course_id,
+                    status=CompletionStatus.completed,
+                    progress_percentage=100,
+                    site_id=current_site.id,
+                    started_at=datetime.utcnow(),
+                    completed_at=datetime.utcnow()
+                )
+                session.add(new_lp)
+            
+            await session.flush()
+            
+            # Trigger course progress update to check for completion
+            await update_course_progress(
+                user_id=current_user.id,
+                course_id=quiz.course_id,
+                session=session,
+                site_id=current_site.id,
+                background_tasks=background_tasks
+            )
+        elif not lesson_progress:
+            # Mark as in_progress if attempted but not passed (and no existing record)
+            new_lp = LessonProgress(
+                user_id=current_user.id,
+                lesson_id=quiz.lesson_id,
+                course_id=quiz.course_id,
+                status=CompletionStatus.in_progress,
+                progress_percentage=0,
+                site_id=current_site.id,
+                started_at=datetime.utcnow()
+            )
+            session.add(new_lp)
+            await session.flush()
     
     return new_attempt
 

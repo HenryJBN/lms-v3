@@ -37,7 +37,7 @@ class Course(MultiTenantMixin, table=True):
     price: float = Field(default=0.0)
     original_price: Optional[float] = None
     currency: str = Field(default="USD")
-    duration_hours: Optional[int] = None
+    duration_hours: Optional[float] = None
     language: str = Field(default="en")
     
     status: CourseStatus = Field(

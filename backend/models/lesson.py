@@ -16,7 +16,7 @@ class Lesson(MultiTenantMixin, table=True):
     description: Optional[str] = None
     content: Optional[str] = None
     video_url: Optional[str] = None
-    video_duration: Optional[int] = None
+    video_duration: Optional[float] = None
     
     type: LessonType = Field(
         sa_column=SAColumn(SAEnum(LessonType, name="lessontype"), default=LessonType.video)
@@ -30,7 +30,7 @@ class Lesson(MultiTenantMixin, table=True):
     resources: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     attachments: Optional[List[Dict[str, Any]]] = Field(default=None, sa_column=Column(JSON))
     
-    estimated_duration: Optional[int] = None
+    estimated_duration: Optional[float] = None
 
     # Assessment settings added based on frontend requirements
     has_quiz: bool = Field(default=False)

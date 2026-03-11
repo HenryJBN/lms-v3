@@ -10,14 +10,14 @@ class LessonBase(BaseSchema):
     description: Optional[str] = None
     content: Optional[str] = None
     video_url: Optional[str] = None
-    video_duration: Optional[int] = None
+    video_duration: Optional[float] = None
     type: LessonType = LessonType.video
     sort_order: int = 0
     is_published: bool = True
     is_preview: bool = False
     prerequisites: List[uuid.UUID] = []
     resources: Optional[Dict[str, Any]] = None
-    estimated_duration: Optional[int] = None
+    estimated_duration: Optional[float] = None
     attachments: Optional[List[Dict[str, Any]]] = None
     has_quiz: bool = False
     has_assignment: bool = False
@@ -33,7 +33,7 @@ class LessonUpdate(BaseSchema):
     description: Optional[str] = None
     content: Optional[str] = None
     video_url: Optional[str] = None
-    video_duration: Optional[int] = None
+    video_duration: Optional[float] = None
     course_id: uuid.UUID
     section_id: Optional[uuid.UUID] = None
     type: Optional[LessonType] = None
@@ -42,7 +42,7 @@ class LessonUpdate(BaseSchema):
     is_preview: Optional[bool] = None
     prerequisites: Optional[List[uuid.UUID]] = None
     resources: Optional[Dict[str, Any]] = None
-    estimated_duration: Optional[int] = None
+    estimated_duration: Optional[float] = None
     attachments: Optional[List[Dict[str, Any]]] = None
     has_quiz: Optional[bool] = None
     has_assignment: Optional[bool] = None
