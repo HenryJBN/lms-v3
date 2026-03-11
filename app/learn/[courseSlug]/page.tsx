@@ -50,6 +50,20 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   const [activeCelebration, setActiveCelebration] = useState<MilestoneCelebration | null>(null)
   const [celebrationModalOpen, setCelebrationModalOpen] = useState(false)
   const [celebrationQueue, setCelebrationQueue] = useState<MilestoneCelebration[]>([])
+  const [pendingAutoPlay, setPendingAutoPlay] = useState<'quiz' | 'next_lesson' | null>(null)
+
+  const pendingCelebrationsRef = useRef<MilestoneCelebration[]>([])
+  const pendingTokensRef = useRef<{ amount: number; type: string } | null>(null)
+  const progressUpdateStartedRef = useRef(false)
+  const videoEndedRef = useRef(false)
+
+  // Reset tracking refs on lesson change
+  useEffect(() => {
+    pendingCelebrationsRef.current = []
+    pendingTokensRef.current = null
+    progressUpdateStartedRef.current = false
+    videoEndedRef.current = false
+  }, [currentLessonIndex])
 
   // 1. Fetch Course Lessons
   const { data: rawLessons = [], isLoading: lessonsLoading } = useQuery({
@@ -114,7 +128,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
             <Gem className="h-5 w-5 text-amber-500" />
             <span>+{justEarnedTokens.amount} Tokens Earned!</span>
           </div>
-        ),
+        ) as any,
         description: justEarnedTokens.type === 'lesson' 
           ? `You earned ${justEarnedTokens.amount} tokens for completing the lesson.`
           : `You earned ${justEarnedTokens.amount} tokens for passing the quiz!`,
@@ -134,6 +148,26 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
       setCelebrationQueue(prev => prev.slice(1))
     }
   }, [celebrationModalOpen, celebrationQueue])
+
+  // Handle auto-navigation when conditions are met
+  useEffect(() => {
+    // Only proceed if there's a pending action AND no active celebrations
+    if (pendingAutoPlay && !celebrationModalOpen && celebrationQueue.length === 0) {
+      // Small delay for smooth transition or to let token toasts show
+      const timer = setTimeout(() => {
+        if (pendingAutoPlay === 'quiz') {
+          setShowQuiz(true)
+        } else if (pendingAutoPlay === 'next_lesson') {
+          // Pass true for autoPlay
+          navigateToLesson(currentLessonIndex + 1, true)
+        }
+        setPendingAutoPlay(null)
+      }, 2000)
+      
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingAutoPlay, celebrationModalOpen, celebrationQueue.length, currentLessonIndex])
 
   // Track when previous lesson was completed to trigger autoplay
   useEffect(() => {
@@ -164,7 +198,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
   }, [autoPlayNext])
 
   // Define navigateToLesson function first to avoid reference errors
-  const navigateToLesson = (index: number) => {
+  const navigateToLesson = (index: number, shouldAutoPlay = false) => {
     if (!course || !userProgress) return
 
     // Check if the lesson is accessible
@@ -178,6 +212,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     if (isAccessible) {
       setCurrentLessonIndex(index)
       setShowQuiz(false)
+      setAutoPlayNext(shouldAutoPlay)
       setVideoCompleted(userProgress.completedLessons?.includes(targetLesson.id) || false)
       const url = `/learn/${courseSlug}?lesson=${targetLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
       router.push(url)
@@ -274,38 +309,61 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
     }
   }
 
-  const handleVideoComplete = async () => {
-    setVideoCompleted(true)
-    
-    // Track if this is a NEW completion (not previously completed)
-    const isNewCompletion = !isLessonCompleted
+  const flushPendingRewards = () => {
+    if (pendingCelebrationsRef.current.length > 0) {
+      setCelebrationQueue(prev => [...prev, ...pendingCelebrationsRef.current])
+      pendingCelebrationsRef.current = []
+    }
+    if (pendingTokensRef.current) {
+      setJustEarnedTokens(pendingTokensRef.current)
+      pendingTokensRef.current = null
+    }
+  }
 
-    // Always check if we need to mark the lesson as completed
-    if (!isLessonCompleted) {
+  const handleVideoProgressThreshold = async () => {
+    // This fires when the video reaches 85%
+    if (!isLessonCompleted && !progressUpdateStartedRef.current) {
+      progressUpdateStartedRef.current = true
       try {
         const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
         
-        // Handle milestone celebrations
+        // Queue up celebrations and tokens instead of showing them immediately
         if (response.milestones && response.milestones.length > 0) {
-          setCelebrationQueue(prev => [...prev, ...response.milestones])
+          pendingCelebrationsRef.current = [...pendingCelebrationsRef.current, ...response.milestones]
         }
-
-        // Show reward notification for NEW completions
-        if (isNewCompletion) {
-          setJustEarnedTokens({ amount: LESSON_TOKEN_REWARD, type: 'lesson' })
-        }
+        pendingTokensRef.current = { amount: LESSON_TOKEN_REWARD, type: 'lesson' }
         
         // Sync progress and enrollment data
         queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "progress"] })
         queryClient.invalidateQueries({ queryKey: ["course", courseSlug, "enrollment"] })
+
+        // If the video already ended while this request was flying (due to seeking to end), flush immediately
+        if (videoEndedRef.current) {
+          flushPendingRewards()
+        }
       } catch (error) {
         console.error("Failed to mark lesson as completed:", error)
+        progressUpdateStartedRef.current = false // Allow retry on failure
       }
     }
+    setVideoCompleted(true)
+  }
 
-    // Auto-navigate logic - this should work for both new and already-completed lessons
+  const handleVideoEnd = async () => {
+    setVideoCompleted(true)
+    videoEndedRef.current = true
+    
+    // In case they skipped to the very end without hitting the 85% mark event
+    if (!isLessonCompleted && !progressUpdateStartedRef.current) {
+      await handleVideoProgressThreshold()
+    }
+
+    // Flush rewards now that video has ended
+    flushPendingRewards()
+
+    // Auto-navigate logic - delay to pending state
     if (currentLesson.hasQuiz && !isQuizCompleted) {
-      setShowQuiz(true)
+      setPendingAutoPlay('quiz')
     } else if (nextLesson) {
       // Check if next lesson is accessible with current progress
       const currentCompleted = userProgress.completedLessons || []
@@ -315,10 +373,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         )
       
       if (canGoNext) {
-        setTimeout(() => {
-          const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
-          router.push(url)
-        }, 2000)
+        setPendingAutoPlay('next_lesson')
       }
     }
   }
@@ -334,7 +389,12 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
         }
 
         // Re-call progress update to sync completion status now that quiz is passed
-        await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+        const response = await progressService.updateLessonProgress(currentLesson.id, { progress_percentage: 100 }, cohortId || undefined)
+
+        // Handle milestone celebrations
+        if (response.milestones && response.milestones.length > 0) {
+          setCelebrationQueue(prev => [...prev, ...response.milestones])
+        }
 
         // Show reward notification for NEW quiz completions
         if (isNewQuizCompletion) {
@@ -356,10 +416,7 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
             )
 
           if (canGoNext) {
-            setTimeout(() => {
-              const url = `/learn/${courseSlug}?lesson=${nextLesson.id}${cohortId ? `&cohort=${cohortId}` : ""}`
-              router.push(url)
-            }, 1500)
+            setPendingAutoPlay('next_lesson')
           }
         }
       } catch (error) {
@@ -468,7 +525,8 @@ export default function CourseLessonPage({ params }: { params: { courseSlug: str
                       key={currentLesson.id}
                       videoUrl={currentLesson.videoUrl}
                       hlsUrl={currentLesson.hlsUrl}
-                      onComplete={handleVideoComplete}
+                      onComplete={handleVideoEnd}
+                      onProgressComplete={handleVideoProgressThreshold}
                       onTimeUpdate={handleVideoTimeUpdate}
                       isCompleted={isLessonCompleted}
                       initialPlaybackRate={savedPlaybackRate}

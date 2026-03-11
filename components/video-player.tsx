@@ -20,7 +20,8 @@ import Hls from "hls.js"
 interface VideoPlayerProps {
   videoUrl: string
   hlsUrl?: string
-  onComplete: () => void
+  onComplete: () => void  // Fires only when the video FULLY ends
+  onProgressComplete?: () => void // Fires when the progress threshold (85%) is reached
   onTimeUpdate?: (currentTime: number, progress: number, timeSpent: number) => void
   isCompleted?: boolean
   initialTime?: number
@@ -34,6 +35,7 @@ export default function VideoPlayer({
   videoUrl,
   hlsUrl,
   onComplete,
+  onProgressComplete,
   onTimeUpdate,
   isCompleted = false,
   initialTime = 0,
@@ -58,6 +60,7 @@ export default function VideoPlayer({
   const isDraggingRef = useRef(false)
   const hasWatched85PercentRef = useRef(isCompleted)
   const onCompleteRef = useRef(onComplete)
+  const onProgressCompleteRef = useRef(onProgressComplete)
   const intendedTimeRef = useRef(0)
   const isSeekingRef = useRef(false)
   const sessionStartTimeRef = useRef<number | null>(null)
@@ -65,7 +68,8 @@ export default function VideoPlayer({
   
   useEffect(() => {
     onCompleteRef.current = onComplete
-  }, [onComplete])
+    onProgressCompleteRef.current = onProgressComplete
+  }, [onComplete, onProgressComplete])
 
   // Initialize HLS or native video
   useEffect(() => {
@@ -161,7 +165,9 @@ export default function VideoPlayer({
       if (!hasWatched85PercentRef.current && video.currentTime / video.duration >= 0.85) {
         hasWatched85PercentRef.current = true
         setHasWatched85Percent(true)
-        onCompleteRef.current()
+        if (onProgressCompleteRef.current) {
+          onProgressCompleteRef.current()
+        }
       }
     }
 
@@ -199,8 +205,12 @@ export default function VideoPlayer({
       if (!hasWatched85PercentRef.current) {
         hasWatched85PercentRef.current = true
         setHasWatched85Percent(true)
-        onCompleteRef.current()
+        if (onProgressCompleteRef.current) {
+          onProgressCompleteRef.current()
+        }
       }
+      // Only navigate away or show modals when video is FULLY ended!
+      onCompleteRef.current()
     }
 
     video.addEventListener("timeupdate", handleTimeUpdate)
