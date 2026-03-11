@@ -76,6 +76,7 @@ import {
   Move,
   Loader2,
   X,
+  ListChecks,
 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { courseService } from "@/lib/services/courses"
@@ -2637,6 +2638,14 @@ export default function LessonsManagement() {
                               <DropdownMenuItem onClick={() => handleEditLesson(lesson)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  (window.location.href = `/admin/courses/lessons/${lesson.id}/quiz?courseId=${lesson.course_id}`)
+                                }
+                              >
+                                <ListChecks className="mr-2 h-4 w-4 text-indigo-600" />
+                                Manage Quiz
                               </DropdownMenuItem>
                               {lesson.status === "draft" ? (
                                 <DropdownMenuItem onClick={() => handlePublishLesson(lesson)}>

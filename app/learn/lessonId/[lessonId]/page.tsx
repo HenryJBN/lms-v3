@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
-import AdaptiveLearningEngine from "@/components/adaptive-learning-engine"
+import LessonQuiz from "@/components/lesson-quiz"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -127,42 +127,60 @@ export default function LessonPage() {
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BrainCircuit className="mr-2 h-5 w-5 text-primary" />
-                Lesson Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium">Type</h4>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {lesson.type || "Unknown"}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium">Status</h4>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {lesson.status || "Unknown"}
-                  </p>
-                </div>
-                {lesson.views !== undefined && (
+          {lesson.has_quiz && lesson.quiz ? (
+            <LessonQuiz 
+              quiz={{
+                title: lesson.quiz.title,
+                description: lesson.quiz.description || "",
+                passingScore: lesson.quiz.passing_score || 70,
+                questions: (lesson.quiz.questions || []).map((q: any) => ({
+                  id: q.id,
+                  question: q.question,
+                  options: q.options?.choices || [],
+                  correctAnswer: (q.options?.choices || []).indexOf(q.correct_answer),
+                  explanation: q.explanation || ""
+                }))
+              }} 
+              onComplete={(passed: boolean) => console.log("Quiz passed:", passed)} 
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BrainCircuit className="mr-2 h-5 w-5 text-primary" />
+                  Lesson Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-medium">Views</h4>
-                    <p className="text-sm text-muted-foreground">{lesson.views.toLocaleString()}</p>
+                    <h4 className="text-sm font-medium">Type</h4>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {lesson.type || "Unknown"}
+                    </p>
                   </div>
-                )}
-                <div>
-                  <h4 className="text-sm font-medium">Duration</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {lesson.duration || "Not specified"}
-                  </p>
+                  <div>
+                    <h4 className="text-sm font-medium">Status</h4>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {lesson.status || "Unknown"}
+                    </p>
+                  </div>
+                  {lesson.views !== undefined && (
+                    <div>
+                      <h4 className="text-sm font-medium">Views</h4>
+                      <p className="text-sm text-muted-foreground">{lesson.views.toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-sm font-medium">Duration</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {lesson.duration || "Not specified"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

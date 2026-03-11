@@ -157,4 +157,11 @@ export const API_ENDPOINTS = {
   milestoneCourseProgress: (courseId: string) => `/api/milestones/user/course-progress/${courseId}`,
   autoGenerateMilestones: "/api/milestones/auto-generate",
   uploadBadgeImage: "/api/milestones/upload-badge-image",
+
+  // Quiz endpoints
+  lessonQuizzes: (lessonId: string) => `/api/lessons/${lessonId}/quizzes`,
+  quizItem: (lessonId: string, quizId: string) => `/api/lessons/${lessonId}/quizzes/${quizId}`,
+  quizQuestions: (lessonId: string, quizId: string) => `/api/lessons/${lessonId}/quizzes/${quizId}/questions`,
+  quizQuestionItem: (lessonId: string, quizId: string, questionId: string) =>
+    `/api/lessons/${lessonId}/quizzes/${quizId}/questions/${questionId}`,
 }

@@ -9,9 +9,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database.session import get_session
-from dependencies import get_current_site, SiteData, SiteData
+from dependencies import get_current_site, SiteData
 from models.site import Site
-from models.lesson import Lesson, Quiz, Assignment
+from models.lesson import Lesson, Quiz, QuizQuestion, Assignment
 from models.course import Course, Section
 from models.user import User
 from models.enrollment import Enrollment, LessonProgress
@@ -379,7 +379,9 @@ async def get_lesson(
         Enrollment, and_(Course.id == Enrollment.course_id, Enrollment.user_id == current_user.id, Enrollment.status.in_(["active", "completed"]))
     ).outerjoin(
         LessonProgress, and_(Lesson.id == LessonProgress.lesson_id, LessonProgress.user_id == current_user.id)
-    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id)
+    ).where(Lesson.id == lesson_id, Lesson.site_id == current_site.id).options(
+        selectinload(Lesson.quiz).selectinload(Quiz.questions)
+    )
     
     result = await session.exec(query)
     row = result.first()
@@ -405,16 +407,11 @@ async def get_lesson(
             detail="Access denied to this lesson"
         )
     
-    l_dict = lesson.model_dump()
-    l_dict["progress_status"] = status_val or "not_started"
-    l_dict["progress_percentage"] = progress_percentage or 0
-    
-    # Explicitly include quiz if it exists
-    if hasattr(lesson, "quiz") and lesson.quiz:
-        l_dict["quiz"] = lesson.quiz.model_dump()
-        l_dict["quiz"]["questions"] = [q.model_dump() for q in lesson.quiz.questions]
+    l_resp = LessonResponse.model_validate(lesson)
+    l_resp.progress_status = status_val or "not_started"
+    l_resp.progress_percentage = progress_percentage or 0
         
-    return l_dict
+    return l_resp
 
 @router.post("/", response_model=LessonResponse)
 async def create_lesson(
@@ -895,8 +892,15 @@ async def create_lesson_quiz(
             detail="Not authorized to create quiz for this lesson"
         )
     
+    # Remove fields that are passed explicitly to avoid "multiple values" error
+    quiz_dict = quiz_data.dict()
+    quiz_dict.pop("lesson_id", None)
+    quiz_dict.pop("course_id", None)
+    quiz_dict.pop("site_id", None)
+    quiz_dict.pop("questions", None)  # Handle separately or ignore if not using nested create
+    
     new_quiz = Quiz(
-        **quiz_data.dict(),
+        **quiz_dict,
         lesson_id=lesson_id,
         course_id=lesson.course_id,
         site_id=lesson.site_id
@@ -904,7 +908,12 @@ async def create_lesson_quiz(
     
     session.add(new_quiz)
     await session.commit()
-    await session.refresh(new_quiz)
+    
+    # Fetch with selectinload to avoid lazy loading crash during serialization
+    query = select(Quiz).where(Quiz.id == new_quiz.id).options(selectinload(Quiz.questions))
+    result = await session.exec(query)
+    new_quiz = result.one()
+    
     return new_quiz
 
 @router.post("/{lesson_id}/assignments", response_model=AssignmentResponse)
@@ -1046,18 +1055,28 @@ async def get_lesson_quizzes(
     quizzes_query = select(Quiz, func.max(QuizAttempt.score).label("best_score"), func.bool_or(QuizAttempt.passed).label("passed")).outerjoin(
         QuizAttempt, and_(Quiz.id == QuizAttempt.quiz_id, QuizAttempt.user_id == current_user.id)
     ).where(
-        Quiz.lesson_id == lesson_id,
-        Quiz.is_published == True
-    ).group_by(Quiz.id).order_by(Quiz.created_at)
+        Quiz.lesson_id == lesson_id
+    )
+
+    # If NOT admin or instructor of this course, only show published quizzes
+    is_admin = current_user.role == "admin"
+    is_instructor = str(instructor_id) == str(current_user.id)
+    
+    if not (is_admin or is_instructor):
+        quizzes_query = quizzes_query.where(Quiz.is_published == True)
+
+    quizzes_query = quizzes_query.group_by(Quiz.id).order_by(Quiz.created_at).options(
+        selectinload(Quiz.questions)
+    )
 
     quizzes_result = await session.exec(quizzes_query)
     
     response_quizzes = []
     for quiz, best_score, passed in quizzes_result.all():
-        q_dict = quiz.model_dump()
-        q_dict["best_score"] = best_score
-        q_dict["passed"] = passed or False
-        response_quizzes.append(q_dict)
+        q_resp = QuizResponse.model_validate(quiz)
+        q_resp.best_score = best_score
+        q_resp.passed = passed or False
+        response_quizzes.append(q_resp)
 
     return response_quizzes
 
@@ -1094,8 +1113,14 @@ async def create_quiz_question(
     sort_result = await session.exec(sort_query)
     max_order = sort_result.one() or 0
     
+    # Remove fields that are passed explicitly to avoid "multiple values" error
+    question_dict = question_data.dict()
+    question_dict.pop("quiz_id", None)
+    question_dict.pop("sort_order", None)
+    question_dict.pop("site_id", None)
+    
     new_question = QuizQuestion(
-        **question_data.dict(),
+        **question_dict,
         quiz_id=quiz_id,
         sort_order=max_order + 1,
         site_id=quiz.site_id
@@ -1105,6 +1130,155 @@ async def create_quiz_question(
     await session.commit()
     await session.refresh(new_question)
     return new_question
+
+@router.put("/{lesson_id}/quizzes/{quiz_id}", response_model=QuizResponse)
+async def update_lesson_quiz(
+    lesson_id: uuid.UUID,
+    quiz_id: uuid.UUID,
+    quiz_update: QuizUpdate,
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: SiteData = Depends(get_current_site)
+):
+    """Update quiz settings"""
+    # Check if quiz exists and user has permission
+    query = select(Quiz, Course.instructor_id).join(
+        Lesson, Quiz.lesson_id == Lesson.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).where(Quiz.id == quiz_id, Lesson.id == lesson_id, Quiz.site_id == current_site.id)
+    
+    result = await session.exec(query)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    
+    quiz, instructor_id = row
+    
+    if current_user.role != "admin" and str(instructor_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    # Update quiz data
+    update_data = quiz_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(quiz, key, value)
+    
+    quiz.updated_at = datetime.utcnow()
+    session.add(quiz)
+    await session.commit()
+    
+    # Fetch with selectinload to avoid lazy loading crash during serialization
+    query = select(Quiz).where(Quiz.id == quiz.id).options(selectinload(Quiz.questions))
+    result = await session.exec(query)
+    quiz = result.one()
+    
+    return quiz
+
+@router.delete("/{lesson_id}/quizzes/{quiz_id}")
+async def delete_lesson_quiz(
+    lesson_id: uuid.UUID,
+    quiz_id: uuid.UUID,
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session),
+    current_site: SiteData = Depends(get_current_site)
+):
+    """Delete a quiz"""
+    # Check if quiz exists and user has permission
+    query = select(Quiz, Course.instructor_id).join(
+        Lesson, Quiz.lesson_id == Lesson.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).where(Quiz.id == quiz_id, Lesson.id == lesson_id, Quiz.site_id == current_site.id)
+    
+    result = await session.exec(query)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz not found")
+    
+    quiz, instructor_id = row
+    
+    if current_user.role != "admin" and str(instructor_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    await session.delete(quiz)
+    await session.commit()
+    return {"message": "Quiz deleted successfully"}
+
+@router.put("/{lesson_id}/quizzes/{quiz_id}/questions/{question_id}", response_model=QuizQuestionResponse)
+async def update_quiz_question(
+    lesson_id: uuid.UUID,
+    quiz_id: uuid.UUID,
+    question_id: uuid.UUID,
+    question_update: QuizQuestionUpdate,
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """Update a quiz question"""
+    # Check permission through quiz ownership
+    query = select(QuizQuestion, Course.instructor_id).join(
+        Quiz, QuizQuestion.quiz_id == Quiz.id
+    ).join(
+        Lesson, Quiz.lesson_id == Lesson.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).where(QuizQuestion.id == question_id, Quiz.id == quiz_id, Lesson.id == lesson_id)
+    
+    result = await session.exec(query)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+    
+    question, instructor_id = row
+    
+    if current_user.role != "admin" and str(instructor_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    # Update question data
+    update_data = question_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(question, key, value)
+    
+    question.updated_at = datetime.utcnow()
+    session.add(question)
+    await session.commit()
+    await session.refresh(question)
+    return question
+
+@router.delete("/{lesson_id}/quizzes/{quiz_id}/questions/{question_id}")
+async def delete_quiz_question(
+    lesson_id: uuid.UUID,
+    quiz_id: uuid.UUID,
+    question_id: uuid.UUID,
+    current_user = Depends(require_instructor_or_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """Delete a quiz question"""
+    # Check permission through quiz ownership
+    query = select(QuizQuestion, Course.instructor_id).join(
+        Quiz, QuizQuestion.quiz_id == Quiz.id
+    ).join(
+        Lesson, Quiz.lesson_id == Lesson.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).where(QuizQuestion.id == question_id, Quiz.id == quiz_id, Lesson.id == lesson_id)
+    
+    result = await session.exec(query)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
+    
+    question, instructor_id = row
+    
+    if current_user.role != "admin" and str(instructor_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    await session.delete(question)
+    await session.commit()
+    return {"message": "Question deleted successfully"}
 
 @router.get("/{lesson_id}/quizzes/{quiz_id}/questions", response_model=List[QuizQuestionResponse])
 async def get_quiz_questions(

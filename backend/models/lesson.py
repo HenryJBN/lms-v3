@@ -75,7 +75,7 @@ class QuizQuestion(MultiTenantMixin, table=True):
     
     question: str
     type: QuizQuestionType = Field(
-        sa_column=SAColumn(SAEnum(QuizQuestionType, name="quizquestiontype"), default=QuizQuestionType.multiple_choice)
+        sa_column=SAColumn(SAEnum(QuizQuestionType, name="quiz_question_type"), default=QuizQuestionType.multiple_choice)
     )
     options: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     correct_answer: str
