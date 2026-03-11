@@ -10,6 +10,7 @@ from models.user import User
 from models.enums import UserRole, UserStatus
 from schemas.system_admin import TenantCreate, SubdomainCheck
 from middleware.auth import get_password_hash
+from utils.site_settings import get_default_theme_config
 
 router = APIRouter()
 

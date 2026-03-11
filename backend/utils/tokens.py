@@ -36,11 +36,18 @@ async def award_tokens(
         balance.updated_at = datetime.utcnow()
         session.add(balance)
         
+        # Map reference_type to transaction_type label
+        tx_type = "earned"
+        if reference_type == "signup_bonus":
+            tx_type = "bonus"
+        elif reference_type == "transfer_in":
+            tx_type = "received"
+            
         # Create transaction record
         transaction = TokenTransaction(
             user_id=user_id,
             amount=amount,
-            transaction_type="credit",
+            transaction_type=tx_type,
             balance_after=balance.balance,
             description=description,
             reference_type=reference_type,
@@ -102,7 +109,7 @@ async def spend_tokens(
         transaction = TokenTransaction(
             user_id=user_id,
             amount=-amount,
-            transaction_type="debit",
+            transaction_type="spent",
             balance_after=balance.balance,
             description=description,
             reference_type=reference_type,

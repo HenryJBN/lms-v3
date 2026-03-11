@@ -5,10 +5,9 @@ Helper functions to retrieve and check site-specific settings from theme_config.
 All settings are tenant-scoped and stored in the Site model's theme_config JSON field.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from uuid import UUID
-from models.site import Site
-
+from models.site import Site, DEFAULT_THEME_CONFIG, get_default_theme_config
 
 def get_site_setting(site: Site, key: str, default: Any = None) -> Any:
     """
@@ -17,11 +16,14 @@ def get_site_setting(site: Site, key: str, default: Any = None) -> Any:
     Args:
         site: Site model instance
         key: Setting key to retrieve
-        default: Default value if key not found
+        default: Default value if key not found (defaults to DEFAULT_THEME_CONFIG)
         
     Returns:
         Setting value or default
     """
+    if default is None:
+        default = DEFAULT_THEME_CONFIG.get(key)
+        
     if not site or not site.theme_config:
         return default
     return site.theme_config.get(key, default)
@@ -33,7 +35,7 @@ def is_registration_enabled(site: Site) -> bool:
     
     Default: True (registration allowed)
     """
-    return get_site_setting(site, "allow_registration", True)
+    return get_site_setting(site, "allow_registration")
 
 
 def is_email_verification_required(site: Site) -> bool:
@@ -42,7 +44,7 @@ def is_email_verification_required(site: Site) -> bool:
     
     Default: True (verification required)
     """
-    return get_site_setting(site, "require_email_verification", True)
+    return get_site_setting(site, "require_email_verification")
 
 
 def are_course_reviews_enabled(site: Site) -> bool:
@@ -51,7 +53,7 @@ def are_course_reviews_enabled(site: Site) -> bool:
     
     Default: True (reviews enabled)
     """
-    return get_site_setting(site, "enable_course_reviews", True)
+    return get_site_setting(site, "enable_course_reviews")
 
 
 def are_courses_auto_approved(site: Site) -> bool:
@@ -60,7 +62,7 @@ def are_courses_auto_approved(site: Site) -> bool:
     
     Default: False (manual approval required)
     """
-    return get_site_setting(site, "auto_approve_courses", False)
+    return get_site_setting(site, "auto_approve_courses")
 
 
 def are_token_rewards_enabled(site: Site) -> bool:
@@ -69,7 +71,7 @@ def are_token_rewards_enabled(site: Site) -> bool:
     
     Default: True (rewards enabled)
     """
-    return get_site_setting(site, "enable_token_rewards", True)
+    return get_site_setting(site, "enable_token_rewards")
 
 
 def get_default_token_reward(site: Site) -> int:
@@ -78,7 +80,7 @@ def get_default_token_reward(site: Site) -> int:
     
     Default: 25 tokens
     """
-    return int(get_site_setting(site, "default_token_reward", 25))
+    return int(get_site_setting(site, "default_token_reward"))
 
 
 def get_lesson_token_reward(site: Site) -> int:
@@ -87,7 +89,7 @@ def get_lesson_token_reward(site: Site) -> int:
     
     Default: 10 tokens
     """
-    return int(get_site_setting(site, "lesson_token_reward", 10))
+    return int(get_site_setting(site, "lesson_token_reward"))
 
 
 def get_quiz_token_reward(site: Site) -> int:
@@ -96,7 +98,7 @@ def get_quiz_token_reward(site: Site) -> int:
     
     Default: 15 tokens
     """
-    return int(get_site_setting(site, "quiz_token_reward", 15))
+    return int(get_site_setting(site, "quiz_token_reward"))
 
 
 def get_signup_token_reward(site: Site) -> int:
@@ -105,7 +107,7 @@ def get_signup_token_reward(site: Site) -> int:
     
     Default: 25 tokens
     """
-    return int(get_site_setting(site, "signup_token_reward", 25))
+    return int(get_site_setting(site, "signup_token_reward"))
 
 
 def are_notifications_enabled(site: Site) -> bool:
@@ -114,7 +116,7 @@ def are_notifications_enabled(site: Site) -> bool:
     
     Default: True (notifications enabled)
     """
-    return get_site_setting(site, "enable_notifications", True)
+    return get_site_setting(site, "enable_notifications")
 
 
 def is_maintenance_mode(site: Site) -> bool:
@@ -123,7 +125,7 @@ def is_maintenance_mode(site: Site) -> bool:
     
     Default: False (site is active)
     """
-    return get_site_setting(site, "maintenance_mode", False)
+    return get_site_setting(site, "maintenance_mode")
 
 
 def get_site_description(site: Site) -> Optional[str]:
@@ -144,9 +146,9 @@ def get_theme_colors(site: Site) -> dict:
         Dict with primary_color, secondary_color, accent_color
     """
     return {
-        "primary_color": get_site_setting(site, "primary_color", "#ef4444"),
-        "secondary_color": get_site_setting(site, "secondary_color", "#3b82f6"),
-        "accent_color": get_site_setting(site, "accent_color", "#8b5cf6"),
+        "primary_color": get_site_setting(site, "primary_color"),
+        "secondary_color": get_site_setting(site, "secondary_color"),
+        "accent_color": get_site_setting(site, "accent_color"),
     }
 
 
@@ -169,7 +171,8 @@ def get_smtp_port(site: Site) -> int:
     Returns:
         SMTP port (default: 587)
     """
-    return int(get_site_setting(site, "smtp_port", 587))
+    val = get_site_setting(site, "smtp_port")
+    return int(val) if val is not None else 587
 
 
 def get_smtp_username(site: Site) -> Optional[str]:

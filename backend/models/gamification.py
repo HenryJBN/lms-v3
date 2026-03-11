@@ -3,6 +3,7 @@ from datetime import datetime
 import uuid
 from sqlmodel import SQLModel, Field, JSON
 from models.base import MultiTenantMixin
+from sqlalchemy import Enum as SAEnum
 from models.enums import TokenTransactionType
 
 class TokenBalance(MultiTenantMixin, table=True):
@@ -21,8 +22,11 @@ class TokenTransaction(MultiTenantMixin, table=True):
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     
     amount: float = Field(default=0.0)
-    # Map transaction_type to 'type' column in DB
-    transaction_type: TokenTransactionType = Field(sa_column_kwargs={"name": "type"}) 
+    # Map transaction_type to 'type' column in DB with explicit Postgres type name
+    transaction_type: TokenTransactionType = Field(
+        sa_column_kwargs={"name": "type"},
+        sa_type=SAEnum(TokenTransactionType, name="token_transaction_type")
+    ) 
     balance_after: float = Field(default=0.0)
     description: str
     

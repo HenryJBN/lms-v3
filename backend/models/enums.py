@@ -73,11 +73,10 @@ class QuizQuestionType(str, Enum):
     fill_blank = "fill_blank"
 
 class TokenTransactionType(str, Enum):
-    credit = "credit"
-    debit = "debit"
-    transfer = "transfer"
-    reward = "reward"
-    purchase = "purchase"
+    earned = "earned"
+    spent = "spent"
+    received = "received"
+    bonus = "bonus"
     refund = "refund"
 
 class MilestoneType(str, Enum):

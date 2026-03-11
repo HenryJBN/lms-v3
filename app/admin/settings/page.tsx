@@ -667,7 +667,7 @@ export default function AdminSettings() {
                             id="defaultTokenReward"
                             type="number"
                             min="0"
-                            value={settings.theme_config.default_token_reward || 50}
+                            value={settings.theme_config.default_token_reward || 25}
                             onChange={(e) =>
                               updateThemeColor("default_token_reward", Number.parseInt(e.target.value))
                             }
