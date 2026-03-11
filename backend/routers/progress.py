@@ -56,7 +56,7 @@ async def get_course_progress_by_slug(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course.id,
         Enrollment.site_id == current_site.id,
-        Enrollment.status == EnrollmentStatus.active
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed])
     )
     
     if cohort_id:
@@ -104,7 +104,7 @@ async def get_course_progress(
         Enrollment.user_id == current_user.id,
         Enrollment.course_id == course_id,
         Enrollment.site_id == current_site.id,
-        Enrollment.status == EnrollmentStatus.active
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed])
     )
     
     if cohort_id:
@@ -328,7 +328,7 @@ async def submit_quiz_attempt(
         Quiz.id == attempt.quiz_id,
         Quiz.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed]),
         Enrollment.site_id == current_site.id
     )
     
@@ -425,7 +425,7 @@ async def get_quiz_attempts(
         Quiz.id == quiz_id,
         Quiz.site_id == current_site.id,
         Enrollment.user_id == current_user.id,
-        Enrollment.status == EnrollmentStatus.active,
+        Enrollment.status.in_([EnrollmentStatus.active, EnrollmentStatus.completed]),
         Enrollment.site_id == current_site.id
     )
     
