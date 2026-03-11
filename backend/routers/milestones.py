@@ -494,4 +494,62 @@ async def get_course_milestones_progress(
     )
 
 
+@router.post("/{user_milestone_id}/claim", response_model=RewardClaimResponse)
+async def claim_milestone_reward(
+    user_milestone_id: uuid.UUID,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session),
+    current_site: SiteData = Depends(get_current_site)
+):
+    """Claim reward for an achieved milestone."""
+    # Validate user milestone
+    user_milestone = await session.get(UserMilestone, user_milestone_id)
+    if not user_milestone or user_milestone.site_id != current_site.id:
+        raise HTTPException(status_code=404, detail="User milestone not found")
+        
+    if user_milestone.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to claim this milestone")
+        
+    if user_milestone.reward_claimed:
+        raise HTTPException(status_code=400, detail="Reward already claimed")
+        
+    # Get milestone definition
+    milestone = await session.get(Milestone, user_milestone.milestone_id)
+    if not milestone or milestone.site_id != current_site.id:
+        raise HTTPException(status_code=404, detail="Milestone definition not found")
+        
+    # Process reward
+    message = "Reward claimed successfully"
+    if milestone.reward_type == RewardType.tokens and milestone.reward_value > 0:
+        result = await award_tokens(
+            user_id=current_user.id,
+            amount=milestone.reward_value,
+            description=f"Reward for milestone: {milestone.name}",
+            session=session,
+            site_id=current_site.id,
+            reference_type="milestone_reward",
+            reference_id=milestone.id
+        )
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail="Failed to award tokens")
+        message = f"Successfully claimed {milestone.reward_value} tokens"
+        
+    # Mark as claimed
+    user_milestone.reward_claimed = True
+    user_milestone.reward_claimed_at = datetime.utcnow()
+    user_milestone.updated_at = datetime.utcnow()
+    
+    session.add(user_milestone)
+    await session.commit()
+    
+    return RewardClaimResponse(
+        success=True,
+        user_milestone_id=user_milestone_id,
+        reward_type=milestone.reward_type,
+        reward_value=milestone.reward_value,
+        claimed_at=user_milestone.reward_claimed_at,
+        message=message
+    )
+
+
     return False

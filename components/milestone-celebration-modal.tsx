@@ -88,23 +88,13 @@ export function MilestoneCelebrationModal({
 
   useEffect(() => {
     if (open && celebration) {
-      // Reset claim state when modal opens with new celebration
+      // Set to true immediately if it came from the backend as claimed
       setIsClaimed(celebration.user_milestone.reward_claimed)
     }
   }, [open, celebration])
 
-  const handleClaimReward = async () => {
-    if (!celebration || !onClaimReward) return
-    
-    setIsClaiming(true)
-    try {
-      await onClaimReward(celebration.milestone.id)
-      setIsClaimed(true)
-    } catch (error) {
-      console.error("Failed to claim reward:", error)
-    } finally {
-      setIsClaiming(false)
-    }
+  const handleDismiss = () => {
+    onOpenChange(false)
   }
 
   if (!celebration) return null
@@ -171,21 +161,27 @@ export function MilestoneCelebrationModal({
                 </div>
               </div>
               
-              {!isClaimed && celebration.milestone.reward_type === 'tokens' && (
+              {celebration.milestone.reward_type === 'tokens' ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
+                    Earned!
+                  </Badge>
+                  <Button
+                    onClick={handleDismiss}
+                    size="sm"
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500"
+                  >
+                    Got it
+                  </Button>
+                </div>
+              ) : (
                 <Button
-                  onClick={handleClaimReward}
-                  disabled={isClaiming}
+                  onClick={handleDismiss}
                   size="sm"
-                  className="bg-gradient-to-r from-indigo-500 to-purple-500"
+                  variant="outline"
                 >
-                  {isClaiming ? "Claiming..." : "Claim"}
+                  Dismiss
                 </Button>
-              )}
-              
-              {isClaimed && (
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  Claimed!
-                </Badge>
               )}
             </div>
           </motion.div>

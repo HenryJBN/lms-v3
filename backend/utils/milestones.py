@@ -178,6 +178,23 @@ async def check_and_award_milestones(
         )
         
         if is_achieved:
+            # Auto-claim tokens immediately
+            reward_claimed = False
+            reward_claimed_at = None
+            if milestone.reward_type == RewardType.tokens and milestone.reward_value > 0:
+                result = await award_tokens(
+                    user_id=user_id,
+                    amount=milestone.reward_value,
+                    description=f"Reward for milestone: {milestone.name}",
+                    session=session,
+                    site_id=site_id,
+                    reference_type="milestone_reward",
+                    reference_id=milestone.id
+                )
+                if result.get("success"):
+                    reward_claimed = True
+                    reward_claimed_at = datetime.utcnow()
+
             # Create user milestone
             user_milestone = UserMilestone(
                 user_id=user_id,
@@ -185,6 +202,8 @@ async def check_and_award_milestones(
                 enrollment_id=enrollment_id,
                 course_id=course_id,
                 progress_at_achievement=enrollment.progress_percentage,
+                reward_claimed=reward_claimed,
+                reward_claimed_at=reward_claimed_at,
                 site_id=site_id
             )
             session.add(user_milestone)
@@ -210,13 +229,26 @@ async def check_and_award_milestones(
                         next_milestone = m
                         break
             
+            # Format reward description based on type
+            reward_desc = ""
+            if milestone.reward_type == RewardType.tokens:
+                reward_desc = f"You've earned {int(milestone.reward_value)} tokens!"
+            elif milestone.reward_type == RewardType.gift_card:
+                reward_desc = "You've unlocked a Gift Card! Claim it from your Profile."
+            elif milestone.reward_type == RewardType.airtime_voucher:
+                reward_desc = "You've unlocked an Airtime Voucher! Claim it from your Profile."
+            elif milestone.reward_type == RewardType.certificate_bonus:
+                reward_desc = "You've unlocked a Certificate Bonus! It will be awarded upon course completion."
+            else:
+                reward_desc = f"You've earned a special reward!"
+            
             # Build celebration response
             celebrations.append(MilestoneCelebrationResponse(
                 milestone=MilestoneResponse.from_orm(milestone),
                 user_milestone=UserMilestoneResponse.from_orm(user_milestone),
                 celebration_title=f"🎉 {milestone.name}!",
                 celebration_message=milestone.celebration_message or "Congratulations on your achievement!",
-                reward_description=f"You've earned {int(milestone.reward_value)} {milestone.reward_type.value}!",
+                reward_description=reward_desc,
                 next_milestone=MilestoneResponse.from_orm(next_milestone) if next_milestone else None
             ))
     
