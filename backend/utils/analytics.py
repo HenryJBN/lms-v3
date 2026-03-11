@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 from sqlmodel import select, func, or_, and_, desc, col
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.user import User, UserProfile
+from sqlalchemy.orm import aliased
+from models.user import User, UserProfile, UserSession
 from models.course import Course, Category, Section, CourseReview
 from models.lesson import Lesson, QuizAttempt
 from models.enrollment import Enrollment, Certificate, LessonProgress
@@ -496,18 +497,20 @@ async def get_top_performing_content(
     
     if content_type == "courses":
         # Additional metrics subqueries
-        comp_sub = select(func.count(Enrollment.id)).where(
-            Enrollment.course_id == Course.id,
-            Enrollment.status == 'completed',
-            Enrollment.enrolled_at >= start_date,
-            Enrollment.enrolled_at <= end_date
+        enrollment_alias = aliased(Enrollment)
+        comp_sub = select(func.count(enrollment_alias.id)).where(
+            enrollment_alias.course_id == Course.id,
+            enrollment_alias.status == 'completed',
+            enrollment_alias.enrolled_at >= start_date,
+            enrollment_alias.enrolled_at <= end_date
         ).scalar_subquery()
         
-        rev_sub = select(func.coalesce(func.sum(RevenueRecord.amount), 0)).where(
-            RevenueRecord.course_id == Course.id,
-            RevenueRecord.status == 'completed',
-            RevenueRecord.created_at >= start_date,
-            RevenueRecord.created_at <= end_date
+        revenue_alias = aliased(RevenueRecord)
+        rev_sub = select(func.coalesce(func.sum(revenue_alias.amount), 0)).where(
+            revenue_alias.course_id == Course.id,
+            revenue_alias.status == 'completed',
+            revenue_alias.created_at >= start_date,
+            revenue_alias.created_at <= end_date
         ).scalar_subquery()
 
         if metric == "enrollments":
@@ -571,7 +574,8 @@ async def get_top_performing_content(
 async def get_platform_kpis(
     session: AsyncSession,
     start_date: datetime, 
-    end_date: datetime
+    end_date: datetime,
+    site_id: uuid.UUID
 ) -> Dict[str, Any]:
     """Get key platform KPIs for dashboard using SQLModel"""
     
@@ -615,8 +619,14 @@ async def get_platform_kpis(
     e_res = await session.exec(engagement_query)
     engagement_kpis = e_res.first()
     
+    # Calculate session duration
+    avg_session_duration = await get_average_session_duration(session, start_date, end_date, site_id)
+    
     return {
-        "users": dict(zip(["total_users", "new_users", "active_users", "total_students", "total_instructors"], user_kpis)),
+        "users": {
+            **dict(zip(["total_users", "new_users", "active_users", "total_students", "total_instructors"], user_kpis)),
+            "avg_session_duration": avg_session_duration
+        },
         "courses": dict(zip(["total_courses", "published_courses", "total_enrollments", "new_courses"], course_kpis)),
         "revenue": {
             "total_revenue": float(revenue_kpis.total_revenue),
@@ -625,3 +635,27 @@ async def get_platform_kpis(
         },
         "engagement": dict(zip(["engaged_users", "total_learning_time", "lesson_completions"], engagement_kpis))
     }
+
+async def get_average_session_duration(
+    session: AsyncSession,
+    start_date: datetime,
+    end_date: datetime,
+    site_id: uuid.UUID
+) -> float:
+    """Calculate average session duration in seconds for the given period"""
+    # Duration = last_activity - login_time
+    # Filter by sessions that started within the period
+    query = select(
+        func.avg(
+            func.extract('epoch', UserSession.last_activity) - 
+            func.extract('epoch', UserSession.login_time)
+        )
+    ).where(
+        UserSession.site_id == site_id,
+        UserSession.login_time >= start_date,
+        UserSession.login_time <= end_date
+    )
+    
+    result = await session.exec(query)
+    avg_duration = result.first()
+    return float(avg_duration or 0.0)

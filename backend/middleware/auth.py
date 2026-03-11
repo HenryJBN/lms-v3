@@ -1,9 +1,9 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt, ExpiredSignatureError
 import bcrypt
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, List
 import uuid
 import os
 from dotenv import load_dotenv
@@ -12,8 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_session
 from dependencies import get_current_site, SiteData
-from models.user import User
+from models.user import User, UserSession
 from models.enums import UserRole, UserStatus
+from sqlalchemy import desc
 
 load_dotenv()
 
@@ -96,7 +97,33 @@ async def authenticate_user(email: str, password: str, session: AsyncSession, si
         return False
     return user
 
+
+async def update_session_activity_background(user_id: uuid.UUID, site_id: uuid.UUID):
+    """
+    Update the last_activity timestamp for the user's most recent active session.
+    Called as a background task to avoid blocking the main request flow.
+    """
+    from database.session import async_session_factory
+    async with async_session_factory() as session:
+        # Find matches for this user and site, pick the most recent active one
+        query = select(UserSession).where(
+            UserSession.user_id == user_id,
+            UserSession.site_id == site_id,
+            UserSession.is_active == True
+        ).order_by(desc(UserSession.login_time)).limit(1)
+        
+        result = await session.exec(query)
+        user_session = result.first()
+        
+        if user_session:
+            # Only update if last activity was more than 1 minute ago to save DB writes
+            if (datetime.now(timezone.utc) - user_session.last_activity.replace(tzinfo=timezone.utc)).total_seconds() > 60:
+                user_session.last_activity = datetime.utcnow()
+                session.add(user_session)
+                await session.commit()
+
 async def get_current_user(
+    background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     session: AsyncSession = Depends(get_session),
     current_site: SiteData = Depends(get_current_site)
@@ -135,6 +162,9 @@ async def get_current_user(
             detail="User does not belong to this site"
         )
     
+    if background_tasks and not is_super_admin:
+        background_tasks.add_task(update_session_activity_background, user.id, current_site.id)
+        
     return user
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):

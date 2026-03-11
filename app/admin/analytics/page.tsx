@@ -106,9 +106,15 @@ export default function AnalyticsPage() {
     avgTimeSpent: d.avg_time_spent,
   })) || []
 
-  const learningMetrics = {
-    averageSessionTime: "0m 0s", // Placeholder
+  const formatDuration = (seconds: number) => {
+    if (!seconds || seconds < 0) return "0m 0s"
+    const m = Math.floor(seconds / 60)
+    const s = Math.round(seconds % 60)
+    if (m === 0) return `${s}s`
+    return `${m}m ${s}s`
   }
+
+  const averageSessionDuration = overviewUsers.avg_session_duration || 0
 
   return (
     <div className="flex min-h-screen">
@@ -194,7 +200,7 @@ export default function AnalyticsPage() {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{learningMetrics.averageSessionTime}</div>
+                    <div className="text-2xl font-bold">{formatDuration(averageSessionDuration)}</div>
                     <p className="text-xs text-muted-foreground">
                       <span className="text-muted-foreground">In selected period</span>
                     </p>
@@ -248,7 +254,7 @@ export default function AnalyticsPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
@@ -394,7 +400,7 @@ export default function AnalyticsPage() {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"

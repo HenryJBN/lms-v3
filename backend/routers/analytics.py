@@ -235,6 +235,10 @@ async def get_analytics_overview(
     user_res = await session.exec(user_query)
     user_stats = user_res.first()
     
+    # Calculate average session duration
+    from utils.analytics import get_average_session_duration
+    avg_session_duration = await get_average_session_duration(session, start_date, end_date, current_site.id)
+    
     # Course analytics
     course_query = select(
         func.count(Course.id).label("total_courses"),
@@ -337,7 +341,8 @@ async def get_analytics_overview(
             "new_users": int(user_stats.new_users or 0),
             "active_users": int(user_stats.active_users or 0),
             "total_students": int(user_stats.total_students or 0),
-            "total_instructors": int(user_stats.total_instructors or 0)
+            "total_instructors": int(user_stats.total_instructors or 0),
+            "avg_session_duration": avg_session_duration
         },
         "courses": {
             "total_courses": int(course_stats.total_courses or 0),
