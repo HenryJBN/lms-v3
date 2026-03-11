@@ -264,9 +264,11 @@ async def update_lesson_progress(
         )
         session.add(updated_progress)
 
-    await session.commit()
+    await session.flush()
     await session.refresh(updated_progress)
-    await session.refresh(current_site)
+    
+    # Create a detached copy to avoid lazy-loading issues during Pydantic validation
+    detached_progress = LessonProgress.model_validate(updated_progress.model_dump())
 
     # Award tokens if lesson just completed and rewards are enabled
     if status_enum == CompletionStatus.completed and (not existing_progress or prev_status != CompletionStatus.completed):
@@ -298,16 +300,14 @@ async def update_lesson_progress(
     # Always update overall course progress to reflect granular changes
     course_progress, milestones = await update_course_progress(user_id, course_id, session, site_id, background_tasks=background_tasks, cohort_id=cohort_id)
 
-    # Refresh the progress object because update_course_progress might have committed and expired it
-    await session.refresh(updated_progress)
-
-    # Prepare response from updated_progress - ensure all required fields are included
-    res_schema = LessonProgressResponse.model_validate(updated_progress)
+    # Prepare response from detached copy - ensure all required fields are included
+    res_schema = LessonProgressResponse.model_validate(detached_progress)
     res_schema.lesson_title = lesson_title
     res_schema.lesson_type = lesson_type
     res_schema.course_progress_percentage = course_progress
     res_schema.milestones = milestones
     
+    await session.commit()
     return res_schema
 
 @router.post("/quiz/attempt", response_model=QuizAttemptResponse)
@@ -525,8 +525,7 @@ async def update_course_progress(user_id: uuid.UUID, course_id: uuid.UUID, sessi
                 enrollment.completed_at = datetime.utcnow()
         
         session.add(enrollment)
-        await session.commit()
-        await session.refresh(enrollment)
+        await session.flush()
         
         # If course completed, award bonus tokens and issue certificate
         if progress_percentage >= 100 and prev_progress < 100:
@@ -625,7 +624,7 @@ async def recalculate_course_progress_all_users(course_id: uuid.UUID, session: A
                 refreshed_enrollment.status = EnrollmentStatus.active
                 refreshed_enrollment.completed_at = None
                 session.add(refreshed_enrollment)
-                await session.commit()
+                await session.flush()
 
 async def check_lesson_assessment_completion(user_id: uuid.UUID, lesson_id: uuid.UUID, session: AsyncSession, site_id: uuid.UUID):
     """
@@ -792,7 +791,7 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
         enrollment.certificate_issued_at = datetime.utcnow()
         session.add(enrollment)
     
-    await session.commit()
+    await session.flush()
 
 async def issue_certificate_background(user_id: uuid.UUID, course_id: uuid.UUID, site_id: uuid.UUID):
     """Wrapper for issue_certificate to be used with BackgroundTasks"""

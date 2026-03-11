@@ -34,6 +34,16 @@ interface LessonQuizProps {
 
 export default function LessonQuiz({ quiz, onComplete }: LessonQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  
+  if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-card rounded-lg border shadow-sm">
+        <h3 className="text-xl font-semibold mb-2">Quiz not available</h3>
+        <p className="text-muted-foreground">No questions found for this quiz.</p>
+      </div>
+    )
+  }
+
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>(
     Array(quiz.questions.length).fill(-1)
   )

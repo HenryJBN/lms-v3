@@ -48,6 +48,7 @@ class NotificationType(str, Enum):
     system = "system"
     course = "course"
     assignment = "assignment"
+    milestone = "milestone"
     certificate = "certificate"
     payment = "payment"
     marketing = "marketing"

@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
-from sqlmodel import SQLModel, Field, JSON, Column
+from sqlmodel import SQLModel, Field, JSON, Column, Relationship
 from sqlalchemy import Column as SAColumn, Enum as SAEnum
 from models.enums import LessonType, QuizQuestionType
 from models.base import MultiTenantMixin
@@ -39,6 +39,9 @@ class Lesson(MultiTenantMixin, table=True):
     
     thumbnail_url: Optional[str] = None
     
+    # Relationships
+    quiz: Optional["Quiz"] = Relationship(back_populates="lesson", sa_relationship_kwargs={"uselist": False})
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -56,6 +59,10 @@ class Quiz(MultiTenantMixin, table=True):
     randomize_questions: bool = Field(default=False)
     show_correct_answers: bool = Field(default=True)
     is_published: bool = Field(default=True)
+    
+    # Relationships
+    lesson: Optional["Lesson"] = Relationship(back_populates="quiz")
+    questions: List["QuizQuestion"] = Relationship(back_populates="quiz", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -78,6 +85,9 @@ class QuizQuestion(MultiTenantMixin, table=True):
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    quiz: Optional["Quiz"] = Relationship(back_populates="questions")
 
 class QuizAttempt(MultiTenantMixin, table=True):
     __tablename__ = "quiz_attempts"

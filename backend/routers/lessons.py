@@ -6,6 +6,7 @@ from datetime import datetime
 
 from sqlmodel import select, func, or_, and_, desc, asc
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from database.session import get_session
 from dependencies import get_current_site, SiteData, SiteData
@@ -267,12 +268,14 @@ async def get_course_lessons_by_slug(
             detail="Access denied to course lessons"
         )
 
-    # Get lessons with progress
+    # Get lessons with progress and quiz data
     lessons_query = select(Lesson, LessonProgress.status.label("progress_status"), LessonProgress.progress_percentage).outerjoin(
         LessonProgress, and_(Lesson.id == LessonProgress.lesson_id, LessonProgress.user_id == current_user.id)
     ).where(
         Lesson.course_id == course.id,
         Lesson.is_published == True
+    ).options(
+        selectinload(Lesson.quiz).selectinload(Quiz.questions)
     ).order_by(Lesson.sort_order, Lesson.created_at)
 
     lessons_result = await session.exec(lessons_query)
@@ -282,6 +285,15 @@ async def get_course_lessons_by_slug(
         l_dict = lesson.model_dump()
         l_dict["progress_status"] = status_val or "not_started"
         l_dict["progress_percentage"] = progress_percentage or 0
+        
+        # Explicitly include quiz if it exists
+        if hasattr(lesson, "quiz") and lesson.quiz:
+            l_dict["quiz"] = lesson.quiz.model_dump()
+            if lesson.quiz.questions:
+                l_dict["quiz"]["questions"] = [q.model_dump() for q in lesson.quiz.questions]
+            else:
+                l_dict["quiz"]["questions"] = []
+            
         response_lessons.append(l_dict)
 
     return response_lessons
@@ -322,12 +334,14 @@ async def get_course_lessons(
             detail="Access denied to course lessons"
         )
 
-    # Get lessons with progress
+    # Get lessons with progress and quiz data
     lessons_query = select(Lesson, LessonProgress.status.label("progress_status"), LessonProgress.progress_percentage).outerjoin(
         LessonProgress, and_(Lesson.id == LessonProgress.lesson_id, LessonProgress.user_id == current_user.id)
     ).where(
         Lesson.course_id == course_id,
         Lesson.is_published == True
+    ).options(
+        selectinload(Lesson.quiz).selectinload(Quiz.questions)
     ).order_by(Lesson.sort_order, Lesson.created_at)
 
     lessons_result = await session.exec(lessons_query)
@@ -337,6 +351,15 @@ async def get_course_lessons(
         l_dict = lesson.model_dump()
         l_dict["progress_status"] = status_val or "not_started"
         l_dict["progress_percentage"] = progress_percentage or 0
+        
+        # Explicitly include quiz if it exists
+        if hasattr(lesson, "quiz") and lesson.quiz:
+            l_dict["quiz"] = lesson.quiz.model_dump()
+            if lesson.quiz.questions:
+                l_dict["quiz"]["questions"] = [q.model_dump() for q in lesson.quiz.questions]
+            else:
+                l_dict["quiz"]["questions"] = []
+            
         response_lessons.append(l_dict)
 
     return response_lessons
@@ -384,6 +407,12 @@ async def get_lesson(
     l_dict = lesson.model_dump()
     l_dict["progress_status"] = status_val or "not_started"
     l_dict["progress_percentage"] = progress_percentage or 0
+    
+    # Explicitly include quiz if it exists
+    if hasattr(lesson, "quiz") and lesson.quiz:
+        l_dict["quiz"] = lesson.quiz.model_dump()
+        l_dict["quiz"]["questions"] = [q.model_dump() for q in lesson.quiz.questions]
+        
     return l_dict
 
 @router.post("/", response_model=LessonResponse)

@@ -139,10 +139,13 @@ async def check_and_award_milestones(
     """
     celebrations = []
     
-    # Get enrollment
-    enrollment = await session.get(Enrollment, enrollment_id)
-    if not enrollment:
+    # Get enrollment and detach it from session immediately
+    enrollment_obj = await session.get(Enrollment, enrollment_id)
+    if not enrollment_obj:
         return celebrations
+    
+    # Create a detached copy of enrollment to avoid lazy-loading issues
+    enrollment = Enrollment.model_validate(enrollment_obj.model_dump())
     
     # Get all active milestones for the course
     milestones_query = select(Milestone).where(
@@ -152,7 +155,10 @@ async def check_and_award_milestones(
     ).order_by(Milestone.sort_order)
     
     milestones_result = await session.exec(milestones_query)
-    milestones = milestones_result.all()
+    milestones_objs = milestones_result.all()
+    
+    # Create detached copies of milestones
+    milestones = [Milestone.model_validate(m.model_dump()) for m in milestones_objs]
     
     # Get already achieved milestones
     achieved_query = select(UserMilestone.milestone_id).where(
@@ -215,6 +221,6 @@ async def check_and_award_milestones(
             ))
     
     if celebrations:
-        await session.commit()
+        await session.flush()
     
     return celebrations

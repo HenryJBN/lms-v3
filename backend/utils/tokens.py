@@ -56,8 +56,7 @@ async def award_tokens(
             metadata_json=metadata or {}
         )
         session.add(transaction)
-        await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
-        await session.refresh(transaction)
+        await session.flush()
         logger.info(f"DEBUG: TOKEN OP SUCCESS {balance.balance}")        
         return {
             "success": True,
@@ -118,7 +117,7 @@ async def spend_tokens(
             metadata_json=metadata or {}
         )
         session.add(transaction)
-        await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
+        await session.flush()
         await session.refresh(transaction)
         logger.info(f"DEBUG: TOKEN OP SUCCESS {balance.balance}")        
         return {
@@ -150,8 +149,7 @@ async def get_token_balance(user_id: uuid.UUID, session: AsyncSession, site_id: 
         if not balance:
             balance = TokenBalance(user_id=user_id, balance=0.0, site_id=site_id)
             session.add(balance)
-            await session.flush(); logger.info("DEBUG: FLUSH SUCCESS"); await session.commit()
-            await session.refresh(balance)
+            await session.flush()
         
         return {
             "balance": balance.balance,

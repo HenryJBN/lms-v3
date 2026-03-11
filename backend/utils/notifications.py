@@ -65,8 +65,7 @@ async def create_notification(
                 link=action_url
             )
             session.add(new_notification)
-            await session.commit()
-            await session.refresh(new_notification)
+            await session.flush()
             
             # Send push notification if user has it enabled
             await send_push_notification(user_id, title, message, session, data)
