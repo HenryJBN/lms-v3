@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, BackgroundTasks
 from typing import List, Optional
 import uuid
 import os
@@ -15,8 +15,9 @@ from models.lesson import Lesson, Quiz, Assignment
 from models.course import Course, Section
 from models.user import User
 from models.enrollment import Enrollment, LessonProgress
-from models.enums import LessonType, UserRole
-from routers.progress import recalculate_course_progress_all_users
+from models.enums import LessonType, UserRole, CompletionStatus
+from routers.progress import recalculate_course_progress_all_users, update_course_progress, award_tokens_background
+from utils.site_settings import are_token_rewards_enabled, get_quiz_token_reward
 from schemas.lesson import (
     LessonCreate, LessonUpdate, LessonResponse,
     QuizCreate, QuizUpdate, QuizResponse,
@@ -1193,6 +1194,7 @@ async def create_quiz_attempt(
 async def submit_quiz_attempt(
     attempt_id: uuid.UUID,
     attempt_update: QuizAttemptCreate,
+    background_tasks: BackgroundTasks,
     current_user = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session),
     current_site: SiteData = Depends(get_current_site)
@@ -1200,7 +1202,7 @@ async def submit_quiz_attempt(
     from models.lesson import Quiz, QuizAttempt, QuizQuestion, QuizAttemptAnswer
     
     # Get attempt and verify ownership
-    query = select(QuizAttempt, Quiz.passing_score).join(
+    query = select(QuizAttempt, Quiz).join(
         Quiz, QuizAttempt.quiz_id == Quiz.id
     ).where(QuizAttempt.id == attempt_id, QuizAttempt.user_id == current_user.id, QuizAttempt.site_id == current_site.id)
     
@@ -1210,7 +1212,8 @@ async def submit_quiz_attempt(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quiz attempt not found")
     
-    attempt, passing_score = row
+    attempt, quiz = row
+    passing_score = quiz.passing_score
     
     if attempt.completed_at:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quiz attempt already submitted")
@@ -1260,6 +1263,76 @@ async def submit_quiz_attempt(
     await session.commit()
     await session.refresh(attempt)
     
+    # Award tokens if passed and rewards are enabled in background
+    if passed and are_token_rewards_enabled(current_site):
+        amount = get_quiz_token_reward(current_site)
+        background_tasks.add_task(
+            award_tokens_background,
+            current_user.id,
+            float(amount),
+            f"Passed quiz: {quiz.title} ({score}%)",
+            current_site.id,
+            "quiz_passed",
+            attempt.quiz_id
+        )
+
+    # Update lesson progress and course progress if it's a lesson-linked quiz
+    if quiz.lesson_id:
+        # Check if lesson progress record exists
+        lp_query = select(LessonProgress).where(
+            LessonProgress.user_id == current_user.id,
+            LessonProgress.lesson_id == quiz.lesson_id,
+            LessonProgress.site_id == current_site.id
+        )
+        lp_result = await session.exec(lp_query)
+        lesson_progress = lp_result.first()
+        
+        if passed:
+            if lesson_progress:
+                if lesson_progress.status != CompletionStatus.completed:
+                    lesson_progress.status = CompletionStatus.completed
+                    lesson_progress.progress_percentage = 100
+                    lesson_progress.completed_at = datetime.utcnow()
+                    lesson_progress.updated_at = datetime.utcnow()
+                    session.add(lesson_progress)
+            else:
+                new_lp = LessonProgress(
+                    user_id=current_user.id,
+                    lesson_id=quiz.lesson_id,
+                    course_id=quiz.course_id,
+                    status=CompletionStatus.completed,
+                    progress_percentage=100,
+                    site_id=current_site.id,
+                    started_at=datetime.utcnow(),
+                    completed_at=datetime.utcnow()
+                )
+                session.add(new_lp)
+            
+            await session.flush()
+            
+            # Trigger course progress update to check for completion
+            await update_course_progress(
+                user_id=current_user.id,
+                course_id=quiz.course_id,
+                session=session,
+                site_id=current_site.id,
+                background_tasks=background_tasks
+            )
+        elif not lesson_progress:
+            # Mark as in_progress if attempted but not passed (and no existing record)
+            new_lp = LessonProgress(
+                user_id=current_user.id,
+                lesson_id=quiz.lesson_id,
+                course_id=quiz.course_id,
+                status=CompletionStatus.in_progress,
+                progress_percentage=0,
+                site_id=current_site.id,
+                started_at=datetime.utcnow()
+            )
+            session.add(new_lp)
+            await session.flush()
+    
+    await session.commit()
     result = QuizAttemptResponse.model_validate(attempt)
     result.total_questions = total_questions
     result.correct_answers = correct_answers

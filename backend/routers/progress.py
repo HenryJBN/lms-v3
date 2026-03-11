@@ -464,6 +464,7 @@ async def submit_quiz_attempt(
             session.add(new_lp)
             await session.flush()
     
+    await session.commit()
     return new_attempt
 
 @router.get("/quiz/{quiz_id}/attempts", response_model=List[QuizAttemptResponse])
@@ -847,7 +848,14 @@ async def issue_certificate(user_id: uuid.UUID, course_id: uuid.UUID, session: A
         enrollment.certificate_issued_at = datetime.utcnow()
         session.add(enrollment)
     
-    await session.flush()
+    # Send notification
+    try:
+        from utils.notifications import send_certificate_notification
+        await send_certificate_notification(user_id, course.title, "issued", session, site_id)
+    except Exception as e:
+        print(f"Failed to send certificate notification: {e}")
+        
+    await session.commit()
 
 async def issue_certificate_background(user_id: uuid.UUID, course_id: uuid.UUID, site_id: uuid.UUID):
     """Wrapper for issue_certificate to be used with BackgroundTasks"""

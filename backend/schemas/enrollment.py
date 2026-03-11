@@ -82,6 +82,7 @@ class CertificateResponse(BaseSchema):
     token_id: Optional[str] = None
     token_uri: Optional[str] = None
     transaction_hash: Optional[str] = Field(default=None, validation_alias="blockchain_hash")
+    certificate_url: Optional[str] = None
     image_url: Optional[str] = None
     metadata: Optional[dict] = None
     issued_at: datetime
